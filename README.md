@@ -1,191 +1,167 @@
-# Bulacan Flood-Control Thesis — Project Audit
+# Auditing Flood-Control Projects from Space
 
-*A BS Mathematics (major in Computer Science) thesis on measuring whether
-flood-control projects actually reduce flooding.*
+*A BS Mathematics (major in Computer Science) thesis: using free satellites to
+check whether declared flood-control projects were actually built.*
 
 ---
 
 ## 1. What this thesis is about (in plain words)
 
-The government spends **billions of pesos** on flood-control projects in Bulacan —
-dikes, floodwalls, drainage, river dredging. Right now, the only question anyone
-asks is *"Was the project finished?"*
+In 2025, the Philippines' Commission on Audit (COA) discovered that many
+"100% complete" flood-control projects in Bulacan were **ghost projects** —
+paid for, but never built, or built in the wrong place. COA found these by hand,
+sending inspection teams to a few dozen sites, *"supported by satellite imagery."*
 
-This thesis asks a harder and more important question:
+This thesis asks:
 
-> **Did the project actually reduce flooding — and by how much?**
+> **Can we detect ghost and mismatched flood-control projects automatically,
+> from free satellite images — and check hundreds of projects instead of a few dozen?**
 
-That sounds simple, but it is genuinely hard to answer scientifically, for three reasons:
-
-1. **Projects are built where flooding is already worst.** So if we just compare
-   "areas with projects" to "areas without," we're really measuring *where the
-   government chose to build*, not whether the building *worked*.
-2. **Water moves.** A dike upstream doesn't delete water — it can push the flood
-   *downstream* onto someone else. So projects affect each other. You can't judge
-   one project in isolation.
-3. **We can't easily see flooding.** There's no clean record of "how flooded was
-   this barangay each year." We have to *reconstruct* flooding from **satellite
-   images**.
-
-The thesis builds a method that handles all three problems and produces, for each
-project, an honest estimate: *this project reduced flooding by X%, give or take Y%* —
-including whether it made flooding **worse downstream**.
+In short: COA verified ~21 projects manually. This thesis builds a method to do
+what they did, **automatically and at scale**, and proves it works by checking that
+it catches the same ghosts COA already confirmed.
 
 ---
 
-## 2. The one research question
+## 2. Why this is scientifically hard (not just "look at pictures")
 
-> How do you measure the true flood-reduction effect of an individual
-> infrastructure project, when (a) projects are built in the riskiest places,
-> (b) projects affect each other through the river network, and (c) the flooding
-> itself can only be seen from satellites?
+Three real problems make this a genuine research contribution, not a homework CNN:
 
-Everything in this repo exists to answer that one question rigorously.
+1. **The locations are lies.** The government's coordinates for these projects were
+   *deliberately falsified* to hide problems. So you can't just look at the declared
+   point — you have to **search the surrounding area** for whether any matching
+   structure exists. → a detection-under-*wrong-location* problem.
+2. **Almost no labeled examples.** Only ~21 projects are officially confirmed as
+   ghosts. You can't train a big AI model on 21 examples. → you need **anomaly
+   detection with calibrated confidence** ("this project is 80% likely a ghost,
+   give or take"), not naive machine learning.
+3. **The structures are small.** Free satellites see the ground at ~5–10 meters per
+   pixel. A dike is visible; a thin floodwall may not be. → **small-target detection**,
+   and honestly deciding *which* project types are even checkable.
 
----
-
-## 3. What's in this repo
-
-| File | What it does |
-|------|--------------|
-| `README.md` | This file — the plan and how to use everything |
-| `audit.py` | A program that takes the list of DPWH projects and finds which ones are **usable** for the study (the "clean" ones). Run this first. |
-| `criteria.yaml` | The exact rules/thresholds the audit uses. **Lock this before looking at any results** (explained below). |
-| `power/` | Math simulations that answer *"how many projects do we need before the study is trustworthy?"* Answer: about **30**. |
-| `requirements.txt` | The Python packages you need to install |
+The thesis handles all three and outputs, per project, an **"existence score with
+error bars,"** validated against COA's confirmed cases.
 
 ---
 
-## 4. The big risk we're de-risking first: **do we have enough projects?**
+## 3. The one research question
 
-A study is only trustworthy if it has enough data. The `power/` simulations already
-answered this:
-
-- If we have **~30 usable projects**, we can reliably detect a realistic
-  flood reduction (about a 15–20% drop). ✅
-- Below **~20 usable projects**, the study is too weak — we'd have to change the plan. ❌
-
-So the whole thesis hinges on **one number**: *how many usable projects are there
-in Bulacan?* The audit (`audit.py`) exists to find that number **now**, in month one,
-instead of discovering a problem in month six.
-
-The catch: not every project on the government's list is usable. Many will be thrown
-out for good scientific reasons. `audit.py` applies a series of filters — think of it
-as a **sieve** — and counts what survives.
+> Can we verify whether declared public infrastructure physically exists, from free
+> multi-sensor satellite data, when (a) the recorded locations are falsified,
+> (b) there are almost no labeled examples, and (c) the structures are near the
+> limit of what the satellite can see?
 
 ---
 
-## 5. The sieve: which projects count as "usable"?
+## 4. How the detector works (the idea in one picture)
 
-Each filter below removes projects that would *break the science* if we kept them.
-The middle column is plain English. The right column is the technical reason (useful
-for your thesis defense).
+For each project we compare **before** vs **after** its construction window, using
+two independent satellite signals:
 
-| Filter | In plain words: keep the project only if… | Why (the scientific reason) |
-|--------|-------------------------------------------|------------------------------|
-| **F0** | …we know **where** it is (has a real location) | You can't study flooding at an unknown place |
-| **F1** | …we know its **cost, type, and finish date** | We need the finish date to compare "before vs after" |
-| **F2** | …it finished during the **years satellites were watching** (2016–2023), with at least a year of images before and after | We compare satellite flooding before and after the project |
-| **F3** | …it's **big enough to matter** (costs ≥ ₱5M, or ≥100 m long) | Tiny projects have effects too small for satellites to detect — the power sims proved this. Including them just adds noise. |
-| **F4** | …it's an **actual flood-control structure** (dike, drainage, dredging…), not a building repair | Only real water infrastructure can change flooding |
-| **F5** | …we can figure out the **area of land it drains** (its catchment) | We need to know *which* land the project protects |
-| **F6** ⚠️ | …**no other project** was built nearby at the same time | If two projects overlap, you can't tell which one caused the change. **This is the filter that removes the most projects.** |
-| **F7** | …that area **actually floods** in the satellite record | If it never visibly floods, there's nothing to measure |
-| **F8** | …there are **people living downstream** of it | Needed to check if the project pushed flooding onto others |
+| Signal | What it is | What it tells us |
+|--------|-----------|------------------|
+| **Optical change** | Planet NICFI (free, 4.77 m) — before/after photos | Did a visible structure *appear*? |
+| **Radar disturbance** | Sentinel-1 radar "coherence" (free) | Was the ground *physically disturbed* by construction — even if clouds blocked the photo? |
 
-**Projects are then sorted into tiers:**
-- **Tier A** — passes everything → can study both the local effect *and* the downstream effect. Best.
-- **Tier B** — passes F0–F7 → local effect only.
-- **Tier C** — borderline → used only for extra robustness checks, not the main result.
-- **Excluded** — fails a basic filter.
+A real project shows **both** signals. A ghost project shows **neither** — despite
+being marked "100% complete." Fusing the two signals into one calibrated score is
+the core contribution.
+
+> ⚠️ **The rule we never break:** the output is always *"no detectable structure
+> consistent with the declared project"* — **never** the word "fraud." A blank
+> satellite could mean a ghost, OR a small legit structure, OR cloud cover. We flag
+> for investigation; we do not accuse. This protects you legally and scientifically.
 
 ---
 
-## 6. What to expect: the list will shrink a LOT
+## 5. The thing we're de-risking first: **do we have enough labels?**
 
-Don't panic when it does — this is normal and *correct*. Planning estimate:
+A detector is only believable if we can *prove* it's accurate. Proving accuracy needs
+labeled examples: projects we know for sure are ghosts, and projects we know for sure
+are real. The `power/` simulations already worked out how many we need:
 
-```
-Government's raw Bulacan project list     ~800–2000 projects   (100%)
-  after "we know where it is"                    ~70%
-  after "we know cost/type/date"                 ~60%
-  after "satellites were watching"               ~45%
-  after "big enough to matter"                   ~30%
-  after "it's real flood infrastructure"         ~25%
-  after "we can map its catchment"               ~22%
-  after "no overlapping projects"  ← biggest cut  8–12%   ← THIS is our usable count
-  after "the area actually floods"                7–10%
-  after "people live downstream"                  4–7%    ← usable for downstream study
-```
+| Labeled examples | How trustworthy the accuracy claim is |
+|------------------|----------------------------------------|
+| 21 (COA's cases only) | Too few — the error bars are too wide to headline |
+| **60 total** (30 ghost + 30 real) | 🟢 **Publishable-tight** |
+| 80 of each | Strong |
 
-**What the final number means for the thesis:**
+**The good news — and why this thesis is safer than most:** we can *make our own
+labels*. COA gives us ~21 confirmed ghosts for free. We add the rest by **eyeballing
+projects on free high-resolution imagery** (Google Earth / Esri Wayback) and marking
+the obvious ones — "structure clearly there" (real) or "obviously empty" (ghost).
+Labeling ~60–160 projects is a weekend of work, not a research program.
 
-| Usable projects | Verdict |
-|-----------------|---------|
-| **30 or more** | 🟢 **Go.** Strong enough to trust. |
-| **20–30** | 🟡 **Go, but carefully** — wider error bars, mention it as a limitation. |
-| **Under 20** | 🔴 **Stop and change the plan** — e.g. study whole river basins instead of individual projects, or do a deep single-project case study. |
+Unlike a study where the data amount is fixed, here **we control the bottleneck.**
+
+---
+
+## 6. Which projects can we actually check? (the sieve)
+
+Not every project is checkable from space. `audit.py` filters the government's list
+down to the **verifiable set** we run the detector on. Each filter has a plain reason.
+
+| Filter | Keep the project only if… | Why |
+|--------|---------------------------|-----|
+| **F0** | …it has a declared location (even a wrong one — we use it as a starting point to search around) | Need a place to start looking |
+| **F1** | …we know its type, cost, and construction dates | Need the dates to compare before vs after |
+| **F2** | …it was built during **2016–2025**, so satellites have before-and-after images | The whole method is before/after comparison |
+| **F3** | …it's a **big-footprint type** (dike, dredging, revetment, retarding basin) — not a thin floodwall or culvert | Small structures are invisible at 5–10 m; checking them would give false "ghost" alarms |
+| **F4** | …its declared size is **big enough to see** (e.g. ≥100 m long) | Same reason — must exceed the satellite's resolution |
+| **F5** | …usable **cloud-free** before/after images actually exist for its area | Can't compare images that don't exist |
+
+Projects that pass = your **application set** (the ones you score, likely hundreds).
+Separately, `audit.py` counts your **validation labels** (COA + self-verified) and
+tells you if you've hit the 60/80-label targets.
+
+> Projects that *fail* F3/F4 aren't wasted — **"which projects are impossible to
+> verify from space" is itself a finding**: it maps the accountability blind spots.
 
 ---
 
 ## 7. Where the data comes from (all free)
 
-You do **not** need Bulacan to hand you secret files. Everything is public:
-
 | What we need | Source | Free? | Status |
 |--------------|--------|-------|--------|
-| **The projects** (location, cost, date) | DPWH "Sumbong sa Pangulo" flood-control list; mirrors on Kaggle & BetterGovPH | Yes | ✅ exists — ⚠️ but locations are known to be inaccurate, so each one must be checked |
-| **The flooding** (the thing we measure) | Sentinel-1 satellite radar — sees through clouds, works in storms | Yes | 🔑 needs one free Copernicus/Google Earth Engine signup |
-| **The rainfall** (to be fair to projects — was it a dry year or a storm?) | CHIRPS satellite rainfall | Yes | ✅ **already tested — downloads and works** |
-| **The rivers** (to know which way water flows) | MERIT Hydro / FABDEM elevation maps | Yes | ✅ open |
-| **The people** (who's affected) | WorldPop population maps | Yes | ✅ **tested — downloads** |
-
-> ⚠️ **Important honest warning about the project data:** The government's location
-> coordinates for these projects have been reported as *deliberately wrong* (to hide
-> problem projects). So before trusting any project's location, we must double-check
-> it against satellite imagery. This is annoying — but it's also part of the thesis
-> story: *the accountability data is so unreliable that satellites are needed just to
-> verify where the money went.*
+| **The projects** (location, cost, type, dates) | DPWH "Sumbong sa Pangulo" list; Kaggle & BetterGovPH mirrors | Yes | ✅ exists — locations falsified, so we search near them |
+| **Ground truth** (confirmed ghosts) | COA fraud audit reports (~21 Bulacan cases, growing) | Yes | ✅ public |
+| **Optical before/after** | Planet NICFI, 4.77 m, monthly 2015–2025 | Yes | 🔑 free, via Google Earth Engine signup |
+| **Radar disturbance** | Sentinel-1 (Copernicus) | Yes | 🔑 same free signup |
+| **Self-labeling imagery** | Google Earth / Esri Wayback high-res | Yes | ✅ browser, no signup |
 
 ---
 
-## 8. How to actually run the audit
+## 8. How to run the audit
 
 ```bash
-# 1. install the tools
 pip install -r requirements.txt
 
-# 2. put the cleaned government project list here as:
-#    dpwh_bulacan_clean.geojson
-#    (columns: id, lon, lat, cost_php, completion_date, type_raw, length_m)
+# put the cleaned government project list here as dpwh_bulacan_clean.geojson
+#   (columns: id, lon, lat, cost_php, completion_date, type_raw, length_m)
 
-# 3. run the sieve
-python audit.py --projects dpwh_bulacan_clean.geojson
-
-# it prints the shrinking funnel, the final usable count,
-# and a GO / CAUTION / STOP verdict.
+python audit.py --projects dpwh_bulacan_clean.geojson --labels coa_confirmed.csv
+# prints: the verifiable application-set size, your current label count,
+#         and a GO / NEED-MORE-LABELS verdict against the 60/80 targets.
 ```
-
-The satellite-dependent filters (F5, F7, F8) are marked as "TODO / stub" in the code —
-those get filled in once the Google Earth Engine account is set up. Filters F0–F6
-(including the all-important F6) already work today with no account.
 
 ---
 
-## 9. Mini-glossary (so no term is scary)
+## 9. Mini-glossary
 
-- **Catchment** — the area of land whose rainwater drains toward one point. A flood
-  project protects (or affects) its catchment.
-- **Confounder** — something that messes up a comparison. Here: rainfall. A project
-  might look great just because it didn't rain much — the study must correct for that.
-- **Spillover / downstream effect** — when helping one place harms another, because
-  the water just moves. A key thing this thesis measures.
-- **Power (statistical)** — how likely your study is to detect a real effect if one
-  exists. Low power = you might miss a real result. That's what `power/` checks.
-- **Pre-register** — write down your rules (`criteria.yaml`) *before* seeing results,
-  so no one can accuse you of tweaking the rules to get the answer you wanted.
-- **Sentinel-1 / SAR** — a radar satellite. Because it's radar, not a camera, it sees
-  the ground even through thick storm clouds — perfect for mapping floods during typhoons.
+- **Ghost project** — a project reported as built and fully paid for, that was never
+  actually built (or built elsewhere).
+- **Optical imagery** — normal satellite "photos" (visible light). Blocked by clouds.
+- **Radar / SAR coherence** — radar bounces off the ground and works through clouds.
+  If the ground was dug up and built on, the radar signal "decorrelates" — a
+  fingerprint of construction activity.
+- **Change detection** — comparing before and after images to see what appeared.
+- **Anomaly detection** — finding the odd ones out when you have very few labeled
+  examples (which is our situation).
+- **Recall** — of all the real ghosts, what fraction did the detector catch?
+- **AUC** — a single 0–1 score for how well the detector separates ghosts from real
+  projects (1.0 = perfect, 0.5 = coin flip).
+- **Calibrated confidence** — the detector says "80% likely a ghost" and it's right
+  ~80% of the time. Honest uncertainty, not a blind yes/no.
 
 ---
 

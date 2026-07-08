@@ -1,45 +1,39 @@
-# Audit thresholds — PRE-REGISTER these before you look at outcomes.
-# Changing them after seeing SAR results = p-hacking. Lock this file, git-commit it, cite it in the thesis.
+# Audit thresholds for the ghost-detection thesis.
+# PRE-REGISTER these before scoring any project. Git-commit and cite in the thesis.
 
-study:
-  sar_start:      "2016-07-01"   # Sentinel-1 6-day (S1A+S1B) reliable coverage begins
-  study_end:      "2024-12-31"   # last date with settled post-period SAR
-  min_pre_months:  12            # F2: months of SAR coverage required BEFORE completion
-  min_post_months: 12            # F2: months of SAR coverage required AFTER completion
+imagery_window:
+  start:          "2016-01-01"   # NICFI + Sentinel-1/2 give reliable before/after from here
+  end:            "2025-06-30"   # last date with settled post-construction imagery
+  min_pre_months:  6             # months of imagery required BEFORE the construction window
+  min_post_months: 6             # months of imagery required AFTER completion
 
-scale_floor:                     # F3 — keep if ANY of these clears (project is "big enough to see")
-  min_cost_php:    5000000       # ₱5M
-  min_length_m:    100
-  min_protected_km2: 0.25
-
-hydrological_types:              # F4 — allowed project types (normalize DPWH strings to these)
+verifiable_types:                # F3 — big-footprint types detectable at ~5-10 m; others are "unverifiable"
   - dike
-  - floodwall
   - revetment
-  - drainage
   - dredging
   - retarding_basin
   - slope_protection
   - river_control
+# NOT verifiable at this resolution (excluded, and reported as an accountability blind spot):
+#   thin floodwall, small drainage/culvert, pumping station internals
 
-catchment:
-  snap_max_m:      500           # F5 — max snap distance from project point to a MERIT stream
-  min_contrib_km2: 0.5           # F5 — reject if delineated contributing area is implausibly tiny
+footprint_floor:                 # F4 — declared size must exceed the satellite's resolution to be seeable
+  min_length_m:    100
+  min_area_m2:     10000         # ~1 hectare, for area-type works (basins, dredged reaches)
 
-isolation:                       # F6 — the killer filter
-  flow_distance_km: 5.0          # up/downstream flow-distance defining "same hydrological neighborhood"
-  # a project is CONTAMINATED if another qualifying project completed within flow_distance_km
-  # AND within [completion - min_pre_months, completion + min_post_months]
+imagery_quality:                 # F5
+  max_cloud_pct:   40            # reject before/after scenes cloudier than this (NICFI mosaics mostly clear)
+  search_radius_m: 500           # because coordinates are falsified: search THIS far around the declared point
 
-observability:                   # F7
-  min_flood_events: 1            # affected catchment must show >=1 SAR-detected open-water flood
-  sar_water_db_threshold: -17    # VV backscatter (dB) below which a pixel is classed as water (tune per scene)
+detector:                        # signal thresholds (tune during development, then LOCK)
+  optical_change_min:   0.15     # min normalized before/after change to count as "structure appeared"
+  sar_coherence_drop_min: 0.20   # min Sentinel-1 coherence loss to count as "construction disturbance"
+  # a project scores "likely real" only if BOTH signals clear their thresholds
 
-downstream:                      # F8 — spillover subsample
-  flow_distance_km: 8.0          # how far downstream to look for exposed population
-  min_pop:         500           # WorldPop head-count needed to count a downstream barangay as "exposed"
+validation_targets:              # from power/ analysis — how many labels for a credible claim
+  min_ghost_labels:      30      # confirmed ghosts (COA ~21 + self-verified)
+  min_legit_labels:      30      # confirmed real (self-verified on high-res imagery)
+  strong_labels_each:    80      # target for a strong, tight claim
 
-decision_gates:
-  go_direct:        30
-  caution_direct:   20
-  go_spillover:     40
+decision:
+  go_total_labels:       60      # 30+30 -> AUC 95% CI half-width < 0.10 (publishable-tight)
