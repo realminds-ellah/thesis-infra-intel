@@ -1,0 +1,10 @@
+# data & derived rasters — never commit large binaries
+*.tif
+*.tif.gz
+*.gz
+*.geojson
+*.csv
+!criteria.yaml
+__pycache__/
+*.pyc
+.venv/

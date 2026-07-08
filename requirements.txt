@@ -1,0 +1,8 @@
+pandas
+pyyaml
+geopandas
+shapely
+rasterio
+# for F5/F7/F8 (satellite + hydrology):
+# earthengine-api
+# pysheds
