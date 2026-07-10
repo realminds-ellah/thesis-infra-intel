@@ -27,6 +27,8 @@ it catches the same ghosts COA already confirmed.
 > [`IDEAS.md`](IDEAS.md) and [`FUSION.md`](FUSION.md).
 > **Top-10 emerging-tech topic bank (for the 3-topic panel proposal):** see
 > [`TOPIC-BANK.md`](TOPIC-BANK.md).
+> **Every topic we've explored (running index, nothing deleted):** see
+> [`RESEARCH-LOG.md`](RESEARCH-LOG.md).
 
 ---
 
