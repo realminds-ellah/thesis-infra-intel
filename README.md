@@ -25,6 +25,8 @@ it catches the same ghosts COA already confirmed.
 > [`SIGNIFICANCE.md`](SIGNIFICANCE.md).
 > **Alternative thesis ideas (ranked) & the recommended upgrade:** see
 > [`IDEAS.md`](IDEAS.md) and [`FUSION.md`](FUSION.md).
+> **Top-10 emerging-tech topic bank (for the 3-topic panel proposal):** see
+> [`TOPIC-BANK.md`](TOPIC-BANK.md).
 
 ---
 
