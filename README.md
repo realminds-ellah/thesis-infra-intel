@@ -29,6 +29,7 @@ it catches the same ghosts COA already confirmed.
 > [`TOPIC-BANK.md`](TOPIC-BANK.md).
 > **Every topic we've explored (running index, nothing deleted):** see
 > [`RESEARCH-LOG.md`](RESEARCH-LOG.md).
+> **All thesis titles in one place:** see [`TITLES.md`](TITLES.md).
 
 ---
 
