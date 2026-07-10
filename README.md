@@ -23,6 +23,8 @@ it catches the same ghosts COA already confirmed.
 
 > **Why this matters, who uses it, and what can be built from it:** see
 > [`SIGNIFICANCE.md`](SIGNIFICANCE.md).
+> **Alternative thesis ideas (ranked) & the recommended upgrade:** see
+> [`IDEAS.md`](IDEAS.md) and [`FUSION.md`](FUSION.md).
 
 ---
 
