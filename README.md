@@ -21,6 +21,9 @@ In short: COA verified ~21 projects manually. This thesis builds a method to do
 what they did, **automatically and at scale**, and proves it works by checking that
 it catches the same ghosts COA already confirmed.
 
+> **Why this matters, who uses it, and what can be built from it:** see
+> [`SIGNIFICANCE.md`](SIGNIFICANCE.md).
+
 ---
 
 ## 2. Why this is scientifically hard (not just "look at pictures")
