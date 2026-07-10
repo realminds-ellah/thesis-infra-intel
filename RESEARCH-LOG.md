@@ -87,11 +87,39 @@ few-shot cropland monitoring · LLM education records · few-shot deforestation/
 
 ---
 
+## G. Heat, climate exposure & environment
+
+**Heat index** — *note: PSA has no gridded temperature; heat exposure comes from
+satellite/climate data (CHIRTS ✅ free, MODIS LST via GEE, ERA5), fused with PSA/DepEd
+for outcomes. Accountability framing: is the government's heat response equitable and
+reaching the vulnerable?*
+
+- ⭐ **Heat Vulnerability Index** — *"Mapping Who Bears the Heat"* — exposure × sensitivity
+  × adaptive capacity, downscaled below PAGASA station level. Composite index + geospatial. *(SDG 3,11,13)*
+- ⭐ **Heat → human harm (causal)** — *"Counting the Cost of Heat"* — distributed-lag causal
+  analysis on mortality / hospitalization / learning / labor. Strongest math + accountability. *(SDG 3,8,4)*
+- 💡 **School heat & learning loss** — *"Too Hot to Learn"* — heat-driven lost school days
+  and their inequities (no-AC schools). *(SDG 4,13)*
+- 💡 **Urban Heat Island + greening optimization** — *"Cooling the City Where It Counts"* —
+  UHI mapping + optimal cooling/greening allocation per peso. *(SDG 11,13)*
+
+**Environment / natural-resource accountability**
+
+- 💡 **Illegal-extraction detector** — *"Detected but Undeclared"* — few-shot satellite change
+  detection of forest clearing / mining scars, cross-checked vs DENR permits → flag
+  *unpermitted* extraction ("detected destruction, no authorization"). GFM (frozen → Colab).
+  Villain: theft of the public's natural resources. *(SDG 15.1, 15.2)* — ⚠️ shares Topic 1's
+  satellite ecosystem, so best standalone rather than paired with the satellite thesis.
+- 💡 **Few-shot cropland / farmland-loss monitoring** *(see Topic Bank #8; SDG 2)*.
+
 ## Datasets verified LIVE this session
 
 | Dataset | For | Status |
 |---------|-----|--------|
 | CHIRPS rainfall | flood confounder | ✅ downloaded real Bulacan values |
+| CHIRTS-daily (temp + humidity + heat index) | heat-index studies | ✅ live on UCSB server (same as CHIRPS) |
+| MODIS LST / ERA5 | heat exposure | 🔑 free via GEE / Copernicus account |
+| Hansen Global Forest Change · DENR permits | illegal-extraction detector | 💡 to verify |
 | WorldPop PHL | exposure | ✅ 188 MB downloadable |
 | Planet NICFI (4.77 m) | satellite optical | ✅ exists, free via GEE signup |
 | Sentinel-1 SAR | flood/infra outcome | 🔑 needs free Copernicus/GEE account |
