@@ -1,5 +1,9 @@
 node_modules
 dist
-data/
 __pycache__/
 .DS_Store
+
+# Source caches only — anchored to the repo root so it does NOT match
+# src/app/data/, which holds the generated JSON the app imports at build time.
+# Without the leading slash this pattern silently excluded the whole dataset.
+/data/

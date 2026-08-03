@@ -60,10 +60,23 @@ slightly *more* often, Fisher exact p = 1.00. **No individual satellite verdict
 carries evidential weight about its contract**, and the app says so in a red
 banner above every assessment.
 
-The cause is resolution, not tuning. A revetment is metres wide; averaging it
-across a 30 m disc of floodplain whose seasonal swing dwarfs the structure buries
-the signal. `SOURCES.md` sets out what would plausibly fix it — 3 m PlanetScope,
-Sentinel-1 coherence, or linear-feature sampling.
+`pipeline/evaluate.py` establishes *why*, rather than assuming it. Four change
+statistics — from a plain disc mean to the most-changed 3×3 patch anywhere in the
+disc — swept across four thresholds, none reaching usable recall on contracts
+that were in the main actually built:
+
+| Statistic | 1.0σ | 1.5σ | 2.0σ | 2.5σ |
+|---|---|---|---|---|
+| `disc-mean` | 25.6% | 15.4% | 12.8% | 0.0% |
+| `tail` | 23.1% | 15.4% | 15.4% | 10.3% |
+| `core` | 25.0% | 16.7% | 8.3% | 8.3% |
+| `patch` | 20.5% | 20.5% | 10.3% | 7.7% |
+
+This **rules out dilution**, which was the obvious explanation and the one an
+earlier draft asserted: concentrating the measurement on the most-changed patch
+does not rescue recall. The limit is the sensor and the setting, so the next
+lever is resolution (3 m PlanetScope) or different physics (Sentinel-1 SAR
+coherence) — not another estimator. See [SOURCES.md](SOURCES.md).
 
 This is a real constraint on the whole approach, and shipping it stated plainly is
 worth more than a detector that looks like it works.

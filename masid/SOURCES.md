@@ -122,16 +122,38 @@ record with a bad coordinate from an ordinary one.
 and the interface says so — in a red banner above every assessment, and in the
 note attached to each verdict.
 
-The cause is a resolution mismatch, not a threshold to tune. Philippine flood
-control structures are narrow and linear: a revetment is metres wide, occupying a
-fraction of one 10 m pixel row. Averaging across a 30 m disc — 28 pixels of
-floodplain whose seasonal swing between rice cycles is far larger than the
-structure's spectral signature — dilutes it below detection. The median raw local
-NDVI change is −0.055 against a null spread that is comfortably wider.
+### The cause is the sensor, not the estimator — tested, not asserted
 
-This bears directly on the thesis. It is a real, publishable constraint on the
-whole approach, and it also reframes GIST's result: a signal that appears most
-often at 150 m may be capturing area rather than structure.
+An earlier version of this document blamed **dilution**: a revetment is metres
+wide, a 30 m disc holds ~28 pixels of floodplain, so averaging buries the
+structure. That was a hypothesis, and `pipeline/evaluate.py` tests it by swapping
+the statistic and changing nothing else.
+
+**Recall on presumed-built contracts** (completed, unflagged — projects that were
+in the main actually built). This metric assumes nothing about whether flagged
+records are ghosts, which is the very thing the thesis is trying to establish:
+
+| Statistic | What it does | 1.0σ | 1.5σ | 2.0σ | 2.5σ |
+|---|---|---|---|---|---|
+| `disc-mean` | mean over the whole disc | 25.6% | 15.4% | 12.8% | 0.0% |
+| `tail` | mean of the most-changed fifth | 23.1% | 15.4% | **15.4%** | 10.3% |
+| `core` | the 3×3 touching the coordinate | 25.0% | 16.7% | 8.3% | 8.3% |
+| `patch` | most-changed 3×3 anywhere in the disc | 20.5% | 20.5% | 10.3% | 7.7% |
+
+At 1.0σ roughly a sixth of null discs fire by chance *per index*, so the left
+column is close to noise. Even there, no statistic exceeds 26%.
+
+**The dilution hypothesis is wrong.** Concentrating the measurement on the
+most-changed 3×3 patch — the shape a small structure actually makes — does not
+rescue recall. If dilution were the binding constraint, `patch` and `tail` would
+have pulled clear of `disc-mean`. They do not.
+
+What remains is the sensor and the setting. Many of these structures sit on
+riverbanks that were already bare, so there is no vegetation to lose; the
+surrounding floodplain swings between rice cycles by more than the structure
+changes; and a two-metre revetment is small even against a 30 m patch. **No
+choice of estimator or threshold recovers this.** The next lever is resolution or
+different physics, not more statistics.
 
 **What would plausibly fix it**
 

@@ -1,0 +1,3556 @@
+[
+ {
+  "id": "C169",
+  "name": "WAWAO BUILDERS",
+  "totalProjects": 82,
+  "activeProjects": 13,
+  "completedProjects": 67,
+  "flaggedProjects": 5,
+  "flagRate": 0.061,
+  "totalValue": 6003460423.07,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C156",
+  "name": "TOPNOTCH CATALYST BUILDERS INC.",
+  "totalProjects": 79,
+  "activeProjects": 23,
+  "completedProjects": 46,
+  "flaggedProjects": 6,
+  "flagRate": 0.076,
+  "totalValue": 5477331082.63,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C150",
+  "name": "SYMS CONSTRUCTION TRADING",
+  "totalProjects": 72,
+  "activeProjects": 48,
+  "completedProjects": 19,
+  "flaggedProjects": 8,
+  "flagRate": 0.111,
+  "totalValue": 4622209952.01,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2021,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C13",
+  "name": "A.R.L. CONSTRUCTION",
+  "totalProjects": 47,
+  "activeProjects": 15,
+  "completedProjects": 31,
+  "flaggedProjects": 6,
+  "flagRate": 0.128,
+  "totalValue": 3535763079.03,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Plaridel"
+  ],
+  "years": [
+   2016,
+   2017,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C92",
+  "name": "L.R. TIQUI BUILDERS, INC.",
+  "totalProjects": 47,
+  "activeProjects": 0,
+  "completedProjects": 47,
+  "flaggedProjects": 11,
+  "flagRate": 0.234,
+  "totalValue": 2431861419.69,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C165",
+  "name": "TRIPLE 8 CONSTRUCTION & SUPPLY, INC. (FORMERLY TRIPLE 8 CONST. & SUPPLY)",
+  "totalProjects": 30,
+  "activeProjects": 10,
+  "completedProjects": 20,
+  "flaggedProjects": 3,
+  "flagRate": 0.1,
+  "totalValue": 2180564635.6,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi"
+  ],
+  "years": [
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C105",
+  "name": "M3 KONSTRACT CORPORATION (FORMERLY:MARGARITA CONSTRUCTION)",
+  "totalProjects": 39,
+  "activeProjects": 4,
+  "completedProjects": 35,
+  "flaggedProjects": 8,
+  "flagRate": 0.205,
+  "totalValue": 2131306810.06,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C77",
+  "name": "JB CONSTRUCTION AND SUPPLY INC. (FORMERLY:JB CONSTRUCTION AND SUPPLY)",
+  "totalProjects": 25,
+  "activeProjects": 12,
+  "completedProjects": 12,
+  "flaggedProjects": 1,
+  "flagRate": 0.04,
+  "totalValue": 1834115458.65,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Guiguinto",
+   "Pandi",
+   "Plaridel"
+  ],
+  "years": [
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C2",
+  "name": "11-16 CONSTRUCTION",
+  "totalProjects": 22,
+  "activeProjects": 8,
+  "completedProjects": 13,
+  "flaggedProjects": 1,
+  "flagRate": 0.045,
+  "totalValue": 1706945192.28,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bulacan",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy"
+  ],
+  "years": [
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C160",
+  "name": "TOPNOTCH CATALYST BUILDERS INC. (34061) / ONE FRAME CONSTRUCTION INC.",
+  "totalProjects": 19,
+  "activeProjects": 4,
+  "completedProjects": 10,
+  "flaggedProjects": 3,
+  "flagRate": 0.158,
+  "totalValue": 1645751045.89,
+  "municipalities": [
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Pandi"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C58",
+  "name": "FLORDES CONSTRUCTION & TRADING CORP. (FORMERLY FLO",
+  "totalProjects": 18,
+  "activeProjects": 12,
+  "completedProjects": 6,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1600312203.94,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Pandi"
+  ],
+  "years": [
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C102",
+  "name": "M.S. RAMOS CONSTRUCTION INC. (FORMERLY: M.S. RAMOS",
+  "totalProjects": 26,
+  "activeProjects": 3,
+  "completedProjects": 23,
+  "flaggedProjects": 3,
+  "flagRate": 0.115,
+  "totalValue": 1547749525.74,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Guiguinto",
+   "Pandi",
+   "Plaridel"
+  ],
+  "years": [
+   2018,
+   2019,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C146",
+  "name": "ST. TIMOTHY CONSTRUCTION CORPORATION ([REVOKED] 39196)",
+  "totalProjects": 31,
+  "activeProjects": 1,
+  "completedProjects": 30,
+  "flaggedProjects": 31,
+  "flagRate": 1.0,
+  "totalValue": 1475810783.05,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C57",
+  "name": "FERDSTAR BUILDERS INC.",
+  "totalProjects": 20,
+  "activeProjects": 2,
+  "completedProjects": 14,
+  "flaggedProjects": 2,
+  "flagRate": 0.1,
+  "totalValue": 1355700293.86,
+  "municipalities": [
+   "Baliuag",
+   "Bulacan",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Plaridel"
+  ],
+  "years": [
+   2016,
+   2018,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C43",
+  "name": "DARCY & ANNA BUILDERS & TRADING",
+  "totalProjects": 18,
+  "activeProjects": 0,
+  "completedProjects": 18,
+  "flaggedProjects": 2,
+  "flagRate": 0.111,
+  "totalValue": 1299907019.58,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Pandi",
+   "Plaridel"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C85",
+  "name": "JTC CRUZ CONSTRUCTION CO., INC.",
+  "totalProjects": 15,
+  "activeProjects": 6,
+  "completedProjects": 9,
+  "flaggedProjects": 3,
+  "flagRate": 0.2,
+  "totalValue": 1255629136.58,
+  "municipalities": [
+   "Bocaue",
+   "Bustos",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy"
+  ],
+  "years": [
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C9",
+  "name": "729 CONSTRUCTION, INC. (FORMERLY 722 CONSTRUCTION, INC.)",
+  "totalProjects": 33,
+  "activeProjects": 2,
+  "completedProjects": 31,
+  "flaggedProjects": 9,
+  "flagRate": 0.273,
+  "totalValue": 1137156980.81,
+  "municipalities": [
+   "Angat",
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C147",
+  "name": "STAR WILLIAM CONSTRUCTION",
+  "totalProjects": 36,
+  "activeProjects": 4,
+  "completedProjects": 32,
+  "flaggedProjects": 9,
+  "flagRate": 0.25,
+  "totalValue": 1091279449.38,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C18",
+  "name": "ALPHA & OMEGA GEN. CONTRACTOR & DEVELOPMENT CORP. ([REVOKED] 38958)",
+  "totalProjects": 28,
+  "activeProjects": 0,
+  "completedProjects": 28,
+  "flaggedProjects": 28,
+  "flagRate": 1.0,
+  "totalValue": 1078996745.35,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2017,
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C72",
+  "name": "J. SIMEON CONSTRUCTION",
+  "totalProjects": 17,
+  "activeProjects": 0,
+  "completedProjects": 17,
+  "flaggedProjects": 2,
+  "flagRate": 0.118,
+  "totalValue": 939496879.74,
+  "municipalities": [
+   "Balagtas",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Paombong",
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C99",
+  "name": "M.G. FRANCISCO CONSTRUCTION",
+  "totalProjects": 20,
+  "activeProjects": 4,
+  "completedProjects": 16,
+  "flaggedProjects": 1,
+  "flagRate": 0.05,
+  "totalValue": 908971019.06,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "City of Malolos",
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2018,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C159",
+  "name": "TOPNOTCH CATALYST BUILDERS INC. (34061) / BLACK HARDHAT INC. (FORMERLY: JCHARDHAT INC.)",
+  "totalProjects": 16,
+  "activeProjects": 1,
+  "completedProjects": 15,
+  "flaggedProjects": 5,
+  "flagRate": 0.312,
+  "totalValue": 897817852.86,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue",
+   "Bustos",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Pandi"
+  ],
+  "years": [
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C71",
+  "name": "IM CONSTRUCTION CORPORATION",
+  "totalProjects": 10,
+  "activeProjects": 3,
+  "completedProjects": 7,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 848486079.7,
+  "municipalities": [
+   "Baliuag",
+   "Bulacan",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Plaridel"
+  ],
+  "years": [
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C127",
+  "name": "PTM DEVELOPMENT CORP.",
+  "totalProjects": 18,
+  "activeProjects": 11,
+  "completedProjects": 5,
+  "flaggedProjects": 4,
+  "flagRate": 0.222,
+  "totalValue": 846841585.29,
+  "municipalities": [
+   "Baliuag",
+   "Bulacan",
+   "Calumpit",
+   "Hagonoy",
+   "Pulilan"
+  ],
+  "years": [
+   2021,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C119",
+  "name": "OLYMPUS MINING AND BUILDERS GROUP PHILS. CORP. (FORMERLY: OLYMPUS BUILDERS AND MINING CORP.)",
+  "totalProjects": 9,
+  "activeProjects": 7,
+  "completedProjects": 0,
+  "flaggedProjects": 4,
+  "flagRate": 0.444,
+  "totalValue": 833786998.82,
+  "municipalities": [
+   "Bustos"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C64",
+  "name": "GREAT PACIFIC BUILDERS AND GEN. CONTRACTOR INC. ([REVOKED] 45914)",
+  "totalProjects": 16,
+  "activeProjects": 2,
+  "completedProjects": 14,
+  "flaggedProjects": 16,
+  "flagRate": 1.0,
+  "totalValue": 794293668.31,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2020,
+   2021,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C152",
+  "name": "TBB CONSTRUCTION CORP.",
+  "totalProjects": 23,
+  "activeProjects": 6,
+  "completedProjects": 17,
+  "flaggedProjects": 3,
+  "flagRate": 0.13,
+  "totalValue": 727790215.72,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "Guiguinto",
+   "Hagonoy",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2020,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C107",
+  "name": "MICHARIAN BUILDERS AND TRADING",
+  "totalProjects": 24,
+  "activeProjects": 11,
+  "completedProjects": 13,
+  "flaggedProjects": 2,
+  "flagRate": 0.083,
+  "totalValue": 726906660.61,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Paombong",
+   "Pulilan"
+  ],
+  "years": [
+   2017,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C28",
+  "name": "AZUL BUILDERS (21870) / JB CONSTRUCTION AND SUPPLY INC. (FORMERLY:JB CONSTRUCTION AND SUPPLY)",
+  "totalProjects": 8,
+  "activeProjects": 0,
+  "completedProjects": 8,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 712397287.67,
+  "municipalities": [
+   "Balagtas",
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2021,
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C44",
+  "name": "DMLC BUILDERS",
+  "totalProjects": 11,
+  "activeProjects": 1,
+  "completedProjects": 10,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 660004438.92,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "City of Malolos",
+   "Plaridel"
+  ],
+  "years": [
+   2018,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C158",
+  "name": "TOPNOTCH CATALYST BUILDERS INC. (34061) / BEAM TEAM DEVELOPER SPECIALIST INC.",
+  "totalProjects": 8,
+  "activeProjects": 2,
+  "completedProjects": 6,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 618673687.39,
+  "municipalities": [
+   "Bocaue",
+   "Guiguinto",
+   "Pandi",
+   "Pulilan"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C75",
+  "name": "JAGONBUILD CONSTRUCTION CORP. (FOR. JAGON BUILDERS",
+  "totalProjects": 9,
+  "activeProjects": 2,
+  "completedProjects": 7,
+  "flaggedProjects": 1,
+  "flagRate": 0.111,
+  "totalValue": 615175321.76,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bustos",
+   "Calumpit",
+   "Pandi"
+  ],
+  "years": [
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C140",
+  "name": "RVR3 CONSTRUCTION SUPPLY AND SERVICES",
+  "totalProjects": 21,
+  "activeProjects": 2,
+  "completedProjects": 19,
+  "flaggedProjects": 1,
+  "flagRate": 0.048,
+  "totalValue": 608416628.52,
+  "municipalities": [
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Paombong",
+   "Plaridel"
+  ],
+  "years": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C175",
+  "name": "YPR GEN. CONTRACTOR AND CONSTRUCTION SUPPLY INC.",
+  "totalProjects": 10,
+  "activeProjects": 1,
+  "completedProjects": 9,
+  "flaggedProjects": 1,
+  "flagRate": 0.1,
+  "totalValue": 490281117.64,
+  "municipalities": [
+   "Baliuag",
+   "Bulacan",
+   "Calumpit",
+   "Guiguinto",
+   "Paombong"
+  ],
+  "years": [
+   2020,
+   2021,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C145",
+  "name": "ST. MATTHEW GEN. CONTRACTOR & DEVELOPMENT CORP. ([REVOKED] 40908)",
+  "totalProjects": 17,
+  "activeProjects": 1,
+  "completedProjects": 16,
+  "flaggedProjects": 17,
+  "flagRate": 1.0,
+  "totalValue": 473299309.31,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Calumpit",
+   "City of Malolos",
+   "Paombong",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2018,
+   2019,
+   2020,
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C34",
+  "name": "C & F CONSTRUCTION & DEVELOPMENT CORPORATION",
+  "totalProjects": 7,
+  "activeProjects": 1,
+  "completedProjects": 6,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 465680150.0,
+  "municipalities": [
+   "Baliuag",
+   "Bustos",
+   "City of Malolos",
+   "Hagonoy"
+  ],
+  "years": [
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C108",
+  "name": "MRB11  CONSTRUCTION CORPORATION (FORMERLY:MRB CONS",
+  "totalProjects": 5,
+  "activeProjects": 2,
+  "completedProjects": 3,
+  "flaggedProjects": 1,
+  "flagRate": 0.2,
+  "totalValue": 445438439.42,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue",
+   "City of Malolos",
+   "Guiguinto"
+  ],
+  "years": [
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C104",
+  "name": "M.S. RAMOS CONSTRUCTION INC. (FORMERLY: M.S. RAMOS (31684) / C.T. LEONCIO CONSTRUCTION & TRADING",
+  "totalProjects": 5,
+  "activeProjects": 4,
+  "completedProjects": 0,
+  "flaggedProjects": 1,
+  "flagRate": 0.2,
+  "totalValue": 421554685.72,
+  "municipalities": [
+   "Bocaue",
+   "City of Malolos"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C120",
+  "name": "ORANI CONSTRUCTION AND SUPPLY CORPORATION (FORMERLY:ORANI BUILDERS & SUPPLY)",
+  "totalProjects": 5,
+  "activeProjects": 1,
+  "completedProjects": 4,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 393035196.83,
+  "municipalities": [
+   "Balagtas",
+   "Bustos",
+   "Guiguinto"
+  ],
+  "years": [
+   2020,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C19",
+  "name": "ALPHA & OMEGA GEN. CONTRACTOR & DEVELOPMENT CORP. ([REVOKED] 38958) / JB CONSTRUCTION AND SUPPLY INC. (FORMERLY:JB CONSTRUCTION AND SUPPLY)",
+  "totalProjects": 5,
+  "activeProjects": 2,
+  "completedProjects": 1,
+  "flaggedProjects": 5,
+  "flagRate": 1.0,
+  "totalValue": 387379972.52,
+  "municipalities": [
+   "Balagtas",
+   "Calumpit"
+  ],
+  "years": [
+   2019,
+   2024,
+   2025
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C27",
+  "name": "AZUL BUILDERS",
+  "totalProjects": 8,
+  "activeProjects": 1,
+  "completedProjects": 7,
+  "flaggedProjects": 1,
+  "flagRate": 0.125,
+  "totalValue": 336273444.63,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue",
+   "Bustos",
+   "Calumpit",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2020,
+   2021,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C86",
+  "name": "JUSTBILT BUILDERS",
+  "totalProjects": 6,
+  "activeProjects": 2,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 326175360.57,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Hagonoy",
+   "Pandi"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C172",
+  "name": "WBX CONSTRUCTION, INC (FORMERLY WBX CONSTRUCTION)",
+  "totalProjects": 21,
+  "activeProjects": 1,
+  "completedProjects": 20,
+  "flaggedProjects": 1,
+  "flagRate": 0.048,
+  "totalValue": 323474899.29,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bulacan",
+   "Bustos",
+   "City of Malolos",
+   "Guiguinto",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C53",
+  "name": "ELITE GENERAL CONTRACTOR AND DEVELOPMENT CORP.",
+  "totalProjects": 4,
+  "activeProjects": 0,
+  "completedProjects": 4,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 318448959.77,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Plaridel"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C144",
+  "name": "ST. GERRARD CONSTRUCTION GEN. CONTRACTOR & DEVELOPMENT CORP. (FORMERLY:ST. GERRARD CONSTRUCTION) ([REVOKED] 31762)",
+  "totalProjects": 7,
+  "activeProjects": 0,
+  "completedProjects": 7,
+  "flaggedProjects": 7,
+  "flagRate": 1.0,
+  "totalValue": 307313867.58,
+  "municipalities": [
+   "Calumpit",
+   "Hagonoy",
+   "Plaridel"
+  ],
+  "years": [
+   2017,
+   2018
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C21",
+  "name": "AMETHYST HORIZON BUILDERS AND GEN. CONTRACTOR AND DEVELOPMENT CORP. ([REVOKED] 49129)",
+  "totalProjects": 5,
+  "activeProjects": 0,
+  "completedProjects": 5,
+  "flaggedProjects": 5,
+  "flagRate": 1.0,
+  "totalValue": 299297228.16,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bulacan",
+   "Plaridel"
+  ],
+  "years": [
+   2022,
+   2023,
+   2024
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C31",
+  "name": "BELL CONSTRUCTION",
+  "totalProjects": 4,
+  "activeProjects": 0,
+  "completedProjects": 4,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 289496439.92,
+  "municipalities": [
+   "Baliuag",
+   "Plaridel"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C59",
+  "name": "FRAMECON BUILDERS",
+  "totalProjects": 10,
+  "activeProjects": 0,
+  "completedProjects": 10,
+  "flaggedProjects": 4,
+  "flagRate": 0.4,
+  "totalValue": 275687471.05,
+  "municipalities": [
+   "Baliuag",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Pulilan"
+  ],
+  "years": [
+   2016,
+   2018,
+   2022,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C66",
+  "name": "HEXAMINDZ CORPORATION (FORMERLY:KILUSANG MAGKAIBIG",
+  "totalProjects": 5,
+  "activeProjects": 0,
+  "completedProjects": 5,
+  "flaggedProjects": 4,
+  "flagRate": 0.8,
+  "totalValue": 245897230.99,
+  "municipalities": [
+   "Bocaue",
+   "Calumpit",
+   "Hagonoy"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C143",
+  "name": "SAMJS CONSTRUCTION SERVICES",
+  "totalProjects": 14,
+  "activeProjects": 2,
+  "completedProjects": 10,
+  "flaggedProjects": 2,
+  "flagRate": 0.143,
+  "totalValue": 227058411.8,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue",
+   "Bulacan",
+   "Calumpit",
+   "City of Malolos",
+   "Guiguinto",
+   "Hagonoy",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2022,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C126",
+  "name": "PRECIOUS CONSTRUCTION",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 225198881.7,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "City of Malolos"
+  ],
+  "years": [
+   2020,
+   2021,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C167",
+  "name": "VICTORIA DEVELOPMENT AND VENTURES CORP. (FOR: VICTORIA DEV'T AND CONST. CORP.)",
+  "totalProjects": 6,
+  "activeProjects": 0,
+  "completedProjects": 6,
+  "flaggedProjects": 1,
+  "flagRate": 0.167,
+  "totalValue": 219997521.16,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue",
+   "Bustos",
+   "Pulilan"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018,
+   2020,
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C3",
+  "name": "11-16 CONSTRUCTION (29646) / BOLTRON BUILDERS CORPORATION",
+  "totalProjects": 3,
+  "activeProjects": 1,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 219614944.46,
+  "municipalities": [
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C38",
+  "name": "CEDAR CONSTRUCTION",
+  "totalProjects": 6,
+  "activeProjects": 0,
+  "completedProjects": 6,
+  "flaggedProjects": 1,
+  "flagRate": 0.167,
+  "totalValue": 199956471.87,
+  "municipalities": [
+   "Baliuag",
+   "Calumpit",
+   "Plaridel"
+  ],
+  "years": [
+   2016,
+   2019,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C141",
+  "name": "S-ANG CONSTRUCTION & GENERAL TRADING, INC. (37149) / C.T. LEONCIO CONSTRUCTION & TRADING",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 193749644.23,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C162",
+  "name": "TOUGHBUILT CONSTRUCTION & TRADING, INC.",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 192998603.8,
+  "municipalities": [
+   "Balagtas",
+   "Bocaue"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C74",
+  "name": "J.D. LEGASPI CONSTRUCTION",
+  "totalProjects": 4,
+  "activeProjects": 0,
+  "completedProjects": 4,
+  "flaggedProjects": 4,
+  "flagRate": 1.0,
+  "totalValue": 184933699.68,
+  "municipalities": [
+   "Calumpit",
+   "Hagonoy"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C35",
+  "name": "C.E.M. CONSTRUCTION, INC.",
+  "totalProjects": 4,
+  "activeProjects": 1,
+  "completedProjects": 3,
+  "flaggedProjects": 2,
+  "flagRate": 0.5,
+  "totalValue": 184070926.6,
+  "municipalities": [
+   "Baliuag",
+   "Calumpit",
+   "Hagonoy",
+   "Pandi"
+  ],
+  "years": [
+   2020,
+   2023,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C8",
+  "name": "525 CONSTRUCTION",
+  "totalProjects": 11,
+  "activeProjects": 0,
+  "completedProjects": 11,
+  "flaggedProjects": 6,
+  "flagRate": 0.545,
+  "totalValue": 181458529.48,
+  "municipalities": [
+   "Balagtas",
+   "Baliuag",
+   "Bocaue",
+   "Bustos",
+   "Calumpit",
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2016,
+   2017,
+   2018,
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C39",
+  "name": "CHRIZMARIE BUILDERS AND CONSTRUCTION SUPPLY",
+  "totalProjects": 3,
+  "activeProjects": 1,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 180886775.54,
+  "municipalities": [
+   "Bustos",
+   "Hagonoy",
+   "Pulilan"
+  ],
+  "years": [
+   2022,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C17",
+  "name": "ALL EML CONSTRUCTION CORPORATION (FORMERLY: E.M.L. CONSTRUCTION & TRADING)",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 2,
+  "flagRate": 0.667,
+  "totalValue": 152182438.22,
+  "municipalities": [
+   "Calumpit",
+   "Hagonoy"
+  ],
+  "years": [
+   2017,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C10",
+  "name": "A.C. SOLIVEN CONSTRUCTION & GENERAL MERCHANDISE",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 1,
+  "flagRate": 0.333,
+  "totalValue": 150659264.07,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C125",
+  "name": "POWER K CONSTRUCTION SUPPLY & SERVICES",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 148849333.54,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C132",
+  "name": "R2A CONSTRUCTION & TRADING CORPORATION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 148678760.53,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C171",
+  "name": "WAWAO BUILDERS (46535) / SYMS CONSTRUCTION TRADING",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 144019327.3,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue"
+  ],
+  "years": [
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C36",
+  "name": "C.T. LEONCIO CONSTRUCTION & TRADING",
+  "totalProjects": 2,
+  "activeProjects": 1,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 142243243.57,
+  "municipalities": [
+   "Bocaue",
+   "City of Malolos"
+  ],
+  "years": [
+   2020,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C149",
+  "name": "STO. CRISTO CONSTRUCTION & TRADING INC. (FOR: STO. CRISTO CONSTRUCTION & TRADING)",
+  "totalProjects": 2,
+  "activeProjects": 1,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 138886756.75,
+  "municipalities": [
+   "Bulacan",
+   "Paombong"
+  ],
+  "years": [
+   2017,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C11",
+  "name": "A.L. SALAZAR CONSTRUCTION, INC.",
+  "totalProjects": 3,
+  "activeProjects": 1,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 134470954.72,
+  "municipalities": [
+   "Guiguinto",
+   "Pulilan"
+  ],
+  "years": [
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C80",
+  "name": "JCW CONSTRUCTION",
+  "totalProjects": 5,
+  "activeProjects": 0,
+  "completedProjects": 5,
+  "flaggedProjects": 1,
+  "flagRate": 0.2,
+  "totalValue": 117188027.82,
+  "municipalities": [
+   "Bulacan",
+   "Calumpit",
+   "Paombong",
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2020,
+   2021,
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C174",
+  "name": "WRO CONST. CORP. (52435) / GRACE CONSTRUCTION CORPORATION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 115728152.54,
+  "municipalities": [
+   "Bustos"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C20",
+  "name": "ALPHA & OMEGA GEN. CONTRACTOR & DEVELOPMENT CORP. ([REVOKED] 38958) / MICHARIAN BUILDERS AND TRADING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 107057000.35,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": true
+ },
+ {
+  "id": "C115",
+  "name": "NEWBIG FOUR J CONSTRUCTION INC. (FORMERLY: FOUR J CONSTRUCTION)",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 97245431.47,
+  "municipalities": [
+   "Guiguinto",
+   "Paombong"
+  ],
+  "years": [
+   2019,
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C93",
+  "name": "L.R. TIQUI BUILDERS, INC. (13810) / M3 KONSTRACT CORPORATION (FORMERLY:MARGARITA CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 96499605.71,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C164",
+  "name": "TRICHES CONSTRUCTION & TRADING (33876) / FRAMECON BUILDERS",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 96498474.65,
+  "municipalities": [
+   "City of Malolos"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C12",
+  "name": "A.L. SALAZAR CONSTRUCTION, INC. (3899) / ROTAFLEX CONSTRUCTION AND DEVELOPMENT CORP. (FORMERLY:ROTA FLEX CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 95049957.26,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C117",
+  "name": "NORTHERN BUILDERS",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 93674974.13,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2018,
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C87",
+  "name": "KATHA BUILDERS & SUPPLIES INC. (34651) / EGB CONSTRUCTION CORPORATION (FORMERLY: EGB CONSTRUCTION)",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 2,
+  "flagRate": 1.0,
+  "totalValue": 92938019.16,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C4",
+  "name": "11-16 CONSTRUCTION (29646) / KBP BUILDERS AND TRADING (FORMERLY: K. BELTRAN CONSTRUCTION & TRADING)",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 92823238.32,
+  "municipalities": [
+   "City of Malolos"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C52",
+  "name": "EL KAPITAN CONSTRUCTION SERVICES",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 1,
+  "flagRate": 0.333,
+  "totalValue": 91215522.64,
+  "municipalities": [
+   "City of Malolos",
+   "Paombong"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C109",
+  "name": "MRB11  CONSTRUCTION CORPORATION (FORMERLY:MRB CONS (17701) / MANCOL CONSTRUCTION CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 78743385.85,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C37",
+  "name": "CAANA CONSTRUCTION CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 77199837.9,
+  "municipalities": [
+   "Pandi"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C68",
+  "name": "HONEYVILLECONST AND DEVELOPMENT CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 77199811.01,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C63",
+  "name": "GLOBALCRETE BUILDERS INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 77199553.69,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C45",
+  "name": "DOUBLE 12 CONSTRUCTION & SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 74249103.11,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C69",
+  "name": "I&E CONSTRUCTION CORPORATION (FORMERLY: I&E CONSTR",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 74119399.52,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C166",
+  "name": "V.R. PATRON BUILDERS & DEVELOPERS CORP. (PREVIOUSL",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 74113581.64,
+  "municipalities": [
+   "Pandi"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C151",
+  "name": "SYMS CONSTRUCTION TRADING (48517) / 911 T.O.R.C CONSTRUCTION CORP.",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 74109809.71,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C137",
+  "name": "ROAD EDGE TRADING & DEVELOPMENT SERVICES",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72374885.43,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C129",
+  "name": "R.D. TALENS CONSTRUCTION AND TRADING (36817) / I.F. CLEMENTE CONSTRUCTION CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72374590.56,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C94",
+  "name": "L.S.D.  CONSTRUCTION & SUPPLIES",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 72374579.8,
+  "municipalities": [
+   "Pandi"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C103",
+  "name": "M.S. RAMOS CONSTRUCTION INC. (FORMERLY: M.S. RAMOS (31684) / 121 CONSTRUCTION CORPORATION (FORMERLY 121 CONSTUC",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72374578.69,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C163",
+  "name": "TRICHES CONSTRUCTION & TRADING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72374051.06,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C170",
+  "name": "WAWAO BUILDERS (46535) / DRJY CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72373859.53,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C157",
+  "name": "TOPNOTCH CATALYST BUILDERS INC. (34061) / 121 CONSTRUCTION CORPORATION (FORMERLY 121 CONSTUC",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 72363309.07,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C24",
+  "name": "ANORE CONSTRUCTION",
+  "totalProjects": 2,
+  "activeProjects": 1,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 70490527.83,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C60",
+  "name": "G.D.L. CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 62048663.16,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C118",
+  "name": "NORTHERN BUILDERS (8789) / MSV CONSTRUCTION AND SUPPLIES",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 59018509.5,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C136",
+  "name": "RJR CALCON CORP.",
+  "totalProjects": 2,
+  "activeProjects": 1,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 58508186.71,
+  "municipalities": [
+   "Bocaue",
+   "Guiguinto"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C133",
+  "name": "RDBT CONSTRUCTION CORP. (48637) / C.B. GARAY PHILWIDE BUILDERS",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 57899547.58,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C89",
+  "name": "KING EIGHT BUILDERS AND SUPPLY (37325) / IRONCUE CONSTRUCTION AND SUPPLY INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 57883314.69,
+  "municipalities": [
+   "City of Malolos"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C49",
+  "name": "EDUARDO T. SANTOS CONSTRUCTION & SUPPLIES",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 55933028.37,
+  "municipalities": [
+   "Paombong",
+   "Plaridel"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C51",
+  "name": "EIGHT KIDS CONSTRUCTION AND TRADING",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 51592250.57,
+  "municipalities": [
+   "Calumpit",
+   "Plaridel"
+  ],
+  "years": [
+   2020,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C6",
+  "name": "121 CONSTRUCTION CORPORATION (FORMERLY 121 CONSTUC",
+  "totalProjects": 6,
+  "activeProjects": 1,
+  "completedProjects": 5,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 51022281.99,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue"
+  ],
+  "years": [
+   2020,
+   2022,
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C155",
+  "name": "TM ABAD CONSTRUCTION CORP. (FOR: TM ABAD CONST.)",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 50179347.37,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C91",
+  "name": "L.M.G. CONSTRUCTION INCORPORATED (FORMERLY: LMG CONSTRUCTION) (5719) / E.R. MANAID CONSTRUCTION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 49361263.22,
+  "municipalities": [
+   "Balagtas",
+   "Plaridel"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C47",
+  "name": "E.M. CUERPO, INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 48999614.38,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C111",
+  "name": "MRRM TRADING & CONSTRUCTION (19657) / G.D.L. CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 48999313.96,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C61",
+  "name": "G.G. UY CONSTRUCTION (32319) / WILFREDO M. DAVID BUILDERS AND CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 48249877.67,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C110",
+  "name": "MRRM TRADING & CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 47531707.89,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C116",
+  "name": "NICLEDON CONSTRUCTION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 47281119.98,
+  "municipalities": [
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C98",
+  "name": "M.C.J. VALENZUELA CONSTRUCTION ENTERPRISES",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 47039817.09,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C168",
+  "name": "VICTORIA DEVELOPMENT AND VENTURES CORP. (FOR: VICTORIA DEV'T AND CONST. CORP.) (32638) / STAR WILLIAM CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 46319872.3,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C101",
+  "name": "M.G. SALAZAR CONSTRUCTION CORP. (FOR. M.G. SALAZAR (4072) / 525 CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 46285797.5,
+  "municipalities": [
+   "Paombong"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C154",
+  "name": "TIONGCO MENDOZA CONSTRUCTION CO. INC.",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 44547063.02,
+  "municipalities": [
+   "Bocaue",
+   "Bustos",
+   "Guiguinto"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C131",
+  "name": "R.U. AQUINO CONSTRUCTION AND DEVELOPMENT CORP. (FO",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 2,
+  "flagRate": 1.0,
+  "totalValue": 44319370.1,
+  "municipalities": [
+   "Calumpit",
+   "Hagonoy"
+  ],
+  "years": [
+   2016,
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C153",
+  "name": "TBB CONSTRUCTION CORP. (37026) / A.R.L. CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 44131025.79,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C46",
+  "name": "DOUBLE Z CONSTRUCTION AND SUPPLY",
+  "totalProjects": 7,
+  "activeProjects": 0,
+  "completedProjects": 7,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 39208348.48,
+  "municipalities": [
+   "Baliuag",
+   "Calumpit",
+   "City of Malolos",
+   "Pandi"
+  ],
+  "years": [
+   2019,
+   2020,
+   2021,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C106",
+  "name": "MCB ZAMORA CONSTRUCTION & SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 39198299.28,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C16",
+  "name": "AESIC CONSTRUCTION",
+  "totalProjects": 5,
+  "activeProjects": 3,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 38609089.95,
+  "municipalities": [
+   "Baliuag",
+   "Bustos",
+   "Calumpit",
+   "City of Malolos"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C95",
+  "name": "L.S.D.  CONSTRUCTION & SUPPLIES (8980) / ADIMRE CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 35579593.42,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C128",
+  "name": "R.D. TALENS CONSTRUCTION AND TRADING",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 2,
+  "flagRate": 1.0,
+  "totalValue": 34032038.57,
+  "municipalities": [
+   "Calumpit",
+   "Hagonoy"
+  ],
+  "years": [
+   2016
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C112",
+  "name": "MSB VITUG CONSTRUCTION (33019) / STAR WILLIAM CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 32531622.48,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C42",
+  "name": "DALCON CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 32167977.4,
+  "municipalities": [
+   "Bulacan"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C142",
+  "name": "S.A. PLEYTO CONSTRUCTION CORPORATION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 31694555.49,
+  "municipalities": [
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2022,
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C79",
+  "name": "JCL BUILDERS",
+  "totalProjects": 9,
+  "activeProjects": 0,
+  "completedProjects": 9,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 30149446.36,
+  "municipalities": [
+   "Calumpit",
+   "City of Malolos",
+   "Paombong",
+   "Pulilan"
+  ],
+  "years": [
+   2019,
+   2020,
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C26",
+  "name": "AYANA CONSTRUCTION AND TRADING",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 29552103.18,
+  "municipalities": [
+   "Plaridel",
+   "Pulilan"
+  ],
+  "years": [
+   2017,
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C7",
+  "name": "5-1 CONSTRUCTION CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 29399409.16,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C1",
+  "name": "108 GENERAL BUILDERS, INC.",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 28273443.84,
+  "municipalities": [
+   "Balagtas"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C78",
+  "name": "JBERNARDO CONSTRUCTION AND SUPPLY",
+  "totalProjects": 2,
+  "activeProjects": 1,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 28134529.61,
+  "municipalities": [
+   "City of Malolos",
+   "Plaridel"
+  ],
+  "years": [
+   2018,
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C148",
+  "name": "STAR WILLIAM CONSTRUCTION (35938) / C.S. GARCIA CONSTRUCTION CORPORATION (FORMERLY: C.S. GARCIA CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 27929837.25,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C114",
+  "name": "NATIONSTAR DEVELOPMENT CORPORATION (FOR: CASMOR CONSTRUCTION CORPORATION) (26876) / STAR WILLIAM CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 27929656.27,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C81",
+  "name": "JCW CONSTRUCTION (32161) / CHUCON BUILDERS CORPORATION (FORMERLY: CHU CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 27929417.48,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C96",
+  "name": "L.S.D.  CONSTRUCTION & SUPPLIES (8980) / G.D.L. CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 27862154.36,
+  "municipalities": [
+   "Bustos"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C123",
+  "name": "PABLO S. LABASBAS CONSTRUCTION CORPORATION (FORMERLY: PABLOS. LABASBAS CONSTRUCTION CORPORATION) (6302) / JCW CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 27817574.61,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C33",
+  "name": "BLACK HARDHAT INC. (FORMERLY: JCHARDHAT INC.)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 27439393.37,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C161",
+  "name": "TOUGHBILT CONSTRUCTION & TRADING, INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 26533190.34,
+  "municipalities": [
+   "Paombong"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C130",
+  "name": "R.S. SEPIAN CONSTRUCTION & TRUCKING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 25552628.81,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C55",
+  "name": "F.R. MAPILISAN CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 22539929.3,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C50",
+  "name": "EGB CONSTRUCTION CORPORATION (FORMERLY: EGB CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 21264436.19,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C41",
+  "name": "D.C. SANDIL CONSTRUCTION AND REALTY DEVELOPMENT, I",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19799558.46,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C84",
+  "name": "JOSE RUBI CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19799198.1,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C139",
+  "name": "ROSSLANCE CONSTRUCTION AND DEVELOPMENT",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19798773.41,
+  "municipalities": [
+   "Guiguinto"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C32",
+  "name": "BIG BEN CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19798438.81,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C62",
+  "name": "GENUINE BUILDERS",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 19599996.35,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C22",
+  "name": "AMIHAN CIVIL ENGINEERING CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19081539.56,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C67",
+  "name": "HIGH STRENGTH DEV. CORPORATION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 19008966.7,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C113",
+  "name": "MSV CONSTRUCTION AND SUPPLIES",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 18619400.36,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C82",
+  "name": "JMK BUILDERS CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 18394973.95,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C14",
+  "name": "AARCON BUILDERS",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 18313556.05,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C135",
+  "name": "RIMJ CONSTRUCTION SUPPLIES AND SERVICES (FOR: ROMINA CONSTRUCTION)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 17324966.29,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C124",
+  "name": "PLL BUILDERS INC.",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 16783925.05,
+  "municipalities": [
+   "Bocaue",
+   "Bustos"
+  ],
+  "years": [
+   2021,
+   2023,
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C65",
+  "name": "HALREY CONSTRUCTION INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 15427387.76,
+  "municipalities": [
+   "Hagonoy"
+  ],
+  "years": [
+   2016
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C48",
+  "name": "E.R. DELA CRUZ CONSTRUCTION & SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 14612967.55,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2016
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C40",
+  "name": "D'JARED VIEW CONSTRUCTION CORP.",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 14332462.22,
+  "municipalities": [
+   "Bustos"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C134",
+  "name": "RHR CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 14116860.24,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2024
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C54",
+  "name": "ESN CONSTRUCTION & TRADING",
+  "totalProjects": 6,
+  "activeProjects": 0,
+  "completedProjects": 6,
+  "flaggedProjects": 4,
+  "flagRate": 0.667,
+  "totalValue": 13100183.92,
+  "municipalities": [
+   "Bocaue",
+   "Bulacan",
+   "Calumpit"
+  ],
+  "years": [
+   2017,
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C100",
+  "name": "M.G. SALAZAR CONSTRUCTION CORP. (FOR. M.G. SALAZAR",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 13021186.6,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2016
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C88",
+  "name": "KBP BUILDERS AND TRADING (FORMERLY: K. BELTRAN CONSTRUCTION & TRADING)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 10907040.61,
+  "municipalities": [
+   "Bustos"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C70",
+  "name": "I.F. CLEMENTE CONSTRUCTION CORPORATION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 9799869.23,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C121",
+  "name": "P.J. CRUZ CONSTRUCTION AND TRADING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 9602452.7,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2022
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C25",
+  "name": "AVE-MIRA CONSTRUCTION AND TRADING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 4949400.06,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C97",
+  "name": "LARSEN-DUTCHER CONSTRACTOR CORPORATION (FORMERLY:LARSEN-DUTCHER CONSTRACTOR)",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 4944925.2,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2023
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C56",
+  "name": "FASTRACK HOME DEVELOPERS, INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 4851015.89,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C5",
+  "name": "1199S CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 4850834.27,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C173",
+  "name": "WINBUILD ENTERPRISES",
+  "totalProjects": 1,
+  "activeProjects": 1,
+  "completedProjects": 0,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 4843114.92,
+  "municipalities": [
+   "Bocaue"
+  ],
+  "years": [
+   2025
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C83",
+  "name": "JORENZ BUILDERS DEVELOPMENT CORP.",
+  "totalProjects": 3,
+  "activeProjects": 0,
+  "completedProjects": 3,
+  "flaggedProjects": 1,
+  "flagRate": 0.333,
+  "totalValue": 4673320.01,
+  "municipalities": [
+   "Bocaue",
+   "Hagonoy",
+   "Pulilan"
+  ],
+  "years": [
+   2018,
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C122",
+  "name": "P.S. FRANCISCO CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 2909624.74,
+  "municipalities": [
+   "Plaridel"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C30",
+  "name": "B3 & R CONSTRUCTION CORPORATION",
+  "totalProjects": 2,
+  "activeProjects": 0,
+  "completedProjects": 2,
+  "flaggedProjects": 1,
+  "flagRate": 0.5,
+  "totalValue": 2889752.36,
+  "municipalities": [
+   "Guiguinto",
+   "Plaridel"
+  ],
+  "years": [
+   2019,
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C15",
+  "name": "ADIMRE CONSTRUCTION",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 1950177.69,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2017
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C90",
+  "name": "KNOV BUILDERS AND SUPPLIES",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 1,
+  "flagRate": 1.0,
+  "totalValue": 1940093.63,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C29",
+  "name": "B. BERNARDO CONST., INC.",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1940004.66,
+  "municipalities": [
+   "Baliuag"
+  ],
+  "years": [
+   2021
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C138",
+  "name": "ROBI BUILDERS AND SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1930101.21,
+  "municipalities": [
+   "Calumpit"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C76",
+  "name": "JALENZ CONSTRUCTION & SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1920629.1,
+  "municipalities": [
+   "City of Malolos"
+  ],
+  "years": [
+   2019
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C73",
+  "name": "J.A. SANDE BUILDERS AND TRADING",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1920173.41,
+  "municipalities": [
+   "Pulilan"
+  ],
+  "years": [
+   2020
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C23",
+  "name": "ANDROMEDA CONSTRUCTION SERVICES AND SUPPLY",
+  "totalProjects": 1,
+  "activeProjects": 0,
+  "completedProjects": 1,
+  "flaggedProjects": 0,
+  "flagRate": 0.0,
+  "totalValue": 1470243.16,
+  "municipalities": [
+   "City of Malolos"
+  ],
+  "years": [
+   2018
+  ],
+  "registrationRevoked": false
+ },
+ {
+  "id": "C176",
+  "name": "nan",
+  "totalProjects": 26,
+  "activeProjects": 0,
+  "completedProjects": 0,
+  "flaggedProjects": 26,
+  "flagRate": 1.0,
+  "totalValue": 0.0,
+  "municipalities": [
+   "Baliuag",
+   "Bocaue",
+   "Calumpit",
+   "City of Malolos",
+   "Hagonoy",
+   "Pandi",
+   "Paombong",
+   "Plaridel"
+  ],
+  "years": [
+   2024,
+   2025
+  ],
+  "registrationRevoked": false
+ }
+]
