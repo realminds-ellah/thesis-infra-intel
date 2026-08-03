@@ -1,0 +1,62 @@
+{
+  "generated": "2026-08-03T14:13:11Z",
+  "areaOfInterest": "Bulacan 1st DEO",
+  "coverage": {
+    "projects": 1293,
+    "contractors": 176,
+    "yearMin": 2016,
+    "yearMax": 2025,
+    "totalBudget": 67747217854.71,
+    "withCoordinates": 1191,
+    "flagged": 310,
+    "municipalitiesServed": [
+      "Angat",
+      "Balagtas",
+      "Baliuag",
+      "Bocaue",
+      "Bulacan",
+      "Bustos",
+      "Calumpit",
+      "City of Malolos",
+      "Guiguinto",
+      "Hagonoy",
+      "Pandi",
+      "Paombong",
+      "Plaridel",
+      "Pulilan"
+    ]
+  },
+  "flagTally": {
+    "CONTRACTOR_REVOKED": 110,
+    "MISSING_COORDS": 102,
+    "COORD_DUPLICATE": 41,
+    "MUNI_MISMATCH": 37,
+    "BOUNDARY_ADJACENT": 33,
+    "UNLOCATABLE_COORD": 9,
+    "OUTSIDE_PROVINCE": 7
+  },
+  "sources": [
+    {
+      "name": "DPWH Infrastructure Transparency Dataset",
+      "publisher": "BetterGov.ph (scrape of infrastructure.dpwh.gov.ph)",
+      "url": "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data",
+      "license": "CC0-1.0",
+      "rowsUpstream": 248220,
+      "provides": "contract id, description, contractor, budget, progress, status, dates, funding source, latitude/longitude"
+    },
+    {
+      "name": "geoBoundaries PHL ADM3 (municipalities)",
+      "publisher": "geoBoundaries / NAMRIA / PSA / OCHA Philippines",
+      "url": "https://www.geoboundaries.org/",
+      "license": "CC BY 3.0 IGO",
+      "provides": "municipal polygons for reverse-geocoding published coordinates"
+    }
+  ],
+  "knownGaps": [
+    "amountPaid is 0 on every completed record in this slice \u2014 the transparency portal does not publish disbursement, so financial reconciliation (request section 1E) still needs DPWH.",
+    "No project polygons or alignment geometry are published anywhere public; each project is a single point (request section 1B).",
+    "No design drawings, cross-sections, bills of quantities or as-builts (request section 1C).",
+    "No inspection or acceptance reports; DIME carries geotagged photos and citizen reports but does not publish the formal records (request section 1D).",
+    "Satellite verification is not yet wired in. Every flag here is a procurement-record consistency check."
+  ]
+}

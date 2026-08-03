@@ -22,6 +22,7 @@ import {
   PROJECTS, CONTRACTORS, META, MUNI_BREAKDOWN, STATUS_PIE, BUDGET_BY_YEAR,
   FLAG_BREAKDOWN, FLAGGED_VALUE, MAP_BOUNDS, FLAG_LABELS, SEVERITY_CFG,
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
+  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 
@@ -971,6 +972,60 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </ResponsiveContainer>
           </div>
         </div>
+        {/* The 2x2 the fusion exists to produce. Two independent signals — the
+            contract record disagreeing with itself, and the award sitting with a
+            heavily concentrated contractor — measured to correlate at r = -0.12,
+            so "both" is genuinely narrower than either list on its own. */}
+        <div className="bg-white rounded border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
+            <Layers size={14} className="text-[#1e3a7b]"/>
+            <span className="text-[12px] font-bold text-gray-700">Audit-Priority Triage</span>
+            <span className="text-[11px] text-gray-400">· contract record × procurement award, {PROCUREMENT.office.awards.toLocaleString()} PhilGEPS awards joined</span>
+          </div>
+          <div className="grid grid-cols-4 divide-x divide-gray-100">
+            {(["both","records-only","procurement-only","neither"] as const).map(q=>{
+              const c=QUADRANT_CFG[q];
+              return (
+                <div key={q} className="p-4" title={c.note}>
+                  <div className="font-mono text-2xl font-bold" style={{color:c.color}}>{TRIAGE.counts[q].toLocaleString()}</div>
+                  <div className="text-[11px] font-semibold text-gray-600 mt-0.5">{c.label}</div>
+                  <div className="text-[10px] text-gray-400 mt-1">{peso(TRIAGE.value[q])}</div>
+                </div>
+              );
+            })}
+          </div>
+          {PRIORITY.length>0&&(
+            <>
+              <div className="px-5 py-2.5 border-t border-gray-100 bg-red-50/40 text-[11px] text-gray-600">
+                <strong className="text-red-700">Investigate first —</strong> both signals, highest value first.
+                An ordering, not a prediction: there is no public itemised list of confirmed
+                ghost projects to validate a ranking against.
+              </div>
+              <table className="w-full text-[12px]">
+                <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Municipality","Contractor","Value","Signals","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+                <tbody>
+                  {PRIORITY.slice(0,8).map(f=>{
+                    const p=PROJECTS.find(x=>x.id===f.id)!;
+                    const pr=PROC_BY_ID.get(f.id);
+                    const codes=[...p.auditFlags.map(x=>FLAG_LABELS[x.code]??x.code),
+                                 ...(pr?.procurementFlags??[]).map(x=>PROC_FLAG_LABELS[x.code]??x.code)];
+                    return (
+                      <tr key={f.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="px-4 py-3"><div className="font-mono text-[11px] text-gray-500">{f.id}</div><div className="text-gray-800 text-[11px]">{p.name.slice(0,40)}…</div></td>
+                        <td className="px-4 py-3 text-gray-600">{p.municipality}</td>
+                        <td className="px-4 py-3 text-gray-600 text-[11px]">{p.contractor.replace(/\s*\(.*$/,"").slice(0,30)}</td>
+                        <td className="px-4 py-3 font-mono">{peso(p.budget)}</td>
+                        <td className="px-4 py-3"><div className="flex gap-1 flex-wrap">{codes.slice(0,3).map(c=><span key={c} className="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-700">{c}</span>)}</div></td>
+                        <td className="px-4 py-3"><button onClick={()=>onViewDetail(f.id)} className="text-[#1e3a7b] text-[11px] font-medium flex items-center gap-1 hover:underline">Review<ArrowRight size={10}/></button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
             <AlertCircle size={14} className="text-amber-500"/>
@@ -1170,6 +1225,35 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
           </div>
         </div>
         {project.auditFlags.length>0&&<div className="ml-11 mt-3"><AuditFlags project={project}/></div>}
+        {(()=>{
+          const pr=PROC_BY_ID.get(project.id);
+          if(!pr||!pr.procurementFlags.length) return null;
+          return (
+            <div className="ml-11 mt-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                <Banknote size={11}/>Procurement signal
+                <span className="font-mono bg-gray-100 text-gray-500 px-1.5 rounded normal-case tracking-normal">{pr.matchConfidence} match</span>
+              </div>
+              {pr.procurementFlags.map(f=>{
+                const sv=SEVERITY_CFG[f.severity];
+                return (
+                  <div key={f.code} className="rounded border p-2.5 text-[11px]" style={{background:sv.bg,borderColor:sv.color+"33",color:sv.color}}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Banknote size={11}/><span className="font-semibold">{PROC_FLAG_LABELS[f.code]??f.code}</span>
+                      <span className="ml-auto font-mono text-[9px] uppercase tracking-wider opacity-70">{sv.label}</span>
+                    </div>
+                    <div className="text-gray-700 leading-relaxed">{f.detail}</div>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-gray-400 leading-relaxed">
+                From PhilGEPS award records, joined on contractor name and contract amount.
+                PhilGEPS publishes no bidder counts, so single-bidder and bid-to-budget
+                indicators are absent rather than estimated.
+              </p>
+            </div>
+          );
+        })()}
       </nav>
       <div className="flex-1 overflow-auto p-6" style={{scrollbarWidth:"none"}}>
         <div className="max-w-6xl mx-auto grid grid-cols-3 gap-5">

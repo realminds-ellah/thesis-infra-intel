@@ -282,7 +282,7 @@ def zonal(grid, masks):
     return out
 
 
-def change_z(before_grid, after_grid, res, rng):
+def change_z(before_grid, after_grid, res, rng, stat="disc-mean", sign=-1):
     """Significance of local change against a bootstrap null of identical discs.
 
     The obvious null — the spread of individual control pixels — is wrong, and
@@ -309,11 +309,77 @@ def change_z(before_grid, after_grid, res, rng):
     yy, xx = np.mgrid[0:h, 0:w]
     dist_c = np.hypot((yy - cy) * res, (xx - cx) * res)
 
-    def disc_mean(py, px, r_m):
+    # 3x3 NaN-aware mean, computed once for the whole grid. The "patch"
+    # statistic then only has to take an extremum inside each disc, which turns
+    # a per-disc O(n^2) scan into an O(n) lookup — the difference between this
+    # finishing and not.
+    smoothed = None
+    if stat == "patch":
+        vals = np.nan_to_num(delta, nan=0.0)
+        cnt = (~np.isnan(delta)).astype(np.float32)
+        acc = np.zeros_like(vals)
+        acn = np.zeros_like(cnt)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                acc += np.roll(np.roll(vals, dy, 0), dx, 1)
+                acn += np.roll(np.roll(cnt, dy, 0), dx, 1)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            smoothed = np.where(acn >= 6, acc / np.maximum(acn, 1), np.nan)
+        smoothed[:1, :] = smoothed[-1:, :] = np.nan   # wrap-around from roll
+        smoothed[:, :1] = smoothed[:, -1:] = np.nan
+
+    def reduce(py, px, r_m):
+        """Collapse the disc to one number, by whichever statistic is selected.
+
+        `sign` is the direction construction moves the index: -1 for NDVI
+        (vegetation lost), +1 for NDBI (built surface gained). Extremum
+        statistics need it; the mean does not.
+
+        The choice of statistic is the whole experiment. A disc mean assumes the
+        structure fills the disc. Philippine flood control structures are narrow
+        and linear — a revetment occupies a fraction of one 10 m pixel row — so a
+        mean over ~28 pixels of floodplain averages it away. The alternatives
+        below concentrate on the most-changed part of the disc instead.
+
+        Whatever is chosen here is also applied to every null disc, so the
+        comparison stays like-for-like no matter how extreme the statistic."""
         d = np.hypot((yy - py) * res, (xx - px) * res)
-        vals = delta[d <= r_m]
+        mask = d <= r_m
+        vals = delta[mask]
         vals = vals[~np.isnan(vals)]
-        return float(vals.mean()) if vals.size >= 4 else None
+        if vals.size < 4:
+            return None
+
+        if stat == "disc-mean":
+            return float(vals.mean())
+
+        if stat == "tail":
+            # Mean of the most-changed fifth of the disc. Survives a structure
+            # covering only part of the footprint without chasing single pixels.
+            k = max(4, int(round(vals.size * 0.2)))
+            v = np.sort(vals)
+            return float(v[:k].mean() if sign < 0 else v[-k:].mean())
+
+        if stat == "core":
+            # Just the pixels touching the coordinate — a 3x3 at 10 m. Assumes
+            # the coordinate is accurate, which for flagged records it is not.
+            core = np.hypot((yy - py) * res, (xx - px) * res) <= max(res * 1.5, 15)
+            v = delta[core]
+            v = v[~np.isnan(v)]
+            return float(v.mean()) if v.size >= 3 else None
+
+        if stat == "patch":
+            # Most-changed contiguous 3x3 anywhere in the disc: the shape a small
+            # structure actually makes, without assuming where it sits.
+            v = smoothed[mask]
+            v = v[~np.isnan(v)]
+            if v.size < 3:
+                return None
+            return float(v.min() if sign < 0 else v.max())
+
+        raise ValueError(f"unknown stat {stat!r}")
+
+    disc_mean = reduce
 
     out = {}
     for r_m in RADII_M:
@@ -700,13 +766,15 @@ def main() -> int:
         "verdict": (
             "The detector separates flagged records from controls."
             if separates else
-            "NO MEASURED DISCRIMINATIVE POWER. Flagged records and seeded controls "
-            "detect at statistically indistinguishable rates, so an individual "
-            "verdict below carries no evidential weight about that contract. "
-            "Sentinel-2 at 10 m averages a narrow linear structure — a revetment "
-            "is metres wide — across a 30 m disc of floodplain whose seasonal "
-            "variation is larger than the structure's signal. This is a "
-            "resolution limit, not a threshold to tune."
+            "NO MEASURED DISCRIMINATIVE POWER. The detector fires on only a small "
+            "fraction of ordinary completed contracts — projects that were, in the "
+            "main, actually built — so it fails on recall before any question of "
+            "ghost projects arises, and an individual verdict below carries no "
+            "evidential weight about its contract. pipeline/evaluate.py rules out "
+            "the obvious explanation: four change statistics, from a plain disc "
+            "mean to the most-changed 3x3 patch, swept across four thresholds, "
+            "none reaching usable recall. The limit is the sensor and the setting, "
+            "not the estimator."
         ),
     }
 
