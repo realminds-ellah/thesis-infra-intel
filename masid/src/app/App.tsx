@@ -22,7 +22,7 @@ import {
   PROJECTS, CONTRACTORS, META, MUNI_BREAKDOWN, STATUS_PIE, BUDGET_BY_YEAR,
   FLAG_BREAKDOWN, FLAGGED_VALUE, MAP_BOUNDS, FLAG_LABELS, SEVERITY_CFG,
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
-  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
+  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 
@@ -980,7 +980,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
           <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
             <Layers size={14} className="text-[#1e3a7b]"/>
             <span className="text-[12px] font-bold text-gray-700">Audit-Priority Triage</span>
-            <span className="text-[11px] text-gray-400">· contract record × procurement award, {PROCUREMENT.office.awards.toLocaleString()} PhilGEPS awards joined</span>
+            <span className="text-[11px] text-gray-400">· contract record × bidding red flags · this office awards at exactly 96.00% of the approved budget on {(PROCUREMENT.office.at96Rate*100).toFixed(1)}% of contracts, rank {PROCUREMENT.office.deoRankAt96} of {PROCUREMENT.office.deosCompared} DEOs (national {(PROCUREMENT.nationalBaseline.at96Rate*100).toFixed(1)}%)</span>
           </div>
           <div className="grid grid-cols-4 divide-x divide-gray-100">
             {(["both","records-only","procurement-only","neither"] as const).map(q=>{
@@ -1282,15 +1282,34 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
               ))}
             </div>
             <div className="flex-1 overflow-auto p-5" role="tabpanel" style={{scrollbarWidth:"none"}}>
-              {tab==="documents"&&(
-                <div className="max-w-xl">
-                  <EmptyState title="No documents published for this contract" body="DPWH does not publish bid documents, contracts, design drawings, cross-sections, bills of quantities, as-builts or acceptance reports through the transparency portal. These correspond to sections 1C and 1D of the consolidated data request and require a direct release from the Information Management Service."/>
-                  <div className="mt-4 text-[11px] text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
-                    Once documents are released, this panel is where extraction and
-                    field-level confidence belong — against real files, not placeholders.
+              {tab==="documents"&&(()=>{
+                const pr=PROC_BY_ID.get(project.id);
+                const have=pr?(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>pr.documents[k]):[];
+                if(!have.length) return (
+                  <div className="max-w-xl">
+                    <EmptyState title="No documents published for this contract" body="This contract is one of the few without a published document. Roughly 95% of contracts at this office do publish the invitation to bid, contract agreement, notice of award and notice to proceed."/>
                   </div>
-                </div>
-              )}
+                );
+                return (
+                  <div className="max-w-2xl space-y-2">
+                    {have.map(k=>(
+                      <a key={k} href={pr!.documents[k]!} target="_blank" rel="noreferrer"
+                        className="flex items-center gap-3 p-3 border border-gray-100 rounded hover:border-[#1e3a7b]/30 hover:bg-blue-50/30 transition-colors">
+                        <FileText size={17} style={{color:"#1e3a7b"}} className="shrink-0"/>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-medium text-gray-800">{DOC_LABELS[k]}</div>
+                          <div className="text-[10px] font-mono text-gray-400 truncate">{pr!.documents[k]!.split("/").pop()}</div>
+                        </div>
+                        <ExternalLink size={13} className="text-gray-300 shrink-0"/>
+                      </a>
+                    ))}
+                    <p className="text-[10px] text-gray-400 leading-relaxed pt-1">
+                      Published by DPWH and served from dcs.infrawatch.ph. Program of work and
+                      engineering design are not published for any contract at this office.
+                    </p>
+                  </div>
+                );
+              })()}
               {tab==="satellite"&&(()=>{
                 const sat=SAT_BY_ID.get(project.id);
                 if(!sat) return (
@@ -1527,218 +1546,72 @@ function SatelliteScreen({project}:{project:Project|null}) {
 // ─── Documents Screen ─────────────────────────────────────────────────────────
 
 function DocumentsScreen() {
-  // The mock shipped an OCR review queue over invented bid documents and BAC
-  // resolutions. No such corpus is public, so the screen now states the gap and
-  // names the request that would close it, rather than demonstrating over fiction.
-  const gaps=[
-    {ref:"1C",title:"Engineering & design",items:"Design drawings, typical cross sections, as-built plans, bills of quantities, structure type and dimensions"},
-    {ref:"1D",title:"Progress monitoring",items:"Monthly and weekly accomplishment reports, geo-tagged progress photographs, inspection reports, acceptance reports, punch lists"},
-    {ref:"1E",title:"Financial",items:"Progress billings, payment dates, amounts released, final payment, liquidated damages"},
-  ];
+  // This screen previously stated that DPWH publishes no contract documents.
+  // That was wrong: the claim came from reading the flat export, which drops the
+  // link columns. 99.5% of contracts at this office carry at least one live
+  // document URL, and a sampled dozen were confirmed to resolve.
+  const [q,setQ]=useState("");
+  const rows=useMemo(()=>PROCUREMENT.results
+    .map(r=>({r, p:PROJECTS.find(x=>x.id===r.id)}))
+    .filter(({r,p})=>p&&Object.values(r.documents).some(Boolean)&&
+      (!q||r.id.toLowerCase().includes(q.toLowerCase())||p!.description.toLowerCase().includes(q.toLowerCase())))
+  ,[q]);
+  const pg=usePagination(rows.length,10);
+  const counts=(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[])
+    .map(k=>({k,n:PROCUREMENT.results.filter(r=>r.documents[k]).length}));
   return (
     <div className="flex-1 overflow-auto bg-gray-50" style={{scrollbarWidth:"none"}}>
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-lg font-bold text-gray-900">Documents</h1>
-        <p className="text-[13px] text-gray-500">Contract documentation for {META.coverage.projects.toLocaleString()} records in {META.areaOfInterest}</p>
-      </div>
-      <div className="p-6 max-w-4xl mx-auto space-y-4">
-        <div className="bg-white rounded border border-gray-200 p-5">
-          <div className="flex items-start gap-3">
-            <Inbox size={20} className="text-gray-300 shrink-0 mt-0.5"/>
-            <div>
-              <div className="text-[14px] font-bold text-gray-800 mb-1">No contract documents are published</div>
-              <p className="text-[13px] text-gray-500 leading-relaxed">
-                The DPWH transparency portal publishes tabular award records only. Not one
-                bid document, contract, drawing, inspection report or billing for any of
-                these {META.coverage.projects.toLocaleString()} contracts is retrievable from any public source.
-                This screen stays empty until a direct release from the Information
-                Management Service fills it.
-              </p>
-            </div>
-          </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-wrap">
+        <div>
+          <h1 className="text-lg font-bold text-gray-900">Contract Documents</h1>
+          <p className="text-[13px] text-gray-500">{PROCUREMENT.office.documentsPublished.toLocaleString()} of {PROJECTS.length.toLocaleString()} contracts publish at least one document · served by dcs.infrawatch.ph</p>
         </div>
-        <div className="bg-white rounded border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
-            <span className="text-[12px] font-bold text-gray-700">Outstanding in the consolidated data request</span>
-          </div>
-          {gaps.map(g=>(
-            <div key={g.ref} className="px-5 py-4 border-b border-gray-50 last:border-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{g.ref}</span>
-                <span className="text-[13px] font-semibold text-gray-800">{g.title}</span>
-              </div>
-              <p className="text-[12px] text-gray-500 leading-relaxed">{g.items}</p>
+        <div className="ml-auto relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <input value={q} onChange={e=>{setQ(e.target.value);pg.setPage(1);}} placeholder="Search contract ID or description…" className="pl-7 pr-3 py-2 text-[12px] border border-gray-200 rounded bg-gray-50 w-72 focus:outline-none focus:border-[#1e3a7b]"/>
+        </div>
+      </div>
+      <div className="p-6 space-y-4 max-w-6xl mx-auto">
+        <div className="grid grid-cols-6 gap-3">
+          {counts.map(({k,n})=>(
+            <div key={k} className="bg-white rounded border border-gray-200 p-3">
+              <div className="font-mono text-xl font-bold" style={{color:n?"#1e3a7b":"#cbd5e1"}}>{n.toLocaleString()}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5 leading-tight">{DOC_LABELS[k]}</div>
             </div>
           ))}
         </div>
         <p className="text-[11px] text-gray-400 leading-relaxed">
-          What <em>is</em> public — contract IDs, contractors, budgets, dates, status and
-          coordinates — is already loaded and drives every other screen. See SOURCES.md.
+          Program of work and engineering design are empty on every contract at this office —
+          those remain the genuine gap, and are sections 1C of the consolidated data request.
+          The invitation-to-bid bundle is a .zip that typically contains the bill of quantities
+          and plans.
         </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Citizen Report Screen ────────────────────────────────────────────────────
-
-function CitizenReportScreen() {
-  const [hasPhoto,setHasPhoto]=useState(false);
-  const [desc,setDesc]=useState("");
-  const [linked,setLinked]=useState("");
-  const [submitted,setSubmitted]=useState(false);
-  const [refCode]=useState("CR-"+Math.random().toString(36).slice(2,10).toUpperCase());
-  if(submitted) return (
-    <div className="flex-1 flex items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-10 max-w-sm w-full text-center" role="status" aria-live="polite">
-        <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{background:"#dcfce7"}}><CheckCircle size={28} style={{color:"#16a34a"}}/></div>
-        <h3 className="text-[17px] font-bold text-gray-900 mb-2">Report Submitted</h3>
-        <p className="text-[13px] text-gray-500 mb-5">Your observation has been recorded and will be reviewed by DPWH Region III monitoring officers within 48 hours.</p>
-        <div className="text-[11px] font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 mb-6">Reference: {refCode}</div>
-        <button onClick={()=>setSubmitted(false)} className="w-full py-2.5 text-white text-[13px] font-semibold rounded hover:opacity-90" style={{background:"#1e3a7b"}}>Submit Another Report</button>
-      </div>
-    </div>
-  );
-  return (
-    <div className="flex-1 overflow-auto bg-gray-50 py-8 px-4" style={{scrollbarWidth:"none"}}>
-      <div className="max-w-xl mx-auto">
-        <div className="mb-6"><div className="flex items-center gap-2 mb-1"><Camera size={17} style={{color:"#1e3a7b"}}/><h2 className="text-[17px] font-bold text-gray-900">Citizen Observation Report</h2></div><p className="text-[13px] text-gray-500 ml-6">Report site conditions, anomalies, or project status. Reviewed within 48 hours by DPWH officers.</p></div>
-        <form onSubmit={e=>{e.preventDefault();setSubmitted(true);}} className="space-y-4" noValidate>
-          <div className="bg-white rounded border border-gray-200 p-5">
-            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Photo / Video <span className="text-gray-300 font-normal">(recommended)</span></label>
-            {hasPhoto?(<div className="relative h-44 rounded overflow-hidden" style={{background:"linear-gradient(135deg,#2a4a38,#3a6048)"}}><div className="absolute inset-0 flex items-center justify-center text-white/40 text-[12px] font-mono">IMG_20241114_094532.jpg</div><button type="button" onClick={()=>setHasPhoto(false)} aria-label="Remove photo" className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60"><X size={12}/></button></div>):(
-              <button type="button" onClick={()=>setHasPhoto(true)} className="w-full h-40 rounded border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-[#1e3a7b] hover:text-[#1e3a7b] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1e3a7b]">
-                <Camera size={28}/><span className="text-[13px] font-medium">Tap to upload photo or video</span><span className="text-[11px] text-gray-300">JPG, PNG, MP4 · Max 50 MB</span>
-              </button>
-            )}
-          </div>
-          <div className="bg-white rounded border border-gray-200 p-5">
-            <label htmlFor="linked-project" className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Link to Project <span className="text-gray-300 font-normal">(optional)</span></label>
-            <select id="linked-project" value={linked} onChange={e=>setLinked(e.target.value)} className="w-full text-[13px] border border-gray-200 rounded px-3 py-2 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
-              <option value="">— No linked project —</option>
-              {PROJECTS.map(p=><option key={p.id} value={p.id}>{p.id} · {p.name}</option>)}
-            </select>
-          </div>
-          <div className="bg-white rounded border border-gray-200 p-5">
-            <label htmlFor="obs-desc" className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Observation Description <span className="text-red-400">*</span></label>
-            <textarea id="obs-desc" required rows={5} value={desc} onChange={e=>setDesc(e.target.value.slice(0,500))} placeholder="Describe what you observed — construction activity, equipment status, flood conditions, anomalies…" className="w-full text-[13px] border border-gray-200 rounded px-3 py-2.5 text-gray-700 placeholder-gray-300 focus:outline-none focus:border-[#1e3a7b] resize-none"/>
-            <div className="text-[11px] text-right mt-1" style={{color:desc.length>450?"#f59e0b":"#d1d5db"}} aria-live="polite">{desc.length}/500</div>
-          </div>
-          <button type="submit" className="w-full py-3 text-white text-[14px] font-semibold rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2" style={{background:"#1e3a7b"}}><Upload size={15}/>Submit Observation Report</button>
-          <p className="text-[11px] text-gray-400 text-center pb-4">Personal information kept confidential · Data Privacy Act (RA 10173)</p>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ─── Contractors Screen ───────────────────────────────────────────────────────
-
-function ContractorsScreen() {
-  const [q,setQ]=useState("");
-  const [selected,setSelected]=useState<Contractor|null>(null);
-  const sort=useSort<Contractor>();
-  const filtered=useMemo(()=>CONTRACTORS.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())||c.municipalities.some(m=>m.toLowerCase().includes(q.toLowerCase()))),[q]);
-  const sorted=useMemo(()=>sort.apply(filtered),[filtered,sort.apply]);
-  const pg=usePagination(filtered.length,8);
-  // PCAB licence class, GPPB blacklisting and performance ratings are not in any
-  // public dataset, so this registry carries only what the award records prove:
-  // who won what, where, when, and how often their records fail a check.
-  const FlagRate=({rate}:{rate:number})=>{
-    const c=rate>=0.5?"#b91c1c":rate>=0.25?"#b45309":"#15803d";
-    return (
-      <div className="flex items-center gap-2">
-        <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{width:`${Math.max(rate*100,rate>0?4:0)}%`,background:c}}/></div>
-        <span className="font-mono text-[11px]" style={{color:c}}>{Math.round(rate*100)}%</span>
-      </div>
-    );
-  };
-  return (
-    <div className="flex-1 flex overflow-hidden bg-white">
-      <div className={`flex flex-col border-r border-gray-200 ${selected?"w-3/5":"flex-1"}`}>
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
-          <h2 className="text-[14px] font-bold text-gray-900">Contractor Registry</h2>
-          <span className="text-[11px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{CONTRACTORS.length}</span>
-          <div className="ml-auto flex items-center gap-3">
-            <div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search name or municipality…" aria-label="Search contractors" className="pl-7 pr-3 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 w-52 focus:outline-none focus:border-[#1e3a7b]"/></div>
-            <span className="text-[11px] text-gray-400">Derived from award records · rebuild with <code className="font-mono">pipeline/build_dataset.py</code></span>
-          </div>
-        </div>
-        <div className="flex-1 overflow-auto" style={{scrollbarWidth:"none"}}>
-          {filtered.length===0?<EmptyState title="No contractors found" body={`No results for "${q}"`} action="Clear search" onAction={()=>setQ("")}/>:(
-            <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
-                <tr>
-                  <SortTh col={"name" as keyof Contractor}           label="Contractor"     sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <SortTh col={"totalProjects" as keyof Contractor}  label="Contracts"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <SortTh col={"totalValue" as keyof Contractor}     label="Total Value"    sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <SortTh col={"activeProjects" as keyof Contractor} label="Ongoing"        sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <SortTh col={"flaggedProjects" as keyof Contractor} label="Flagged"       sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <SortTh col={"flagRate" as keyof Contractor}       label="Flag Rate"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
-                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Years</th>
-                  <th className="px-4 py-2.5"/>
+        <div className="bg-white rounded border border-gray-200 overflow-hidden">
+          <table className="w-full text-[12px]">
+            <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Description","Award","Documents"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+            <tbody>
+              {pg.paginate(rows).map(({r,p})=>(
+                <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 align-top">
+                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{r.id}</td>
+                  <td className="px-4 py-3 text-gray-700 max-w-md">{p!.description.slice(0,95)}{p!.description.length>95?"…":""}</td>
+                  <td className="px-4 py-3 font-mono whitespace-nowrap">{r.awardAmount?pesoFull(r.awardAmount):"—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>r.documents[k]).map(k=>(
+                        <a key={k} href={r.documents[k]!} target="_blank" rel="noreferrer"
+                          className="text-[10px] px-2 py-1 rounded border border-gray-200 text-[#1e3a7b] hover:bg-blue-50 hover:border-[#1e3a7b]/30 flex items-center gap-1">
+                          <FileText size={10}/>{DOC_LABELS[k]}<ExternalLink size={9}/>
+                        </a>
+                      ))}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {pg.paginate(sorted).map(c=>{
-                  return (
-                    <tr key={c.id} onClick={()=>setSelected(selected?.id===c.id?null:c)}
-                      className={`border-b border-gray-50 cursor-pointer transition-colors ${selected?.id===c.id?"bg-blue-50":"hover:bg-gray-50"}`}>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{c.name}
-                        {c.registrationRevoked&&<span className="ml-2 text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-700 align-middle">REVOKED</span>}</td>
-                      <td className="px-4 py-3 font-mono text-center">{c.totalProjects}</td>
-                      <td className="px-4 py-3 font-mono">{peso(c.totalValue)}</td>
-                      <td className="px-4 py-3 font-mono text-center">{c.activeProjects}</td>
-                      <td className="px-4 py-3 font-mono text-center">{c.flaggedProjects}</td>
-                      <td className="px-4 py-3"><FlagRate rate={c.flagRate}/></td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{c.years.length?`${c.years[0]}–${c.years[c.years.length-1]}`:"—"}</td>
-                      <td className="px-4 py-3"><button className="text-[#1e3a7b] text-[11px] flex items-center gap-1 hover:underline font-medium">View<ArrowRight size={10}/></button></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
-      </div>
-      {selected&&(
-        <div className="w-2/5 flex flex-col bg-white border-l border-gray-200">
-          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
-            <span className="text-[12px] font-bold text-gray-700">{selected.name}</span>
-            <button onClick={()=>setSelected(null)} aria-label="Close detail panel"><X size={15} className="text-gray-400 hover:text-gray-600"/></button>
-          </div>
-          <div className="flex-1 overflow-auto p-5 space-y-4" style={{scrollbarWidth:"none"}}>
-            <div className="bg-white rounded border border-gray-200 p-4">
-              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Award Record</div>
-              <dl className="space-y-2.5">{[
-                {l:"Contracts won",v:String(selected.totalProjects)},
-                {l:"Total awarded",v:pesoFull(selected.totalValue),m:true},
-                {l:"Years active",v:selected.years.length?`${selected.years[0]}–${selected.years[selected.years.length-1]}`:"—",m:true},
-                {l:"Municipalities",v:String(selected.municipalities.length)},
-                {l:"Registration",v:selected.registrationRevoked?"Marked REVOKED by DPWH":"No marker in DPWH record"},
-              ].map(({l,v,m})=>(<div key={l} className="flex items-start gap-2 justify-between"><dt className="text-[12px] text-gray-500">{l}</dt><dd className={`text-[12px] font-medium text-gray-800 text-right ${m?"font-mono":""}`}>{v}</dd></div>))}</dl>
-              <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">PCAB licence class, GPPB blacklisting and performance ratings are not published in any open dataset. They are absent rather than estimated.</p>
-            </div>
-            <div className="bg-white rounded border border-gray-200 p-4">
-              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Record Quality</div>
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold" style={{color:"#1e3a7b"}}>{selected.activeProjects}</div><div className="text-[10px] text-gray-400">Ongoing</div></div>
-                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-green-700">{selected.completedProjects}</div><div className="text-[10px] text-gray-400">Completed</div></div>
-                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-amber-600">{selected.flaggedProjects}</div><div className="text-[10px] text-gray-400">Flagged</div></div>
-              </div>
-              <div className="text-[11px] text-gray-500 mb-1.5">Share of this contractor&apos;s records tripping a consistency check</div>
-              <FlagRate rate={selected.flagRate}/>
-            </div>
-            <div className="bg-white rounded border border-gray-200 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50"><span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Linked Projects</span></div>
-              {PROJECTS.filter(p=>p.contractor===selected.name).length===0?<EmptyState title="No linked projects" body="No projects found in MASID for this contractor."/>:PROJECTS.filter(p=>p.contractor===selected.name).map(p=>(
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0"><div className="flex-1 min-w-0"><div className="text-[12px] font-medium text-gray-800 truncate">{p.name}</div><div className="text-[10px] font-mono text-gray-400">{p.id}</div></div><StatusBadge status={p.status}/></div>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
+          <Pagination page={pg.page} totalPages={Math.ceil(rows.length/pg.pageSize)} setPage={pg.setPage} total={rows.length} pageSize={pg.pageSize}/>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,266 @@
+{
+ "generated": "2026-08-03T16:13:08Z",
+ "districtOffice": "Bulacan 1st DEO",
+ "contracts": 1293,
+ "usable": true,
+ "budgetSemantics": {
+  "matchesAbc": 0.5514,
+  "matchesAwardAmount": 0.4273,
+  "conclusion": "mixed \u2014 use abc and awardAmount explicitly"
+ },
+ "primarySourceSpotCheck": {
+  "contractId": "22CC0095",
+  "document": "https://dcs.infrawatch.ph/notice_of_award/22CC0095/22CC0095_-_NOA.pdf",
+  "pdfStates": "P43,276,428.28",
+  "parquetAwardAmount": 43276428.28,
+  "match": true
+ },
+ "checks": [
+  {
+   "check": "rows, flat export",
+   "level": "INFO",
+   "value": "248,220",
+   "note": ""
+  },
+  {
+   "check": "rows, detail export",
+   "level": "INFO",
+   "value": "248,421",
+   "note": ""
+  },
+  {
+   "check": "detail has no duplicate contractId",
+   "level": "PASS",
+   "violations": 0,
+   "total": 248421,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "every flat contract exists in detail",
+   "level": "PASS",
+   "violations": 0,
+   "total": 248220,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "contracts only in detail",
+   "level": "INFO",
+   "value": "201",
+   "note": "(detail is the newer, larger export)"
+  },
+  {
+   "check": "contracts in slice",
+   "level": "INFO",
+   "value": "1,293",
+   "note": ""
+  },
+  {
+   "check": "agree on budget",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on amountPaid",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on progress",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on status",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on contractor",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on latitude",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on longitude",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "agree on infraYear",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "every contract has at least one bidder",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "at most one winner per contract",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "exactly one winner per contract",
+   "level": "WARN",
+   "violations": 26,
+   "total": 1293,
+   "rate": 0.0201,
+   "note": "(0 winners tracks the null-contractor rows)"
+  },
+  {
+   "check": "every bidder carries a PCAB id",
+   "level": "WARN",
+   "violations": 119,
+   "total": 1293,
+   "rate": 0.092,
+   "note": "(gaps are unusable for identity, not wrong)"
+  },
+  {
+   "check": "abc present and positive",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "awardAmount <= abc",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "bid-to-ABC ratio within 0.5-1.0",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "advertisement <= bid deadline",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "bid deadline <= date of award",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "date of award <= start date",
+   "level": "WARN",
+   "violations": 1,
+   "total": 1293,
+   "rate": 0.0008,
+   "note": ""
+  },
+  {
+   "check": "start <= completion",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": ""
+  },
+  {
+   "check": "budget matches abc",
+   "level": "INFO",
+   "value": "671 (55.1%)",
+   "note": ""
+  },
+  {
+   "check": "budget matches awardAmount",
+   "level": "INFO",
+   "value": "520 (42.7%)",
+   "note": ""
+  },
+  {
+   "check": "budget matches neither",
+   "level": "INFO",
+   "value": "26",
+   "note": ""
+  },
+  {
+   "check": "advertisement published",
+   "level": "INFO",
+   "value": "1,217 / 1,293 (94.1%)",
+   "note": ""
+  },
+  {
+   "check": "contractAgreement published",
+   "level": "INFO",
+   "value": "1,237 / 1,293 (95.7%)",
+   "note": ""
+  },
+  {
+   "check": "noticeOfAward published",
+   "level": "INFO",
+   "value": "1,245 / 1,293 (96.3%)",
+   "note": ""
+  },
+  {
+   "check": "noticeToProceed published",
+   "level": "INFO",
+   "value": "1,237 / 1,293 (95.7%)",
+   "note": ""
+  },
+  {
+   "check": "programOfWork published",
+   "level": "INFO",
+   "value": "0 / 1,293 ( 0.0%)",
+   "note": ""
+  },
+  {
+   "check": "engineeringDesign published",
+   "level": "INFO",
+   "value": "0 / 1,293 ( 0.0%)",
+   "note": ""
+  }
+ ]
+}
