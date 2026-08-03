@@ -183,7 +183,95 @@ Coverage figures are carried in `satellite.json` and shown in the interface;
 records outside the subset display as "not assessed" rather than as anything
 else. `--limit` extends it, and results cache per scene.
 
-## 3. Philippine municipal boundaries
+## 3. PhilGEPS award records
+
+| | |
+|---|---|
+| **Dataset** | [`bettergovph/philgeps-data`](https://huggingface.co/datasets/bettergovph/philgeps-data) |
+| **Licence** | CC0-1.0 |
+| **Size** | 5,481,161 award rows, 2000–2025 (`philgeps.parquet`, 492 MB) |
+| **Slice** | 6,503 awards to Bulacan 1st DEO after dedup — ₱109.64 B, 537 contractors |
+
+### The join, and why the planned key does not work
+
+`FUSION.md` proposed `contractId` ↔ PhilGEPS contract reference as the primary
+key. **That key does not exist in practice.** `contract_no` is null on **99.9%**
+of PhilGEPS rows, and where present it is free text in no consistent format —
+`CB2024-047`, `I30`, `24112023`, `CS-01-2025-04(A)`. The primary strategy is dead
+on arrival, which is exactly the thing `FUSION.md` said to find out in month one.
+
+The fallback works well enough to build on. Normalised contractor name plus
+contract amount, over 1,293 contracts:
+
+| Match | Count | Share |
+|---|---|---|
+| exact amount + contractor | 435 | 33.6% |
+| within 0.5% + contractor | 31 | 2.4% |
+| contractor only (no amount agreement) | 541 | 41.8% |
+| no award from that contractor at this office | 286 | 22.1% |
+
+**36.0% usable amount-level join.** Entity resolution is lossy by design:
+parenthetical content is dropped (`([REVOKED] 39196)`, `(FORMERLY:…)`) and
+generic corporate vocabulary is stripped, so two genuinely different firms
+differing only in those words will collide. Every match additionally has to agree
+on the contract amount before it is used for anything.
+
+Also note PhilGEPS bulk data repeats award rows verbatim — 7,126 rows collapse to
+6,503. Left in, every concentration figure would be wrong by the duplication rate.
+
+### What is not derivable, and is therefore absent
+
+`FUSION.md`'s Signal A wanted single-bidder awards, bidder counts and the
+bid-to-ABC ratio. **PhilGEPS publishes no bidder data and no approved-budget
+column**, so none of those are implemented. They are absent rather than
+approximated.
+
+One substitute was tempting and is deliberately not used. The ratio of PhilGEPS
+award to DPWH budget sits at exactly 1.0000 on 43% of comparable contracts, which
+reads like winning at precisely the approved budget — a classic red flag. But
+DPWH's `budget` column has mixed semantics: on many records it plainly *is* the
+awarded amount, in which case a ratio of 1.0 is the same number appearing twice,
+not an absence of competition. The two cannot be told apart from these sources,
+so the ratio is reported only as records disagreeing about a contract's value.
+
+### What is implemented
+
+- **`AWARD_CONCENTRATION`** — a contractor's share of everything this district
+  office has awarded, across all categories. Measured in **multiples of an equal
+  split** rather than as an absolute share: with 537 contractors an equal split
+  is 0.19%, so a flat "8% is high" threshold (which an earlier pass used) flags
+  nobody. Medium at 10×, high at 20×. Top of the book: WAWAO 6.10%, TOPNOTCH
+  CATALYST 5.92%, SYMS 5.62%.
+- **`NO_PHILGEPS_AWARD`** — no award to this contractor from this office. PhilGEPS
+  coverage of DPWH is incomplete, so this is a gap in the record, not a finding.
+- **`VALUE_DISAGREEMENT`** — no award from the contractor comes within 0.5% of the
+  DPWH value.
+
+### The fusion
+
+The two signals are **measurably independent**: across all 1,293 contracts the
+records score and the procurement score correlate at **r = −0.12**. Neither is a
+proxy for the other, which is the entire justification for fusing them — "high on
+both" is genuinely narrower than either list alone.
+
+| Quadrant | Contracts | Value |
+|---|---|---|
+| **Records and procurement both** | **16** | **₱831.1 M** |
+| Records only | 142 | ₱3.9 B |
+| Procurement only | 264 | ₱17.7 B |
+| Neither | 871 | ₱45.3 B |
+
+**This is an ordering, not a prediction.** `FUSION.md`'s validation plan — "our
+score placed 18 of 21 COA-confirmed ghosts in the top decile" — cannot be run:
+the ICI turned its findings over to the DOJ and the Ombudsman rather than
+publishing an itemised list, so there is no public ground truth to rank against.
+Nothing here has been shown to rank confirmed cases highly. It ranks contracts by
+how much the public record disagrees with itself, which is a triage aid.
+
+Unlike the imagery tier, this one is not *known to be broken* — it is simply
+unvalidated, and the distinction matters.
+
+## 4. Philippine municipal boundaries
 
 | | |
 |---|---|

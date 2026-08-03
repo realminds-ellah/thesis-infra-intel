@@ -8,6 +8,7 @@ response and no PhilSA imagery grant required to run it.
 
 ```bash
 python3 pipeline/build_dataset.py   # contracts, boundaries, consistency flags
+python3 pipeline/procurement.py     # PhilGEPS awards, join + concentration
 python3 pipeline/satellite.py       # Sentinel-2 change detection (free, no signup)
 npm install && npm run dev
 ```
@@ -29,7 +30,9 @@ public record does not contain.
 
 ```
 pipeline/build_dataset.py   fetch → filter → geocode → flag → emit JSON
+pipeline/procurement.py     PhilGEPS → entity resolution → join → concentration
 pipeline/satellite.py       STAC search → windowed COG reads → composite → z-score
+pipeline/evaluate.py        statistic ablation for the imagery tier
 src/app/data/               generated: projects, contractors, boundaries, satellite, meta
 src/app/data/index.ts       typed accessors and derived chart series
 src/app/App.tsx             the dashboard
@@ -37,13 +40,27 @@ data/                       source cache (untracked)
 SOURCES.md                  provenance, licences, gaps, flag definitions
 ```
 
-## Two tiers
+## Three tiers
 
 **Records tier** — every published coordinate is reverse-geocoded against
 official municipal boundaries and compared with the location the contract
 description itself states, and every contractor is checked against the
 registration marker DPWH publishes in its own records. 310 of 1,293 records
 disagree with themselves or with the contractor register in some way.
+
+**Procurement tier** — 6,503 PhilGEPS awards to this district office (₱109.64 B,
+537 contractors) joined to the contracts on contractor name plus amount, since
+`contract_no` is null on 99.9% of PhilGEPS rows and the `contractId` key
+`FUSION.md` planned does not exist. 36% usable amount-level join. Yields contractor
+concentration measured in multiples of an equal split. No bidder counts exist in
+PhilGEPS, so single-bidder and bid-to-ABC indicators are absent, not estimated.
+
+**Fusion** — the two signals correlate at **r = −0.12**, so they are genuinely
+independent and "high on both" is narrower than either alone. 2×2 triage over all
+1,293 contracts: **16 flagged by both** (₱831 M), 142 records-only, 264
+procurement-only, 871 neither. An ordering, not a prediction — the ICI never
+published an itemised ghost list, so there is no public ground truth to validate a
+ranking against.
 
 **Imagery tier** — Sentinel-2 L2A change detection over the pre-construction and
 post-completion periods, sampled at 30 m, 90 m and 150 m against a bootstrap null
