@@ -460,6 +460,28 @@ A switch that selects seven contracts in eight is not a filter. Bidding patterns
 are still shown on every contract's detail panel, where they belong: they
 describe how a contract was bought, not the structure.
 
+### Field inspection brief
+
+Everything else here is built for reading at a desk. An inspector needs something
+else, so any contract can be printed as a one-page brief:
+
+- **Where to go** — coordinates as tap-through links to Google Maps and Waze, plus
+  the figures written out for a handheld GPS, the barangay the contract names, and
+  the flood hazard at that spot.
+- **What should be there** — structure type, chainage limits and length pulled off
+  the contract title, so the question becomes specific: *is there 780 m of
+  revetment between STA 0+000 and STA 0+780* rather than *is it built*. Parsed for
+  1,209 of 1,293 contracts (type), 764 (barangay) and 224 (chainage).
+- **Know before you go** — every flag, so an inspector learns the coordinate is
+  disputed before driving to it rather than after.
+- **What to check** — a checklist that adapts to what the contract actually
+  states, ending with "if nothing is found, note what IS at the location".
+- **Findings** — printed fields, because a brief that cannot be written on comes
+  back empty.
+
+The satellite verdict appears with an explicit instruction not to let it shape
+what is looked for on site, since the tier has no measured discriminative power.
+
 ### Clicking a project
 
 Opens a satellite view of the site itself, not a diagram of it. The panel map was

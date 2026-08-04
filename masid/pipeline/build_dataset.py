@@ -93,6 +93,23 @@ ALIASES = {
     "BALIWAG": "Baliuag",
 }
 
+# What an inspector needs off the contract description, in the order the phrases
+# actually appear in DPWH titles. Longest/most specific first so "concrete slope
+# protection" does not resolve to "concrete".
+STRUCTURE_TYPES = [
+    ("PUMPING STATION", "Pumping station"), ("FLOOD GATE", "Flood gate"),
+    ("FLOODGATE", "Flood gate"), ("SLOPE PROTECTION", "Slope protection"),
+    ("SHORE PROTECTION", "Shore protection"), ("BANK PROTECTION", "Bank protection"),
+    ("RIVER PROTECTION", "Bank protection"), ("RIVERBANK PROTECTION", "Bank protection"),
+    ("REVETMENT", "Revetment"), ("FLOOD WALL", "Flood wall"), ("FLOODWALL", "Flood wall"),
+    ("RIVER WALL", "River wall"), ("DRAINAGE", "Drainage"), ("DREDGING", "Dredging"),
+    ("DESILTING", "Desilting"), ("RIPRAP", "Riprap"), ("RIP-RAP", "Riprap"),
+    ("DIKE", "Dike"), ("EMBANKMENT", "Embankment"), ("PARAPET", "Parapet wall"),
+    ("CHANNEL", "Channel works"), ("WATERWAY", "Waterway works"),
+    ("FLOOD MITIGATION", "Flood mitigation structure"),
+    ("FLOOD CONTROL", "Flood control structure"),
+]
+
 # A published point this close to the boundary of the municipality its own
 # description names is a cartographic edge case, not a relocated project.
 BOUNDARY_TOLERANCE_M = 300
@@ -225,6 +242,37 @@ DECLARED_VOCAB = sorted(VOCAB_TO_LGU, key=len, reverse=True)
 # spelled the other way yield no declared municipality, which under-flags — the
 # safe direction for a tool that accuses public officials of nothing.
 PROVINCE_TOKEN = re.compile(r"\b(BULACAN|BULACA)\b")
+
+
+def structure_type(description: str) -> str | None:
+    """What an inspector is looking for when they arrive."""
+    d = norm(description)
+    for token, label in STRUCTURE_TYPES:
+        if token in d:
+            return label
+    return None
+
+
+def barangay(description: str) -> str | None:
+    """DPWH titles name the barangay in prose: '... AT BARANGAY PANDUCOT, ...'."""
+    m = re.search(r"\b(?:BRGY\.?|BARANGAY)\s+([A-Z][A-Z0-9 .'\-]{2,40}?)\s*(?:,|$|\()",
+                  description.upper())
+    if not m:
+        return None
+    v = re.sub(r"\s+", " ", m.group(1)).strip(" .,-")
+    return title(v) if v else None
+
+
+def station_limits(description: str):
+    """Chainage markers like 'STA. 0+475 - STA. 0+829' give the exact stretch of
+    river to walk, and its length. Only 14% of contracts carry them, but where
+    they do it is the difference between finding a structure and guessing."""
+    pts = [int(a) * 1000 + int(b) for a, b in
+           re.findall(r"(?:STA|K)\.?\s*(\d+)\s*\+\s*(\d+)", description, re.I)]
+    if len(pts) < 2:
+        return None, None, None
+    lo, hi = min(pts), max(pts)
+    return f"{lo//1000}+{lo%1000:03d}", f"{hi//1000}+{hi%1000:03d}", (hi - lo) or None
 
 
 def declared_municipality(description: str) -> str | None:
@@ -472,6 +520,7 @@ def main() -> int:
         weight = {"high": 3, "medium": 2, "low": 1}
         score = sum(weight[f["severity"]] for f in flags)
 
+        st_from, st_to, st_len = station_limits(r["description"])
         municipality = decl or geoc or "Unspecified"
 
         # Status is the lifecycle stage DPWH reports and NOTHING else. An earlier
@@ -515,6 +564,11 @@ def main() -> int:
             "docCount": sum(1 for c in ("advertisement","contractAgreement","noticeOfAward","noticeToProceed")
                             if isinstance(r[c], str) and r[c].startswith("http")),
             "reportCount": 0 if pd.isna(r["reportCount"]) else int(r["reportCount"]),
+            "structureType": structure_type(r["description"]),
+            "barangay": barangay(r["description"]),
+            "stationFrom": st_from,
+            "stationTo": st_to,
+            "lengthMetres": st_len,
             "auditFlags": flags,
             "auditScore": score,
         })

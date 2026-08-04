@@ -30,6 +30,7 @@ import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
 import { LeafletMap } from "./LeafletMap";
 import { SatelliteScreen } from "./SatelliteScreen";
+import { InspectionBrief } from "./InspectionBrief";
 import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
@@ -909,6 +910,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,colorBy}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role;layers:MapLayers;colorBy:string|null}) {
   const [selectedId,setSelectedId]=useState("");
+  const [briefFor,setBriefFor]=useState<Project|null>(null);
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   // Colour follows the filter unless the user overrides it: setting a delivery
   // filter and then having to pick "colour by delivery" separately is a step
@@ -1121,7 +1123,19 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
           )}
         </div>
 
-        <div className="px-5 py-3.5 border-t border-gray-100 shrink-0">
+        <div className="px-5 py-3.5 border-t border-gray-100 shrink-0 space-y-2">
+          {project.lat!=null&&project.lng!=null&&(
+            <div className="flex gap-2">
+              <a href={`https://www.google.com/maps/search/?api=1&query=${project.lat},${project.lng}`} target="_blank" rel="noreferrer"
+                className="flex-1 py-2 rounded border border-gray-200 text-[12px] text-gray-600 flex items-center justify-center gap-1.5 hover:border-[#1e3a7b]/40 hover:text-[#1e3a7b]">
+                <MapPin size={12}/>Navigate
+              </a>
+              <button onClick={()=>setBriefFor(project)}
+                className="flex-1 py-2 rounded border border-gray-200 text-[12px] text-gray-600 flex items-center justify-center gap-1.5 hover:border-[#1e3a7b]/40 hover:text-[#1e3a7b]">
+                <FileText size={12}/>Field brief
+              </button>
+            </div>
+          )}
           <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"#1e3a7b"}}>Open full record<ArrowRight size={14}/></button>
         </div>
       </div>
@@ -1167,6 +1181,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             </div>
           )}
           {selected&&<SlidePanel project={selected}/>}
+          {briefFor&&<InspectionBrief project={briefFor} onClose={()=>setBriefFor(null)}/>}
         </div>
       ):(
         <div className="flex-1 flex flex-col overflow-hidden">
