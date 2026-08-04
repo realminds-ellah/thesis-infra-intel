@@ -26,6 +26,7 @@ import {
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel } from "./FilterPanel";
+import { ENCODINGS, ENCODING_BY_KEY, colorOf, legendFor, suggestEncoding, BASEMAP, type Encoding } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -396,15 +397,15 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
 
 // ─── Map components ───────────────────────────────────────────────────────────
 
-function MapMarker({p,selected,onClick}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void}) {
+function MapMarker({p,selected,onClick,fill}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void;fill:string}) {
   const [hov,setHov]=useState(false);
   const {x,y}=toXY(p.lng,p.lat);
-  const c=STATUS_CFG[p.status];
+  const c={dot:fill};
   return (
     <g transform={`translate(${x},${y})`} onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{cursor:"pointer"}} role="button" aria-label={p.name}>
-      {p.status==="flagged"&&<circle r={7} fill="none" stroke={c.dot} strokeWidth={1} opacity={0.5}/>}
+      
       {selected&&<circle r={12} fill="none" stroke={c.dot} strokeWidth={2} opacity={0.85}/>}
-      <circle r={selected?7:4} fill={c.dot} stroke="#fff" strokeWidth={1} fillOpacity={0.9} style={{filter:"drop-shadow(0 1px 4px rgba(0,0,0,.28))",transition:"r 0.12s"}}/>
+      <circle r={selected?7:4.5} fill={c.dot} stroke={BASEMAP.surface} strokeWidth={2} style={{transition:"r 0.12s"}}/>
       {hov&&!selected&&(
         <g transform="translate(12,-44)">
           <rect x={0} y={0} width={172} height={40} rx={4} fill="white" style={{filter:"drop-shadow(0 2px 10px rgba(0,0,0,.18))"}}/>
@@ -422,7 +423,7 @@ function MapMarker({p,selected,onClick}:{p:Project&{lat:number;lng:number};selec
  * a map whose flags read "this coordinate is in the wrong municipality" has to
  * show the actual lines that judgement was made against.
  */
-function MapSVG({projects,selectedId,onSelect}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void}) {
+function MapSVG({projects,selectedId,onSelect,enc}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void;enc:Encoding}) {
   const ringPath=(ring:[number,number][])=>
     ring.map(([lng,lat],i)=>{const{x,y}=toXY(lng,lat);return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join("")+"Z";
   const paths=useMemo(()=>BOUNDARIES.map(b=>({
@@ -441,20 +442,20 @@ function MapSVG({projects,selectedId,onSelect}:{projects:Project[];selectedId:st
   const glngs:number[]=[]; for(let v=step(MB.minLng);v<=MB.maxLng;v+=0.1) glngs.push(step(v));
   return (
     <svg viewBox={`0 0 ${MB.W} ${MB.H}`} className="w-full h-full" aria-label="Map of Bulacan Province with flood control project locations" role="img">
-      <rect width={MB.W} height={MB.H} fill="#dde6f0"/>
-      {glats.map(lat=>{const{y}=toXY(MB.minLng,lat);return(<g key={`la${lat}`}><line x1={0} y1={y} x2={MB.W} y2={y} stroke="#9ab5cc" strokeWidth={0.35} strokeDasharray="4,5"/><text x={5} y={y-3} fontSize={7} fill="#7a9cb5" fontFamily="DM Mono,monospace">{lat.toFixed(1)}°N</text></g>);})}
-      {glngs.map(lng=>{const{x}=toXY(lng,MB.minLat);return(<g key={`ln${lng}`}><line x1={x} y1={0} x2={x} y2={MB.H} stroke="#9ab5cc" strokeWidth={0.35} strokeDasharray="4,5"/><text x={x+3} y={MB.H-6} fontSize={7} fill="#7a9cb5" fontFamily="DM Mono,monospace">{lng.toFixed(1)}°E</text></g>);})}
+      <rect width={MB.W} height={MB.H} fill={BASEMAP.surface}/>
+      {glats.map(lat=>{const{y}=toXY(MB.minLng,lat);return(<g key={`la${lat}`}><line x1={0} y1={y} x2={MB.W} y2={y} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={5} y={y-3} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lat.toFixed(1)}°N</text></g>);})}
+      {glngs.map(lng=>{const{x}=toXY(lng,MB.minLat);return(<g key={`ln${lng}`}><line x1={x} y1={0} x2={x} y2={MB.H} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={x+3} y={MB.H-6} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lng.toFixed(1)}°E</text></g>);})}
       {/* Municipalities this district office's own records describe are filled;
           the rest of the province is drawn but left pale for context. */}
-      {paths.map(p=><path key={p.name} d={p.d} fill={p.served?"#e2eaf6":"#eef2f7"} stroke="#1e3a7b" strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.8:0.35}/>)}
+      {paths.map(p=><path key={p.name} d={p.d} fill={p.served?BASEMAP.servedFill:BASEMAP.otherFill} stroke={BASEMAP.stroke} strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.85:0.4}/>)}
       {paths.filter(p=>p.served).map(p=>(
-        <text key={`t${p.name}`} x={p.label.x} y={p.label.y} textAnchor="middle" fontSize={7} fill="#4568a0" fontFamily="Inter,sans-serif" fontWeight={700} letterSpacing={0.5} style={{userSelect:"none",pointerEvents:"none"}}>
+        <text key={`t${p.name}`} x={p.label.x} y={p.label.y} textAnchor="middle" fontSize={7} fill={BASEMAP.label} fontFamily="Inter,sans-serif" fontWeight={700} letterSpacing={0.5} style={{userSelect:"none",pointerEvents:"none"}}>
           {p.name.replace("City of ","").toUpperCase()}
         </text>
       ))}
       {projects.filter(p=>p.lat!=null&&p.lng!=null
         &&p.lat>=MB.minLat&&p.lat<=MB.maxLat&&p.lng>=MB.minLng&&p.lng<=MB.maxLng)
-        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)}/>)}
+        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)}/>)}
       {/* Scale bar measured from the current extent — a fixed "10 km" label would
           be wrong the moment the bounds change. */}
       {(()=>{
@@ -463,7 +464,7 @@ function MapSVG({projects,selectedId,onSelect}:{projects:Project[];selectedId:st
         const km=[1,2,5,10,20,50].reverse().find(k=>k/kmPerPx<=110)??1;
         const w=km/kmPerPx;
         return (
-          <g transform={`translate(${MB.W-w-70},${MB.H-32})`}>
+          <g transform={`translate(70,${MB.H-32})`}>
             <rect x={-8} y={-3} width={w+16} height={18} rx={3} fill="white" opacity={0.88}/>
             <line x1={0} y1={8} x2={w} y2={8} stroke="#1e3a7b" strokeWidth={1.5}/>
             <line x1={0} y1={5} x2={0} y2={11} stroke="#1e3a7b" strokeWidth={1.5}/>
@@ -963,6 +964,13 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 function MapScreen({projects,onViewDetail,filters,onClearFilters}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void}) {
   const [selectedId,setSelectedId]=useState("");
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
+  // Colour follows the filter unless the user overrides it: setting a delivery
+  // filter and then having to pick "colour by delivery" separately is a step
+  // that should not exist.
+  const [colorOverride,setColorOverride]=useState<string|null>(null);
+  const encKey=colorOverride??suggestEncoding(filters as never);
+  const enc=ENCODING_BY_KEY.get(encKey)!;
+  const legend=useMemo(()=>legendFor(enc,projects),[enc,projects]);
   const [q,setQ]=useState("");
   const sort=useSort<Project>();
   const flagged=projects.filter(p=>p.status==="flagged").length;
@@ -1031,18 +1039,31 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters}:{projects:Proj
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
-          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId}/>
+          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId} enc={enc}/>
           <div className="absolute left-3 bottom-8 flex flex-col gap-1">
             <button aria-label="Zoom in"  className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomIn  size={14}/></button>
             <button aria-label="Zoom out" className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomOut size={14}/></button>
           </div>
-          <div className="absolute bottom-8 right-3 bg-white border border-gray-200 rounded shadow-sm p-3" role="legend" aria-label="Map legend">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Legend</div>
-            <div className="space-y-1.5">
-              {(Object.entries(STATUS_CFG) as [ProjectStatus,typeof STATUS_CFG["completed"]][]).map(([k,c])=>(
-                <div key={k} className="flex items-center gap-2"><div className="w-3 h-3 rounded-full border-2 border-white shadow-sm" style={{background:c.dot}}/><span className="text-[11px] text-gray-600">{c.label}</span></div>
+          <div className="absolute bottom-8 right-3 bg-white/95 border border-gray-200 rounded shadow-sm p-3 backdrop-blur-sm" style={{maxWidth:250}} role="group" aria-label="Map legend">
+            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Colour by</label>
+            <select value={encKey} onChange={e=>setColorOverride(e.target.value)}
+              className="w-full text-[12px] border border-gray-200 rounded px-2 py-1 bg-white mb-2 focus:outline-none focus:border-[#1e3a7b]">
+              {ENCODINGS.map(o=><option key={o.key} value={o.key}>{o.label}</option>)}
+            </select>
+            {/* Counts and words carry the meaning, not the colour on its own —
+                the palette clears every CVD gate but sits below 3:1 against the
+                basemap, and a labelled legend is the method's relief for that. */}
+            <div className="space-y-1">
+              {legend.map(b=>(
+                <div key={b.key} className={`flex items-center gap-2 ${b.n===0?"opacity-40":""}`}>
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{background:b.color,boxShadow:`0 0 0 1.5px ${BASEMAP.surface}`}}/>
+                  <span className="text-[11px] text-gray-600 flex-1 leading-tight">{b.label}</span>
+                  <span className="text-[10px] font-mono text-gray-400 tabular-nums">{b.n.toLocaleString()}</span>
+                </div>
               ))}
             </div>
+            <p className="text-[10px] text-gray-400 mt-2 leading-snug">{enc.note}</p>
+            {colorOverride&&<button onClick={()=>setColorOverride(null)} className="text-[10px] text-[#1e3a7b] hover:underline mt-1">follow filter</button>}
           </div>
           {filtered.length===0&&(
             <div className="absolute inset-0 flex items-center justify-center bg-white/80">

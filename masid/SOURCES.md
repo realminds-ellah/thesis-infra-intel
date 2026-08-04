@@ -333,6 +333,58 @@ and the award on 43%.
 It is now a dual-handle range over `awardAmount`, bounded by the real data
 (₱950K–₱209.5M), with the distribution drawn behind it.
 
+## Map colour
+
+Markers are coloured by a selectable encoding, and the encoding **follows the
+filter** — setting a delivery filter colours by delivery concern without being
+asked. The legend always shows labels and live counts.
+
+Every palette was run through a validator against the map's **actual** surface
+and against **all pairs**, not adjacent ones: on a map any two categories can end
+up side by side.
+
+Two results changed the design.
+
+**The obvious palette fails.** Green / amber / orange / red — the status colours
+already used for badges — collapse as a map encoding:
+
+```
+red ↔ green     ΔE 4.1 (deutan)      — the classic red-green failure
+orange ↔ amber  ΔE 13.6 (normal)     — below the 15 floor even with full colour vision
+all five        below 3:1 on surface
+```
+
+They are kept for badges, where an icon and a word carry the meaning, and are not
+used to colour marks.
+
+**Most of these dimensions are ordinal, not categorical.** Audit priority,
+delivery concern, thinness of competition and award size are all *ordered*, and
+ordered data wants a single-hue ramp rather than distinct hues. That also
+sidesteps the three-slot ceiling that applies to categorical palettes on
+all-pairs forms, because a ramp is validated on monotone lightness instead.
+
+Validated 2026-08-04, light mode, surface `#f2f2f0`:
+
+| Palette | Use | Result |
+|---|---|---|
+| `#6da7ec #3987e5 #256abf #104281` | 4-step ordinal | all checks pass |
+| `#6da7ec #3987e5 #256abf #184f95 #0d366b` | 5-step ordinal | all checks pass |
+| `#2a78d6 #eb6834 #1baf7a` | 3-slot categorical, all-pairs | all checks pass |
+
+The categorical set carries a contrast warning (orange 2.85:1, aqua 2.51:1). The
+relief rule applies and is met: the legend is always visible, always labelled and
+always counted, so identity is never colour alone.
+
+Reported status has five values. Past three the palette cannot clear the
+all-pairs floors, so *proposed* and *terminated* fold into "Other" rather than
+being given colours that cannot be told apart.
+
+**The basemap was desaturated** to neutral greys. It was a saturated blue, which
+both competed with the data and pushed the light end of the ordinal ramp below
+the 2:1 floor against it. Marker drop-shadows were also removed — at this density
+several hundred of them merged into a grey smear; the 2 px surface ring around
+each mark is the separator, and it is enough.
+
 ## What is deliberately absent
 
 The consolidated data request asks DPWH for five categories. Two arrived free.
