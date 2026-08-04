@@ -29,6 +29,7 @@ import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
 import { LeafletMap } from "./LeafletMap";
+import { SatelliteScreen } from "./SatelliteScreen";
 import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
@@ -1372,189 +1373,9 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
 
 // ─── Satellite Screen ─────────────────────────────────────────────────────────
 
-function SatelliteScreen({project}:{project:Project|null}) {
-  const sat=project?SAT_BY_ID.get(project.id):undefined;
-  const cfg=sat?VERDICT_CFG[sat.verdict]:null;
-  const radii=[30,90,150];
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5 shrink-0 flex items-center gap-3">
-        <Satellite size={18} style={{color:"#1e3a7b"}}/>
-        <div>
-          <div className="text-[14px] font-bold text-gray-900">Satellite Monitoring</div>
-          <div className="text-[12px] text-gray-500">{project?.name.slice(0,70)??"Select a project"} · Sentinel-2 L2A, 10 m · {SATELLITE.source.access}</div>
-        </div>
-        {cfg&&<span className="ml-auto text-[11px] font-semibold px-2.5 py-1 rounded" style={{background:cfg.bg,color:cfg.color}}>{cfg.short.toUpperCase()}</span>}
-      </div>
-      <div className="flex-1 overflow-auto p-6" style={{scrollbarWidth:"none"}}>
-        <div className="max-w-4xl mx-auto space-y-4">
-
-          {/* The control sample measured this method against itself. If it cannot
-              separate flagged records from ordinary ones, that has to be the first
-              thing anyone reads — before any individual verdict. */}
-          <div className="rounded border p-4" style={VALIDATION.discriminates
-            ? {background:"#f0fdf4",borderColor:"#86efac"}
-            : {background:"#fef2f2",borderColor:"#fca5a5"}}>
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" style={{color:VALIDATION.discriminates?"#15803d":"#b91c1c"}}/>
-              <div className="min-w-0">
-                <div className="text-[12px] font-bold mb-1" style={{color:VALIDATION.discriminates?"#15803d":"#b91c1c"}}>
-                  Method validation — {VALIDATION.discriminates?"detector separates flagged from control":"no measured discriminative power"}
-                </div>
-                <p className="text-[12px] text-gray-700 leading-relaxed">{VALIDATION.verdict}</p>
-                <div className="flex gap-5 mt-2.5 text-[11px] font-mono text-gray-600 flex-wrap">
-                  <span>flagged <strong>{VALIDATION.flagged.detections}/{VALIDATION.flagged.assessed}</strong> ({((VALIDATION.flagged.rate??0)*100).toFixed(1)}%)</span>
-                  <span>seeded control <strong>{VALIDATION.control.detections}/{VALIDATION.control.assessed}</strong> ({((VALIDATION.control.rate??0)*100).toFixed(1)}%)</span>
-                  <span>median σ at 30 m — flagged {VALIDATION.flagged.medianZNdvi30m}, control {VALIDATION.control.medianZNdvi30m}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {!project&&<EmptyState title="No project selected" body="Open a project from the map or list to see its imagery assessment."/>}
-
-          {project&&!sat&&(
-            <div className="bg-white rounded border border-gray-200 p-5">
-              <div className="text-[14px] font-bold text-gray-800 mb-1">Not assessed</div>
-              <p className="text-[13px] text-gray-500 leading-relaxed">
-                This contract is not in the assessed subset. The satellite tier runs on an
-                audit-priority selection — the highest-scoring flagged records plus a seeded
-                control sample — so that flagged and unflagged records are measured the same
-                way. {SATELLITE.coverage.assessed} of {SATELLITE.coverage.total.toLocaleString()} records
-                have been assessed so far. Raise <code className="font-mono">--limit</code> on
-                <code className="font-mono"> pipeline/satellite.py</code> to extend coverage;
-                results cache, so only new records are fetched.
-              </p>
-            </div>
-          )}
-
-          {sat&&cfg&&(
-            <>
-              <div className="rounded border p-4" style={{background:cfg.bg,borderColor:cfg.color+"44"}}>
-                <div className="flex items-start gap-2.5">
-                  <Satellite size={15} className="shrink-0 mt-0.5" style={{color:cfg.color}}/>
-                  <div>
-                    <div className="text-[13px] font-bold mb-1" style={{color:cfg.color}}>{cfg.label}</div>
-                    <p className="text-[12px] text-gray-700 leading-relaxed">{sat.detail}</p>
-                    <p className="text-[11px] text-gray-500 leading-relaxed mt-2">{cfg.note}</p>
-                  </div>
-                </div>
-              </div>
-
-              {sat.chips&&(
-                <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-3 flex-wrap">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">NDVI, before and after</span>
-                    <span className="text-[11px] text-gray-400">· rings mark the 30 / 90 / 150 m sampling radii, cross marks the published coordinate</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    {([["before","Before construction",sat.scenesBefore],["after","After completion",sat.scenesAfter]] as const).map(([k,label,scenes])=>(
-                      <figure key={k} className="m-0">
-                        <img src={sat.chips![k]} alt={`NDVI composite ${label.toLowerCase()} for ${project.id}`}
-                          className="w-full rounded border border-gray-200" style={{imageRendering:"pixelated",aspectRatio:"1"}}/>
-                        <figcaption className="mt-2">
-                          <div className="text-[12px] font-semibold text-gray-700">{label}</div>
-                          <div className="text-[10px] font-mono text-gray-400 truncate" title={scenes.join(", ")}>{scenes.length} scene{scenes.length===1?"":"s"} · median composite</div>
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                  <div className="px-4 pb-3 flex items-center gap-3 flex-wrap text-[10px] text-gray-400">
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-8 h-2.5 rounded-sm" style={{background:"linear-gradient(90deg,#6e4a2e,#a68a6a,#ded8c6,#96be78,#40914a,#12522c)"}}/>bare ground → dense vegetation</span>
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{background:"#8c8f94"}}/>cloud-masked, no clear observation</span>
-                    <span>· 1 px = 10 m</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded border border-gray-200 p-4">
-                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Change by sampling radius</div>
-                <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                  Each figure is the local change from the pre-construction period to the
-                  post-completion period, measured against a bootstrap null: {String(SATELLITE.method.nullSamples)} discs
-                  of the same radius dropped at random in this site&apos;s own 300–600 m annulus.
-                  &ldquo;Rank vs null&rdquo; is where the real disc falls among them. Construction reads
-                  as NDVI down and NDBI up; both must pass {String(SATELLITE.method.ndviZThreshold)}σ / +{String(SATELLITE.method.ndbiZThreshold)}σ to count.
-                </p>
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      {["Radius","ΔNDVI","σ","ΔNDBI","σ","Rank vs null","Reads as"].map(h=>(
-                        <th key={h} className="text-left py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {radii.map(r=>{
-                      const v=sat.rings[`r${r}`];
-                      if(!v) return (
-                        <tr key={r} className="border-b border-gray-50">
-                          <td className="py-2.5 font-mono">{r} m</td>
-                          <td colSpan={6} className="py-2.5 text-gray-300">not enough clear pixels</td>
-                        </tr>
-                      );
-                      const hit=v.zNdvi<=Number(SATELLITE.method.ndviZThreshold)&&v.zNdbi>=Number(SATELLITE.method.ndbiZThreshold);
-                      return (
-                        <tr key={r} className="border-b border-gray-50">
-                          <td className="py-2.5 font-mono text-gray-700">{r} m</td>
-                          <td className="py-2.5 font-mono" style={{color:v.dNdvi<0?"#15803d":"#64748b"}}>{v.dNdvi>=0?"+":""}{v.dNdvi.toFixed(3)}</td>
-                          <td className="py-2.5 font-mono text-gray-500">{v.zNdvi>=0?"+":""}{v.zNdvi.toFixed(2)}</td>
-                          <td className="py-2.5 font-mono" style={{color:v.dNdbi>0?"#b45309":"#64748b"}}>{v.dNdbi>=0?"+":""}{v.dNdbi.toFixed(3)}</td>
-                          <td className="py-2.5 font-mono text-gray-500">{v.zNdbi>=0?"+":""}{v.zNdbi.toFixed(2)}</td>
-                          <td className="py-2.5 font-mono text-gray-500" title="Share of randomly placed same-radius discs showing less NDVI change than this one">{(v.pctNdvi*100).toFixed(0)}th pct</td>
-                          <td className="py-2.5">{hit
-                            ?<span className="text-[11px] px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-700">construction-consistent</span>
-                            :<span className="text-[11px] text-gray-400">below threshold</span>}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded border border-gray-200 p-4">
-                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Assessment Quality</div>
-                  <dl className="space-y-2.5">
-                    {[
-                      {l:"Confidence",v:sat.confidence},
-                      {l:"Cloud-free fraction",v:`${Math.round(sat.cloudFreeFraction*100)}%`},
-                      {l:"Null discs sampled",v:sat.control?String(sat.control.nullDiscs):"—"},
-                      {l:"Method validated",v:VALIDATION.discriminates?"yes":"no — see banner"},
-                    ].map(({l,v})=>(
-                      <div key={l} className="flex items-center justify-between">
-                        <dt className="text-[12px] text-gray-500">{l}</dt>
-                        <dd className="text-[12px] font-mono font-medium text-gray-800">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-                <div className="bg-white rounded border border-gray-200 p-4">
-                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Scenes Used</div>
-                  <div className="space-y-2 text-[11px] font-mono text-gray-600">
-                    <div><span className="text-gray-400 not-italic font-sans">Before · </span>{sat.scenesBefore.length?sat.scenesBefore.join(", "):"—"}</div>
-                    <div><span className="text-gray-400 font-sans">After · </span>{sat.scenesAfter.length?sat.scenesAfter.join(", "):"—"}</div>
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
-                    Copernicus Sentinel data (ESA), retrieved from AWS Open Data via Earth Search. No account required.
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="text-[11px] text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
-            <strong className="text-gray-500">What this cannot do.</strong> Sentinel-2 resolves 10 m
-            per pixel. A revetment two metres wide, a drainage line, a repair to an existing structure,
-            or any work on ground that was already bare will produce no signal at all. A &ldquo;no signal&rdquo;
-            result narrows where to look; it does not establish that nothing was built. Field inspection
-            and sub-metre imagery remain the only ways to settle an individual case.
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// SatelliteScreen now lives in src/app/SatelliteScreen.tsx — a browsable
+// workbench rather than a view that only worked if you arrived carrying a
+// selection.
 
 // ─── Documents Screen ─────────────────────────────────────────────────────────
 
@@ -1874,7 +1695,7 @@ export default function App() {
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
           {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers} colorBy={colorBy}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
-          {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
+          {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
           {screen==="citizen-report"&&<CitizenReportScreen/>}
           {screen==="contractors"  &&<ContractorsScreen/>}

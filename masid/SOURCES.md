@@ -200,6 +200,27 @@ A repair to an existing structure, or any work on ground that was already bare,
 produces no signal. Cloud cover over Bulacan is heavy enough that 59 of 200
 records could not be assessed at all.
 
+### How it is presented
+
+A browsable workbench rather than a view that only worked if you arrived already
+carrying a selection. The 200 assessed contracts are listed and filterable by
+verdict; selecting one shows three panels side by side:
+
+| | |
+|---|---|
+| **Before** | NDVI composite from the year running up to construction |
+| **After** | NDVI composite from the year after it was due to finish |
+| **Today** | live Esri high-resolution imagery at the same coordinate |
+
+The first two are what the detector measured. **The third is the check on it.**
+If the pipeline reports no change and current imagery plainly shows a concrete
+revetment, that is the detector failing — and it should be visible rather than
+buried in a recall statistic. Equally, if the pipeline is silent and the ground
+looks empty, a reader can see that for themselves instead of taking a σ value on
+trust.
+
+The validation result is pinned above all of it and cannot be scrolled past.
+
 ### Coverage is partial by design
 
 The tier runs on an **audit-priority subset**: the highest-scoring flagged
