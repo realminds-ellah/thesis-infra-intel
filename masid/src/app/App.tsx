@@ -473,7 +473,9 @@ function LoginScreen({onLogin}:{onLogin:(role:Role)=>void}) {
         <div className="relative">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-9 h-9 rounded flex items-center justify-center" style={{background:"#f59e0b"}}><Shield size={18} style={{color:"#1e3a7b"}}/></div>
-            <div><div className="text-white font-bold text-lg tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL MONITORING</div></div>
+            {/* The acronym spelled out at least once, on the one screen every
+                visitor passes through. It appeared nowhere in the app before. */}
+            <div><div className="text-white font-bold text-lg tracking-widest">MASID</div><div className="text-white/50 tracking-wide" style={{fontSize:8.5}}>MONITORING AND SURVEILLANCE OF INFRASTRUCTURE DELIVERY</div></div>
           </div>
           <h2 className="text-white text-3xl font-bold leading-tight mb-3">Infrastructure<br/>Monitoring for<br/>the Philippines</h2>
           <p className="text-white/50 text-sm leading-relaxed">An integrated platform for DPWH flood control tracking, satellite monitoring, procurement transparency, and citizen engagement.</p>
@@ -689,7 +691,9 @@ function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNoti
         : <div className="w-7 h-7"/>}
       <div className="flex items-center gap-2 mr-2 shrink-0">
         <div className="w-7 h-7 rounded flex items-center justify-center" style={{background:"#f59e0b"}}><Shield size={14} style={{color:"#1e3a7b"}}/></div>
-        <div className="leading-none"><div className="text-white font-bold text-sm tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL PH</div></div>
+        {/* Short in the nav bar, where there is no room; the full name is on the
+            title so it is one hover away rather than nowhere. */}
+        <div className="leading-none" title="MASID — Monitoring And Surveillance of Infrastructure Delivery"><div className="text-white font-bold text-sm tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL PH</div></div>
       </div>
       <nav className="flex items-center gap-0.5 overflow-x-auto" style={{scrollbarWidth:"none"}}>
         {visible.map(([label,s,icon])=>(
