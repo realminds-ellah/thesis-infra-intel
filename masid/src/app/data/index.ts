@@ -321,9 +321,12 @@ export interface ContractDocuments {
   engineeringDesign: string | null;
 }
 
+export interface Bidder { name: string; pcab: string | null; won: boolean }
+
 export interface ProcurementResult {
   id: string;
   bidders: number;
+  bidderList: Bidder[];
   winnerPcab: string | null;
   abc: number | null;
   awardAmount: number | null;
@@ -529,3 +532,42 @@ export const YEAR_STATS: YearStat[] = (() => {
     };
   });
 })();
+
+
+/**
+ * A sentence about the contract, in the words a person would use.
+ *
+ * The panel was all tiles and tables: correct, and impossible to read aloud.
+ * Everything here comes from fields already on screen — the point is not new
+ * information but a form someone can actually take in.
+ */
+export function plainSummary(p: Project): string {
+  const pr = PROC_BY_ID.get(p.id);
+  const money = pr?.awardAmount
+    ? `₱${(pr.awardAmount / 1e6).toFixed(1)} million`
+    : "an unpublished amount";
+  const who = p.contractor.replace(/\s*\(.*$/, "").trim() || "an unnamed contractor";
+  const year = p.infraYear ? ` under the ${p.infraYear} programme` : "";
+  const where = p.municipality && p.municipality !== "Unspecified" ? ` in ${p.municipality}` : "";
+
+  const stage =
+    p.dpwhStatus === "Completed"
+      ? p.endDate ? `DPWH reports it finished on ${fmtDate(p.endDate)}.` : "DPWH reports it finished."
+      : p.dpwhStatus === "On-Going"
+        ? `DPWH reports it ${p.completion}% built${p.endDate ? `, due to finish ${fmtDate(p.endDate)}` : ""}.`
+        : p.dpwhStatus === "For Procurement"
+          ? "It is still out for bidding."
+          : "Work has not started.";
+
+  const comp = pr?.bidders === 1
+    ? " Only one company bid for it."
+    : pr?.bidders ? ` ${pr.bidders} companies bid for it.` : "";
+
+  return `A flood-control contract worth ${money}${where}, awarded to ${who}${year}. ${stage}${comp}`;
+}
+
+function fmtDate(d: string): string {
+  const t = new Date(d);
+  return Number.isNaN(t.getTime()) ? d
+    : t.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}

@@ -441,13 +441,25 @@ describe how a contract was bought, not the structure.
 
 ### Clicking a project
 
-Opens a real map of its surroundings — the actual municipal boundaries, every
-other contract in frame (clickable), a scale bar measured from the extent — with
-the full contract underneath: approved budget against awarded amount, bidder
-count, dates, every flag, and live links to the published documents.
+Opens a satellite view of the site itself, not a diagram of it. The panel map was
+a hand-drawn SVG — a grey rectangle, boundary lines, small dots — which told you
+a contract had neighbours and nothing about the place. It now opens on Esri
+imagery at zoom 16 with a 30 m ring on the published coordinate, so the question
+people actually have when they click a flood-control contract — *is there
+anything there?* — can be answered by looking.
 
-It replaces a decorative polygon inherited from the design export that drew the
-same invented coastline for every contract in the register.
+Alongside it, a sentence rather than a table:
+
+> A flood-control contract worth ₱47.0 million in Balagtas, awarded to M.C.J.
+> Valenzuela Construction Enterprises under the 2022 programme. DPWH reports it
+> finished on 24 September 2022. 3 companies bid for it.
+
+Nothing in that sentence is new — every field is elsewhere on the panel. The
+point is a form a person can take in. The full contract description sits behind a
+disclosure, and **who else bid** is listed with PCAB numbers, which DPWH publishes
+and nothing else in this project had surfaced.
+
+
 
 ### The panel changes with the role
 

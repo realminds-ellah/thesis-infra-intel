@@ -29,7 +29,7 @@ import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
 import { LeafletMap } from "./LeafletMap";
-import { HAZARD_BY_ID } from "./data";
+import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
@@ -992,6 +992,19 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
         )}
 
         <div className="flex-1 overflow-y-auto px-5 py-4" style={{scrollbarWidth:"none"}}>
+          {/* Something to read before anything to scan. Everything in it is on
+              screen elsewhere; the point is a form a person can take in. */}
+          <p className="text-[13px] text-gray-700 leading-relaxed mb-3">{plainSummary(project)}</p>
+
+          <details className="mb-3.5 group">
+            <summary className="text-[11px] text-[#1e3a7b] cursor-pointer hover:underline">
+              Read the full contract description
+            </summary>
+            <p className="text-[12px] text-gray-600 leading-relaxed mt-1.5 pl-2 border-l-2 border-gray-100">
+              {project.description}
+            </p>
+          </details>
+
           {/* The three numbers that answer "what did this cost and was it competed" */}
           <div className="grid grid-cols-3 gap-2 mb-1">
             <div className="rounded bg-gray-50 p-2.5">
@@ -1038,6 +1051,26 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             <Fact l="Reported progress" v={`${project.completion}%`}/>
             <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
           </Section>
+
+          {pr&&pr.bidderList&&pr.bidderList.length>0&&(
+            <Section title={`Who bid — ${pr.bidderList.length}`}>
+              <div className="space-y-1">
+                {pr.bidderList.map((b,i)=>(
+                  <div key={`${b.pcab??b.name}-${i}`} className="flex items-baseline gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                    <span className={`text-[12px] flex-1 ${b.won?"font-semibold text-gray-900":"text-gray-600"}`}>{b.name||"(unnamed)"}</span>
+                    {b.won&&<span className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0" style={{background:"#e6f2e6",color:"#046b04"}}>won</span>}
+                    {b.pcab&&<span className="text-[10px] font-mono text-gray-400 shrink-0">PCAB {b.pcab}</span>}
+                  </div>
+                ))}
+              </div>
+              {pr.bidderList.length===1&&(
+                <p className="text-[10px] text-gray-400 leading-relaxed mt-2">
+                  Nobody else bid. Nationally, 9% of flood-control contracts are awarded
+                  without a competing bid.
+                </p>
+              )}
+            </Section>
+          )}
 
           <Section title="Timeline">
             <div className="space-y-0">
