@@ -25,7 +25,7 @@ import {
   PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
-import { FilterPanel } from "./FilterPanel";
+import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
 import { HAZARD_BY_ID } from "./data";
@@ -425,7 +425,7 @@ function MapMarker({p,selected,onClick,fill,shape}:{p:Project&{lat:number;lng:nu
  * a map whose flags read "this coordinate is in the wrong municipality" has to
  * show the actual lines that judgement was made against.
  */
-function MapSVG({projects,selectedId,onSelect,enc}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void;enc:Encoding}) {
+function MapSVG({projects,selectedId,onSelect,enc,layers}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void;enc:Encoding;layers:MapLayers}) {
   const ringPath=(ring:[number,number][])=>
     ring.map(([lng,lat],i)=>{const{x,y}=toXY(lng,lat);return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join("")+"Z";
   const paths=useMemo(()=>BOUNDARIES.map(b=>({
@@ -449,13 +449,13 @@ function MapSVG({projects,selectedId,onSelect,enc}:{projects:Project[];selectedI
       {glngs.map(lng=>{const{x}=toXY(lng,MB.minLat);return(<g key={`ln${lng}`}><line x1={x} y1={0} x2={x} y2={MB.H} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={x+3} y={MB.H-6} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lng.toFixed(1)}°E</text></g>);})}
       {/* Municipalities this district office's own records describe are filled;
           the rest of the province is drawn but left pale for context. */}
-      {paths.map(p=><path key={p.name} d={p.d} fill={p.served?BASEMAP.servedFill:BASEMAP.otherFill} stroke={BASEMAP.stroke} strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.85:0.4}/>)}
-      {paths.filter(p=>p.served).map(p=>(
+      {layers.boundaries&&paths.map(p=><path key={p.name} d={p.d} fill={p.served?BASEMAP.servedFill:BASEMAP.otherFill} stroke={BASEMAP.stroke} strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.85:0.4}/>)}
+      {layers.labels&&paths.filter(p=>p.served).map(p=>(
         <text key={`t${p.name}`} x={p.label.x} y={p.label.y} textAnchor="middle" fontSize={7} fill={BASEMAP.label} fontFamily="Inter,sans-serif" fontWeight={700} letterSpacing={0.5} style={{userSelect:"none",pointerEvents:"none"}}>
           {p.name.replace("City of ","").toUpperCase()}
         </text>
       ))}
-      {projects.filter(p=>p.lat!=null&&p.lng!=null
+      {layers.markers&&projects.filter(p=>p.lat!=null&&p.lng!=null
         &&p.lat>=MB.minLat&&p.lat<=MB.maxLat&&p.lng>=MB.minLng&&p.lng<=MB.maxLng)
         .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)} shape={shapeOf(p,enc)}/>)}
       {/* Scale bar measured from the current extent — a fixed "10 km" label would
@@ -963,7 +963,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 // ─── Map Screen ───────────────────────────────────────────────────────────────
 
-function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role}) {
+function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role;layers:MapLayers}) {
   const [selectedId,setSelectedId]=useState("");
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   // Colour follows the filter unless the user overrides it: setting a delivery
@@ -1123,7 +1123,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
-          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId} enc={enc}/>
+          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId} enc={enc} layers={layers}/>
           <div className="absolute left-3 bottom-8 flex flex-col gap-1">
             <button aria-label="Zoom in"  className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomIn  size={14}/></button>
             <button aria-label="Zoom out" className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomOut size={14}/></button>
@@ -1799,6 +1799,7 @@ export default function App() {
   // Filters initialise from the URL so a filtered view can be shared as a link,
   // which is the whole point of a transparency register.
   const [filters,setFilters]          = useState<Filters>(()=>fromQuery(window.location.search.slice(1)));
+  const [mapLayers,setMapLayers]      = useState<MapLayers>({markers:true,boundaries:true,labels:true});
 
 
   const handleViewDetail = (id:string) => { setSelId(id); setScreen("project-detail"); };
@@ -1857,11 +1858,11 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} layers={mapLayers} setLayers={setMapLayers}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
-          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole}/>}
+          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
           {screen==="documents"    &&<DocumentsScreen/>}

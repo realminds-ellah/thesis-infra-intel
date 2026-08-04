@@ -340,20 +340,27 @@ published fraud audit reports do name specific Bulacan 1st DEO contracts as ghos
 or relocated — extracting those would give a recorded field rather than an
 inference, and is the obvious next step.
 
-### Six chips instead of eighteen tickboxes
+### The map sidebar is the original design's, kept simple
 
-The individual checks are all still filterable, one disclosure down. Above them
-sit six bundles, because nobody arrives at a public register wanting to tick
-`UNLOCATABLE_COORD`:
+Six controls: municipality, status, contractor, awarded amount, layers, summary.
+An intermediate version grew to ten collapsible groups, six concern chips and a
+preset row — comprehensive, and far too much for the screen most people will
+actually use.
 
-| Chip | Contracts | Bundles |
-|---|---|---|
-| Running late | 256 | past its finish date |
-| Built more than once | 142 | same coordinate, later year |
-| Can't be found on a map | 191 | missing, mismatched, unlocatable, outside province, duplicated |
-| No paperwork published | 7 | no contract document at all |
-| Nowhere near flooding | 3 | over 1 km from any modelled flood extent |
-| Something odd about the deal | 652 | won at exactly 96%, one bidder, short bid window, revoked contractor |
+What was kept from that version is the correctness, not the controls:
+
+- Status counts are DPWH's own stages, so they add to the register.
+- The amount slider reads `awardAmount` and runs to the real maximum
+  (₱210M), not a hard-coded ₱100M ceiling over an ambiguous column.
+- Counts are live against the other filters.
+- Layer toggles now actually drive the map rather than decorating the panel.
+
+**"Only ones with a problem" counts the records checks, not the bidding ones.**
+Including procurement flags takes it from 310 to 1,123 — 87% of the register —
+because round-number bids alone are 709 and contractor concentration another 366.
+A switch that selects seven contracts in eight is not a filter. Bidding patterns
+are still shown on every contract's detail panel, where they belong: they
+describe how a contract was bought, not the structure.
 
 ### Clicking a project
 

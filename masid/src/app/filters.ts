@@ -52,6 +52,8 @@ export interface Filters {
   docs: Set<DocState>;
   hazard: Set<HazardState>;
   concerns: Set<ConcernKey>;
+  /** One switch standing in for the whole condition list. */
+  onlyProblems: boolean;
 }
 
 export const emptyFilters = (): Filters => ({
@@ -61,6 +63,7 @@ export const emptyFilters = (): Filters => ({
   bidders: new Set(), ratio: new Set(), recordFlags: new Set(),
   procFlags: new Set(), quadrant: new Set(), satellite: new Set(),
   coords: new Set(), docs: new Set(), hazard: new Set(), concerns: new Set(),
+  onlyProblems: false,
 });
 
 // ─── derived per-project attributes ───────────────────────────────────────────
@@ -154,6 +157,17 @@ const preds = (f: Filters): Record<keyof Filters, Pred> => ({
   // which is what "show me late OR rebuilt projects" means to a reader.
   concerns: p => f.concerns.size === 0 ||
     CONCERNS.some(c => f.concerns.has(c.key) && c.test(p)),
+  // The condition list collapsed to one switch.
+  //
+  // Deliberately the RECORDS checks only, not the bidding ones. Including
+  // procurement flags takes this from 310 contracts to 1,123 — 87% of the
+  // register — because round-number bids alone are 709 and contractor
+  // concentration another 366. A switch that selects seven contracts in eight
+  // is not a filter, and "has a problem" would stop meaning anything.
+  //
+  // Bidding patterns are still shown on every contract's detail panel; they are
+  // a property of how it was bought, not of the structure.
+  onlyProblems: p => !f.onlyProblems || p.auditFlags.length > 0,
 });
 
 export function applyFilters(f: Filters, source: Project[] = PROJECTS): Project[] {
@@ -362,6 +376,7 @@ const SETS: (keyof Filters)[] = ["status", "delivery", "municipality", "bidders"
 
 export function toQuery(f: Filters): string {
   const p = new URLSearchParams();
+  if (f.onlyProblems) p.set("problems", "1");
   if (f.q) p.set("q", f.q);
   if (f.contractor) p.set("c", f.contractor);
   for (const k of SETS) {
@@ -376,6 +391,7 @@ export function toQuery(f: Filters): string {
 export function fromQuery(qs: string): Filters {
   const p = new URLSearchParams(qs);
   const f = emptyFilters();
+  f.onlyProblems = p.get("problems") === "1";
   f.q = p.get("q") ?? "";
   f.contractor = p.get("c") ?? "";
   for (const k of SETS) {
@@ -395,6 +411,7 @@ export function activeCount(f: Filters): number {
   if (f.contractor) n++;
   if (f.years) n++;
   if (f.amount) n++;
+  if (f.onlyProblems) n++;
   for (const k of SETS) n += (f[k] as Set<string>).size ? 1 : 0;
   return n;
 }
