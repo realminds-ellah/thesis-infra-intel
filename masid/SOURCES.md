@@ -316,6 +316,32 @@ the boundaries shown are the same ones the flags were computed against.
 
 ---
 
+## Citizen reports
+
+A feed, with two mechanisms and an honest account of what each is worth.
+
+**Live capture only.** The camera opens in the page and a frame is taken from the
+live stream; there is no file picker, so a photo saved from elsewhere cannot be
+attached. Each capture records its time and, where permitted, the device's own
+GPS fix — which is then compared against the coordinate DPWH published, and shown
+as "taken 40 m from the published coordinate" or "taken 2,100 m from it".
+
+*This raises the bar; it does not close the door.* A determined person can feed a
+virtual camera device. It stops the easy case — attaching an old or borrowed
+photo — and nothing beyond that. Anything consequential still needs a human to
+verify it.
+
+**"Masid" votes.** Readers mark reports worth attention and the feed sorts by it.
+*Votes measure attention, not truth.* A widely shared wrong report will outrank an
+accurate one nobody saw, and any public vote can be brigaded. The count is
+presented as what it is — how many people looked and agreed — never as a
+verification status.
+
+**Prototype.** There is no server. Reports live in the browser's localStorage and
+go nowhere. A real deployment needs submission, moderation, an audit trail and a
+takedown route; none of that exists here, and the banner on the page says so
+rather than letting anyone believe they have filed something.
+
 ## Relationship to BetterGov.ph
 
 [bettergov.ph/flood-control-projects/map](https://bettergov.ph/flood-control-projects/map)

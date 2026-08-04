@@ -105,12 +105,9 @@ export function FilterPanel({
   const maxM = Math.ceil(AMOUNT_BOUNDS[1] / 1e6);
   const curM = filters.amount ? Math.round(filters.amount[1] / 1e6) : maxM;
 
-  if (collapsed) return (
-    <aside className="w-11 shrink-0 border-r border-gray-200 bg-white flex flex-col items-center py-3 gap-2" aria-label="Collapsed filter sidebar">
-      <div className="w-7 h-7 flex items-center justify-center rounded text-gray-400" title="Filters"><Filter size={14} /></div>
-      <div className="w-7 h-7 flex items-center justify-center rounded text-gray-400" title="Layers"><Layers size={14} /></div>
-    </aside>
-  );
+  // Collapsing hides it entirely. A 44px strip of dead icons gave back almost
+  // none of the screen, which is the only reason to collapse a panel.
+  if (collapsed) return null;
 
   return (
     <aside className="w-60 shrink-0 border-r border-gray-200 bg-white flex flex-col overflow-hidden" aria-label="Filter sidebar">

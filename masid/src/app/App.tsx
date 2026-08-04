@@ -31,6 +31,7 @@ import { ProjectMap } from "./ProjectMap";
 import { LeafletMap } from "./LeafletMap";
 import { SatelliteScreen } from "./SatelliteScreen";
 import { InspectionBrief } from "./InspectionBrief";
+import { ReportsFeed } from "./ReportsFeed";
 import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
@@ -631,8 +632,8 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
 
 // ─── Top Nav ──────────────────────────────────────────────────────────────────
 
-function TopNav({screen,onNavigate,onToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette}:{
-  screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;onToggleNotifications:()=>void;
+function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette}:{
+  screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;canToggleSidebar:boolean;onToggleNotifications:()=>void;
   unreadCount:number;role:Role;onLogout:()=>void;onCreateProject:()=>void;canCreate:boolean;onOpenPalette:()=>void;
 }) {
   const rc=ROLE_CFG[role];
@@ -649,7 +650,12 @@ function TopNav({screen,onNavigate,onToggleSidebar,onToggleNotifications,unreadC
   const visible=links.filter(([,,, roles])=>!roles||roles.includes(role));
   return (
     <header className="h-[52px] shrink-0 flex items-center gap-2 px-3 border-b border-white/10" style={{background:"#1e3a7b"}}>
-      <button onClick={onToggleSidebar} aria-label="Toggle sidebar" className="w-7 h-7 flex items-center justify-center rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Menu size={16}/></button>
+      {/* Only offered where a sidebar exists to collapse. It used to sit on every
+          screen and do nothing on most of them. */}
+      {canToggleSidebar
+        ? <button onClick={onToggleSidebar} aria-label="Toggle filters" title="Show or hide the filters"
+            className="w-7 h-7 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"><Menu size={16}/></button>
+        : <div className="w-7 h-7"/>}
       <div className="flex items-center gap-2 mr-2 shrink-0">
         <div className="w-7 h-7 rounded flex items-center justify-center" style={{background:"#f59e0b"}}><Shield size={14} style={{color:"#1e3a7b"}}/></div>
         <div className="leading-none"><div className="text-white font-bold text-sm tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL PH</div></div>
@@ -1405,7 +1411,7 @@ function DocumentsScreen() {
     .filter(({r,p})=>p&&Object.values(r.documents).some(Boolean)&&
       (!q||r.id.toLowerCase().includes(q.toLowerCase())||p!.description.toLowerCase().includes(q.toLowerCase())))
   ,[q]);
-  const pg=usePagination(rows.length,10);
+  const pg=usePagination(rows.length,12);
   const counts=(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[])
     .map(k=>({k,n:PROCUREMENT.results.filter(r=>r.documents[k]).length}));
   return (
@@ -1441,15 +1447,16 @@ function DocumentsScreen() {
             <tbody>
               {pg.paginate(rows).map(({r,p})=>(
                 <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 align-top">
-                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{r.id}</td>
-                  <td className="px-4 py-3 text-gray-700 max-w-md">{p!.description.slice(0,95)}{p!.description.length>95?"…":""}</td>
-                  <td className="px-4 py-3 font-mono whitespace-nowrap">{r.awardAmount?pesoFull(r.awardAmount):"—"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1.5">
+                  <td className="px-4 py-2.5 font-mono text-[11px] text-gray-600 align-middle">{r.id}</td>
+                  <td className="px-4 py-2.5 text-gray-700 max-w-sm truncate" title={p!.description}>{p!.description}</td>
+                  <td className="px-4 py-2.5 font-mono whitespace-nowrap align-middle">{r.awardAmount?peso(r.awardAmount):"—"}</td>
+                  <td className="px-4 py-2.5 align-middle">
+                    <div className="flex flex-wrap gap-1">
                       {(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>r.documents[k]).map(k=>(
                         <a key={k} href={r.documents[k]!} target="_blank" rel="noreferrer"
-                          className="text-[10px] px-2 py-1 rounded border border-gray-200 text-[#1e3a7b] hover:bg-blue-50 hover:border-[#1e3a7b]/30 flex items-center gap-1">
-                          <FileText size={10}/>{DOC_LABELS[k]}<ExternalLink size={9}/>
+                          title={DOC_LABELS[k]}
+                          className="text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-[#1e3a7b] hover:bg-blue-50 hover:border-[#1e3a7b]/30 flex items-center gap-1">
+                          <FileText size={9}/>{DOC_LABELS[k].replace("Invitation to bid, BOQ and plans","Bid docs").replace("Contract agreement","Contract").replace("Notice of award","NOA").replace("Notice to proceed","NTP")}
                         </a>
                       ))}
                     </div>
@@ -1693,7 +1700,7 @@ export default function App() {
       {createModalOpen&&<CreateProjectModal onClose={()=>setCreate(false)} onSave={()=>{}}/>}
 
       <div className="relative shrink-0">
-        <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)}
+        <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)} canToggleSidebar={showSidebar}
           onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole}
           onLogout={handleLogout} onCreateProject={()=>setCreate(true)} canCreate={canCreate}
           onOpenPalette={()=>setPalette(true)}/>
@@ -1712,7 +1719,7 @@ export default function App() {
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
-          {screen==="citizen-report"&&<CitizenReportScreen/>}
+          {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail}/>}
           {screen==="contractors"  &&<ContractorsScreen/>}
           {screen==="admin"        &&<AdminScreen/>}
           {screen==="transparency" &&<TransparencyScreen onLogin={()=>setIsLoggedIn(false)}/>}
