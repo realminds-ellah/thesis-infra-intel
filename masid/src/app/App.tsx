@@ -1478,6 +1478,118 @@ function DocumentsScreen() {
   );
 }
 
+// Lost in an over-wide slice when the satellite screen was extracted, and only
+// surfaced by clicking the tab — the build passed the whole time.
+function ContractorsScreen() {
+  const [q,setQ]=useState("");
+  const [selected,setSelected]=useState<Contractor|null>(null);
+  const sort=useSort<Contractor>();
+  const filtered=useMemo(()=>CONTRACTORS.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())||c.municipalities.some(m=>m.toLowerCase().includes(q.toLowerCase()))),[q]);
+  const sorted=useMemo(()=>sort.apply(filtered),[filtered,sort.apply]);
+  const pg=usePagination(filtered.length,8);
+  // PCAB licence class, GPPB blacklisting and performance ratings are not in any
+  // public dataset, so this registry carries only what the award records prove:
+  // who won what, where, when, and how often their records fail a check.
+  const FlagRate=({rate}:{rate:number})=>{
+    const c=rate>=0.5?"#b91c1c":rate>=0.25?"#b45309":"#15803d";
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{width:`${Math.max(rate*100,rate>0?4:0)}%`,background:c}}/></div>
+        <span className="font-mono text-[11px]" style={{color:c}}>{Math.round(rate*100)}%</span>
+      </div>
+    );
+  };
+  return (
+    <div className="flex-1 flex overflow-hidden bg-white">
+      <div className={`flex flex-col border-r border-gray-200 ${selected?"w-3/5":"flex-1"}`}>
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <h2 className="text-[14px] font-bold text-gray-900">Contractor Registry</h2>
+          <span className="text-[11px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{CONTRACTORS.length}</span>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search name or municipality…" aria-label="Search contractors" className="pl-7 pr-3 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 w-52 focus:outline-none focus:border-[#1e3a7b]"/></div>
+            <span className="text-[11px] text-gray-400">Derived from award records · rebuild with <code className="font-mono">pipeline/build_dataset.py</code></span>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto" style={{scrollbarWidth:"none"}}>
+          {filtered.length===0?<EmptyState title="No contractors found" body={`No results for "${q}"`} action="Clear search" onAction={()=>setQ("")}/>:(
+            <table className="w-full text-[12px]">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+                <tr>
+                  <SortTh col={"name" as keyof Contractor}           label="Contractor"     sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"totalProjects" as keyof Contractor}  label="Contracts"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"totalValue" as keyof Contractor}     label="Total Value"    sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"activeProjects" as keyof Contractor} label="Ongoing"        sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"flaggedProjects" as keyof Contractor} label="Flagged"       sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"flagRate" as keyof Contractor}       label="Flag Rate"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Years</th>
+                  <th className="px-4 py-2.5"/>
+                </tr>
+              </thead>
+              <tbody>
+                {pg.paginate(sorted).map(c=>{
+                  return (
+                    <tr key={c.id} onClick={()=>setSelected(selected?.id===c.id?null:c)}
+                      className={`border-b border-gray-50 cursor-pointer transition-colors ${selected?.id===c.id?"bg-blue-50":"hover:bg-gray-50"}`}>
+                      <td className="px-4 py-3 font-semibold text-gray-800">{c.name}
+                        {c.registrationRevoked&&<span className="ml-2 text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-700 align-middle">REVOKED</span>}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.totalProjects}</td>
+                      <td className="px-4 py-3 font-mono">{peso(c.totalValue)}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.activeProjects}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.flaggedProjects}</td>
+                      <td className="px-4 py-3"><FlagRate rate={c.flagRate}/></td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{c.years.length?`${c.years[0]}–${c.years[c.years.length-1]}`:"—"}</td>
+                      <td className="px-4 py-3"><button className="text-[#1e3a7b] text-[11px] flex items-center gap-1 hover:underline font-medium">View<ArrowRight size={10}/></button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+        <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
+      </div>
+      {selected&&(
+        <div className="w-2/5 flex flex-col bg-white border-l border-gray-200">
+          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+            <span className="text-[12px] font-bold text-gray-700">{selected.name}</span>
+            <button onClick={()=>setSelected(null)} aria-label="Close detail panel"><X size={15} className="text-gray-400 hover:text-gray-600"/></button>
+          </div>
+          <div className="flex-1 overflow-auto p-5 space-y-4" style={{scrollbarWidth:"none"}}>
+            <div className="bg-white rounded border border-gray-200 p-4">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Award Record</div>
+              <dl className="space-y-2.5">{[
+                {l:"Contracts won",v:String(selected.totalProjects)},
+                {l:"Total awarded",v:pesoFull(selected.totalValue),m:true},
+                {l:"Years active",v:selected.years.length?`${selected.years[0]}–${selected.years[selected.years.length-1]}`:"—",m:true},
+                {l:"Municipalities",v:String(selected.municipalities.length)},
+                {l:"Registration",v:selected.registrationRevoked?"Marked REVOKED by DPWH":"No marker in DPWH record"},
+              ].map(({l,v,m})=>(<div key={l} className="flex items-start gap-2 justify-between"><dt className="text-[12px] text-gray-500">{l}</dt><dd className={`text-[12px] font-medium text-gray-800 text-right ${m?"font-mono":""}`}>{v}</dd></div>))}</dl>
+              <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">PCAB licence class, GPPB blacklisting and performance ratings are not published in any open dataset. They are absent rather than estimated.</p>
+            </div>
+            <div className="bg-white rounded border border-gray-200 p-4">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Record Quality</div>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold" style={{color:"#1e3a7b"}}>{selected.activeProjects}</div><div className="text-[10px] text-gray-400">Ongoing</div></div>
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-green-700">{selected.completedProjects}</div><div className="text-[10px] text-gray-400">Completed</div></div>
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-amber-600">{selected.flaggedProjects}</div><div className="text-[10px] text-gray-400">Flagged</div></div>
+              </div>
+              <div className="text-[11px] text-gray-500 mb-1.5">Share of this contractor&apos;s records tripping a consistency check</div>
+              <FlagRate rate={selected.flagRate}/>
+            </div>
+            <div className="bg-white rounded border border-gray-200 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50"><span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Linked Projects</span></div>
+              {PROJECTS.filter(p=>p.contractor===selected.name).length===0?<EmptyState title="No linked projects" body="No projects found in MASID for this contractor."/>:PROJECTS.filter(p=>p.contractor===selected.name).map(p=>(
+                <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0"><div className="flex-1 min-w-0"><div className="text-[12px] font-medium text-gray-800 truncate">{p.name}</div><div className="text-[10px] font-mono text-gray-400">{p.id}</div></div><StatusBadge status={p.status}/></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ─── Admin Screen ─────────────────────────────────────────────────────────────
 
 function AdminScreen() {

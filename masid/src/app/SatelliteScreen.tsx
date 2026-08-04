@@ -234,8 +234,9 @@ export function SatelliteScreen({ initialId, onOpenRecord }:
                   </p>
                   <table className="w-full text-[12px]">
                     <thead><tr className="border-b border-gray-100">
-                      {["Radius", "Vegetation", "σ", "Built surface", "σ", "Reads as"].map(h =>
-                        <th key={h} className="text-left py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}
+                      {/* keyed by position: two columns are both headed σ */}
+                      {["Radius", "Vegetation", "σ", "Built surface", "σ", "Reads as"].map((h, i) =>
+                        <th key={i} className="text-left py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {[30, 90, 150].map(r => {
