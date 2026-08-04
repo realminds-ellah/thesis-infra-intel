@@ -941,7 +941,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
       </div>
     );
     return (
-      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-10" style={{width:420}}>
+      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col" style={{width:420,zIndex:1000}}>
         <div className="flex items-start gap-2 p-4 border-b border-gray-100 shrink-0">
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-mono text-gray-400 mb-1">{project.id}</div>
@@ -973,6 +973,11 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
         <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{scrollbarWidth:"none"}}>
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge status={project.status}/>
+            {project.auditFlags.length>0&&(
+              <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:"#fff4ec",color:"#c05621"}}>
+                <AlertTriangle size={10}/>Flagged for review
+              </span>
+            )}
             {hz?.hazard&&hz.hazard!=="none"&&<span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">{hz.hazard} flood risk</span>}
             {(project as never as {siteRebuilds?:number}).siteRebuilds ?<span className="text-[10px] px-2 py-0.5 rounded bg-orange-50 text-orange-700">built again later</span>:null}
           </div>
@@ -1069,8 +1074,8 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             onSelect={setSelectedId} showBoundaries={layers.boundaries}
             cluster={layers.markers}/>
           {filtered.length===0&&(
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-              <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={()=>(Object.keys(filters) as ProjectStatus[]).forEach(k=>!filters[k]&&onToggleStatus(k))}/>
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80" style={{zIndex:900}}>
+              <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={onClearFilters}/>
             </div>
           )}
           {selected&&<SlidePanel project={selected}/>}

@@ -169,13 +169,13 @@ export function FilterPanel({
               Everything the pipeline checks — location, paperwork, bidding,
               delivery — behind a single switch instead of eighteen boxes. */}
           <label className="flex items-center gap-2.5 cursor-pointer group mt-3 pt-3 border-t border-gray-100">
-            <button role="checkbox" aria-checked={filters.onlyProblems} aria-label="Only projects with a problem"
+            <button role="checkbox" aria-checked={filters.onlyProblems} aria-label="Only projects flagged for review"
               onClick={() => setFilters({ ...filters, onlyProblems: !filters.onlyProblems })}
               className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b]"
               style={filters.onlyProblems ? { background: "#e8722c", borderColor: "#e8722c" } : { background: "#fff", borderColor: "#d1d5db" }}>
               {filters.onlyProblems && <Check size={9} color="#fff" />}
             </button>
-            <span className="flex-1 text-[12px] text-gray-600 group-hover:text-gray-900">Only ones with a problem</span>
+            <span className="flex-1 text-[12px] text-gray-600 group-hover:text-gray-900">Flagged for review</span>
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded font-medium bg-orange-50 text-orange-700">{problemTotal}</span>
           </label>
         </div>
@@ -260,7 +260,7 @@ export function FilterPanel({
         <div className="grid grid-cols-2 gap-2">
           {([
             [result.length.toLocaleString(), "Shown", "#eef2f9", "#1e3a7b"],
-            [String(result.filter(p => p.auditFlags.length > 0).length), "With a problem", "#fff4ec", "#c05621"],
+            [String(result.filter(p => p.auditFlags.length > 0).length), "Flagged for review", "#fff4ec", "#c05621"],
             [String(result.filter(p => p.status === "completed").length), "Finished", "#e6f2e6", "#046b04"],
             [String(result.filter(p => p.status === "ongoing").length), "Being built", "#e6eefa", "#1c5cab"],
           ] as [string, string, string, string][]).map(([v, l, bg, col]) => (
