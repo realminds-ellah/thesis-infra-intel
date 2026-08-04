@@ -7,3 +7,4 @@ __pycache__/
 # src/app/data/, which holds the generated JSON the app imports at build time.
 # Without the leading slash this pattern silently excluded the whole dataset.
 /data/
+.vercel
