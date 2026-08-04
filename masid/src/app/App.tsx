@@ -101,6 +101,12 @@ const STATUS_CFG: Record<ProjectStatus,{label:string;dot:string;bg:string;text:s
   proposed:  { label:"Proposed",           dot:"#94a3b8", bg:"#f1f5f9", text:"#64748b" },
   terminated:{ label:"Terminated",         dot:"#dc2626", bg:"#fee2e2", text:"#b91c1c" },
 };
+/** How a commenter is shown in a public thread — the role, not a username. */
+const ROLE_LABELS_PUBLIC: Record<Role,string> = {
+  "dpwh-admin":"DPWH Admin", "dpwh-engineer":"DPWH Engineer", "field-inspector":"Field Inspector",
+  "psa-analyst":"PSA Analyst", "lgu-coordinator":"LGU Coordinator", "public":"Public",
+};
+
 const ROLE_CFG: Record<Role,{label:string;bg:string}> = {
   "dpwh-admin":     { label:"DPWH Admin",       bg:"#1e3a7b" },
   "dpwh-engineer":  { label:"DPWH Engineer",    bg:"#2563eb" },
@@ -1719,7 +1725,7 @@ export default function App() {
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
-          {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail}/>}
+          {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail} role={ROLE_LABELS_PUBLIC[userRole]}/>}
           {screen==="contractors"  &&<ContractorsScreen/>}
           {screen==="admin"        &&<AdminScreen/>}
           {screen==="transparency" &&<TransparencyScreen onLogin={()=>setIsLoggedIn(false)}/>}

@@ -32,11 +32,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, X, Eye, Clock, MapPin, AlertTriangle, Video, Loader2, Search,
+  MessageSquare, CornerDownRight, Link2, Send,
 } from "lucide-react";
 
 import { PROJECTS, type Project } from "./data";
 
 const KEY = "masid.reports.v1";
+
+export interface Comment {
+  id: string;
+  author: string;          // the role the commenter was signed in as
+  text: string;
+  at: number;
+  masid: number;
+  replyTo?: string;        // one level deep; threads beyond that stop being read
+  demo?: boolean;
+}
 
 export interface CitizenReport {
   id: string;
@@ -48,6 +59,7 @@ export interface CitizenReport {
   lng: number | null;
   metresFromContract: number | null;
   masid: number;
+  comments: Comment[];
   /** Seeded example, never a real submission. Badged wherever it appears. */
   demo?: boolean;
 }
@@ -89,6 +101,12 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#4a6b52"),
     capturedAt: Date.now() - 5 * HOUR,
     lat: 14.81240, lng: 120.71600, metresFromContract: 42, masid: 12,
+    comments: [
+      { id: "c1", author: "LGU Coordinator", at: Date.now() - 4 * HOUR, masid: 3, demo: true,
+        text: "Billboards get taken down after handover in a lot of these, so the absence is not unusual on its own." },
+      { id: "c2", author: "Public", at: Date.now() - 2 * HOUR, masid: 1, replyTo: "c1", demo: true,
+        text: "Good to know. Is there a rule on how long they have to stay up?" },
+    ],
   },
   {
     id: "demo-2", projectId: "24CC0546", demo: true,
@@ -96,6 +114,14 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#8a7a4a"),
     capturedAt: Date.now() - 26 * HOUR,
     lat: 14.85210, lng: 120.83140, metresFromContract: 3120, masid: 47,
+    comments: [
+      { id: "c3", author: "Field Inspector", at: Date.now() - 20 * HOUR, masid: 9, demo: true,
+        text: "This contract is already flagged in the register for the same reason — the description names Calumpit and the published point falls in Malolos. Worth checking the actual structure before concluding anything." },
+      { id: "c4", author: "Public", at: Date.now() - 14 * HOUR, masid: 4, replyTo: "c3", demo: true,
+        text: "So the coordinate is wrong rather than the project missing? Those are very different things." },
+      { id: "c5", author: "DPWH Engineer", at: Date.now() - 9 * HOUR, masid: 6, replyTo: "c3", demo: true,
+        text: "Both are possible from this alone. Needs a site visit against the chainage in the contract, not a photo of one spot." },
+    ],
   },
   {
     id: "demo-3", projectId: "18CC0051", demo: true,
@@ -103,6 +129,10 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#6b5a4a"),
     capturedAt: Date.now() - 3 * 24 * HOUR,
     lat: 14.77230, lng: 120.75310, metresFromContract: 18, masid: 31,
+    comments: [
+      { id: "c6", author: "Public", at: Date.now() - 2 * 24 * HOUR, masid: 8, demo: true,
+        text: "It floods along here every wet season. Whatever was built the first time did not hold." },
+    ],
   },
 ];
 
@@ -179,7 +209,7 @@ function CaptureSheet({ onClose, onDone }:
     onDone({
       id: `r${Date.now()}`, projectId: chosen.id, note: note.trim(), image: shot,
       capturedAt: Date.now(), lat: fix?.[0] ?? null, lng: fix?.[1] ?? null,
-      metresFromContract: d, masid: 0,
+      metresFromContract: d, masid: 0, comments: [],
     });
   };
 
@@ -276,11 +306,111 @@ function CaptureSheet({ onClose, onDone }:
   );
 }
 
-export function ReportsFeed({ onOpenProject }: { onOpenProject: (id: string) => void }) {
+/**
+ * The discussion under a report.
+ *
+ * Flat with a single level of reply, deliberately. Deeper nesting is where
+ * threads stop being read, and on a register naming real contractors a long
+ * argument buried four levels down is worse than no argument at all.
+ *
+ * The commenter's ROLE is shown rather than a username. Whether a remark comes
+ * from a resident, a district engineer or a field inspector changes how it should
+ * be weighed, and this app already knows which one is signed in.
+ */
+function Thread({ report, role, onComment, onVote }: {
+  report: CitizenReport;
+  role: string;
+  onComment: (text: string, replyTo?: string) => void;
+  onVote: (commentId: string) => void;
+}) {
+  const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const top = report.comments.filter(c => !c.replyTo);
+  const repliesOf = (id: string) => report.comments.filter(c => c.replyTo === id);
+
+  const Row = ({ c, nested }: { c: Comment; nested?: boolean }) => (
+    <div className={`flex gap-2.5 ${nested ? "ml-7 mt-2" : "mt-3"}`}>
+      <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white"
+        style={{ background: nested ? "#94a3b8" : "#1e3a7b" }}>{c.author.charAt(0)}</div>
+      <div className="flex-1 min-w-0">
+        <div className="rounded-lg bg-gray-50 px-3 py-2">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold text-gray-800">{c.author}</span>
+            <span className="text-[10px] text-gray-400">{ago(c.at)}</span>
+            {c.demo && <span className="text-[9px] px-1.5 rounded" style={{ background: "#fef9e7", color: "#b45309" }}>demo</span>}
+          </div>
+          <p className="text-[12px] text-gray-700 leading-relaxed mt-0.5">{c.text}</p>
+        </div>
+        <div className="flex items-center gap-3 mt-1 ml-1">
+          <button onClick={() => onVote(c.id)} className="text-[10px] text-gray-400 hover:text-[#1e3a7b] flex items-center gap-1">
+            <Eye size={10} />{c.masid}
+          </button>
+          {!nested && (
+            <button onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
+              className="text-[10px] text-gray-400 hover:text-[#1e3a7b] flex items-center gap-1">
+              <CornerDownRight size={10} />Reply
+            </button>
+          )}
+        </div>
+        {replyTo === c.id && (
+          <div className="flex gap-2 mt-2">
+            <input autoFocus value={text} onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && text.trim()) { onComment(text.trim(), c.id); setText(""); setReplyTo(null); } }}
+              placeholder={`Reply to ${c.author}…`}
+              className="flex-1 px-2.5 py-1.5 text-[12px] border border-gray-200 rounded bg-white focus:outline-none focus:border-[#1e3a7b]" />
+            <button onClick={() => { if (text.trim()) { onComment(text.trim(), c.id); setText(""); setReplyTo(null); } }}
+              className="px-2.5 rounded text-white" style={{ background: "#1e3a7b" }}><Send size={12} /></button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="border-t border-gray-100 px-4 pb-4">
+      {top.map(c => (
+        <div key={c.id}>
+          <Row c={c} />
+          {repliesOf(c.id).map(r => <Row key={r.id} c={r} nested />)}
+        </div>
+      ))}
+      {replyTo === null && (
+        <div className="flex gap-2 mt-3">
+          <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: "#1e3a7b" }}>{role.charAt(0)}</div>
+          <input value={text} onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && text.trim()) { onComment(text.trim()); setText(""); } }}
+            placeholder="Add what you know about this site…"
+            className="flex-1 px-3 py-1.5 text-[12px] border border-gray-200 rounded-full bg-white focus:outline-none focus:border-[#1e3a7b]" />
+          <button onClick={() => { if (text.trim()) { onComment(text.trim()); setText(""); } }} disabled={!text.trim()}
+            className="px-3 rounded-full text-white disabled:opacity-30" style={{ background: "#1e3a7b" }}><Send size={13} /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject: (id: string) => void; role?: string }) {
   const [reports, setReports] = useState<CitizenReport[]>(load);
   const [sort, setSort] = useState<"new" | "masid">("new");
   const [capturing, setCapturing] = useState(false);
   const [voted, setVoted] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const addComment = (reportId: string, text: string, replyTo?: string) =>
+    setReports(reports.map(r => r.id === reportId ? {
+      ...r, comments: [...r.comments,
+        { id: `c${Date.now()}`, author: role, text, at: Date.now(), masid: 0, replyTo }],
+    } : r));
+
+  const voteComment = (reportId: string, cid: string) => {
+    const k = `${reportId}:${cid}`;
+    if (voted.has(k)) return;
+    setVoted(new Set(voted).add(k));
+    setReports(reports.map(r => r.id === reportId ? {
+      ...r, comments: r.comments.map(c => c.id === cid ? { ...c, masid: c.masid + 1 } : c),
+    } : r));
+  };
 
   useEffect(() => save(reports), [reports]);
 
@@ -319,7 +449,8 @@ export function ReportsFeed({ onOpenProject }: { onOpenProject: (id: string) => 
               taken live — there is no way to attach an existing file — which stops the easy case but is not
               proof, since a virtual camera can defeat it. <strong>Masid counts measure attention, not
               truth</strong>: a widely shared wrong report will outrank an accurate one nobody saw. A real
-              deployment needs submission, moderation, an audit trail and a takedown route. None of that is
+              deployment needs submission, moderation, an audit trail and a takedown route — which matters
+              more once there are comments, since these threads name real companies. None of that is
               here.
             </div>
           </div>
@@ -379,7 +510,7 @@ export function ReportsFeed({ onOpenProject }: { onOpenProject: (id: string) => 
                       <div className="text-[11px] text-gray-500 mt-0.5">{p.municipality} · {p.dpwhStatus}</div>
                     </button>
                   )}
-                  <div className="flex items-center gap-3 text-[11px] text-gray-400 flex-wrap">
+                  <div className="flex items-center gap-3 text-[11px] text-gray-400 flex-wrap mb-2.5">
                     <span className="flex items-center gap-1"><Clock size={10} />{ago(r.capturedAt)}</span>
                     {r.metresFromContract != null && (
                       <span className="flex items-center gap-1" style={{ color: far ? "#c0272d" : "#046b04" }}>
@@ -391,7 +522,30 @@ export function ReportsFeed({ onOpenProject }: { onOpenProject: (id: string) => 
                     )}
                     {r.lat == null && <span className="flex items-center gap-1"><MapPin size={10} />no location fix — unverified</span>}
                   </div>
+
+                  <div className="flex items-center gap-1 pt-2.5 border-t border-gray-100">
+                    <button onClick={() => {
+                        const n = new Set(open); n.has(r.id) ? n.delete(r.id) : n.add(r.id); setOpen(n);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-500 hover:bg-gray-50 hover:text-[#1e3a7b]">
+                      <MessageSquare size={13} />
+                      {r.comments.length} comment{r.comments.length === 1 ? "" : "s"}
+                    </button>
+                    <button onClick={() => {
+                        navigator.clipboard?.writeText(`${location.origin}${location.pathname}#report-${r.id}`);
+                        setCopied(r.id); setTimeout(() => setCopied(null), 1400);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-500 hover:bg-gray-50 hover:text-[#1e3a7b]">
+                      <Link2 size={13} />{copied === r.id ? "Copied" : "Share"}
+                    </button>
+                  </div>
                 </div>
+
+                {open.has(r.id) && (
+                  <Thread report={r} role={role}
+                    onComment={(t, to) => addComment(r.id, t, to)}
+                    onVote={cid => voteComment(r.id, cid)} />
+                )}
               </div>
             </article>
           );

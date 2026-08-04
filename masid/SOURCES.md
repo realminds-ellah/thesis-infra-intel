@@ -337,9 +337,19 @@ accurate one nobody saw, and any public vote can be brigaded. The count is
 presented as what it is — how many people looked and agreed — never as a
 verification status.
 
+**Discussion.** Reports carry comment threads, flat with a single level of reply.
+Deeper nesting is where threads stop being read, and on a register naming real
+companies an argument buried four levels down is worse than none.
+
+Commenters are shown by **role, not username** — resident, district engineer,
+field inspector — because whether a remark comes from someone who lives beside
+the site or someone who signed the contract changes how it should be weighed, and
+the app already knows which is signed in.
+
 **Prototype.** There is no server. Reports live in the browser's localStorage and
 go nowhere. A real deployment needs submission, moderation, an audit trail and a
-takedown route; none of that exists here, and the banner on the page says so
+takedown route — which matters more once threads exist, because they name real
+companies; none of that exists here, and the banner on the page says so
 rather than letting anyone believe they have filed something.
 
 ## Relationship to BetterGov.ph
