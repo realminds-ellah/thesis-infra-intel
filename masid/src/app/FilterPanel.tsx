@@ -30,6 +30,8 @@ import {
 import { META, PROJECTS, type ProjectStatus } from "./data";
 import type { Role } from "./roles";
 import { ROLE_VIEWS } from "./roleFilters";
+import { ENCODINGS } from "./mapColor";
+import { suggestEncoding } from "./mapColor";
 
 const peso = (n: number) =>
   n >= 1e9 ? `₱${(n / 1e9).toFixed(2)}B` : `₱${Math.round(n / 1e6)}M`;
@@ -44,7 +46,7 @@ const STATUS_TINT: Record<ProjectStatus, { dot: string; bg: string; text: string
 export interface MapLayers { markers: boolean; boundaries: boolean; labels: boolean }
 
 export function FilterPanel({
-  filters, setFilters, collapsed, role = "dpwh-admin", layers, setLayers,
+  filters, setFilters, collapsed, role = "dpwh-admin", layers, setLayers, colorBy, setColorBy,
 }: {
   filters: Filters;
   setFilters: (f: Filters) => void;
@@ -52,6 +54,8 @@ export function FilterPanel({
   role?: Role;
   layers: MapLayers;
   setLayers: (l: MapLayers) => void;
+  colorBy: string | null;
+  setColorBy: (k: string | null) => void;
 }) {
   const view = ROLE_VIEWS[role] ?? ROLE_VIEWS["dpwh-admin"];
   const result = useMemo(() => applyFilters(filters), [filters]);
@@ -170,6 +174,17 @@ export function FilterPanel({
           <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
             <span>{peso(AMOUNT_BOUNDS[0])}</span><span>{peso(AMOUNT_BOUNDS[1])}</span>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="colour-by" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Colour dots by</label>
+          <select id="colour-by"
+            value={colorBy ?? suggestEncoding(filters as never)}
+            onChange={e => setColorBy(e.target.value)}
+            className="w-full text-[12px] border border-gray-200 rounded px-2.5 py-1.5 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
+            {ENCODINGS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+          {colorBy && <button onClick={() => setColorBy(null)} className="text-[10px] text-[#1e3a7b] hover:underline mt-1">follow the filter instead</button>}
         </div>
 
         <div>

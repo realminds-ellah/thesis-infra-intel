@@ -963,18 +963,17 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 // ─── Map Screen ───────────────────────────────────────────────────────────────
 
-function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role;layers:MapLayers}) {
+function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,colorBy}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role;layers:MapLayers;colorBy:string|null}) {
   const [selectedId,setSelectedId]=useState("");
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   // Colour follows the filter unless the user overrides it: setting a delivery
   // filter and then having to pick "colour by delivery" separately is a step
   // that should not exist.
-  const [colorOverride,setColorOverride]=useState<string|null>(null);
   // The filter wins if it implies an encoding; otherwise the role's default —
   // an inspector opens on delivery, an analyst on flood exposure.
   const roleDefault=(ROLE_VIEWS[role]??ROLE_VIEWS["dpwh-admin"]).defaultEncoding;
   const suggested=suggestEncoding(filters as never);
-  const encKey=colorOverride??(suggested==="priority"?roleDefault:suggested);
+  const encKey=colorBy??(suggested==="priority"?roleDefault:suggested);
   const enc=ENCODING_BY_KEY.get(encKey)!;
   const legend=useMemo(()=>legendFor(enc,projects),[enc,projects]);
   const [q,setQ]=useState("");
@@ -1128,28 +1127,20 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers}:{p
             <button aria-label="Zoom in"  className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomIn  size={14}/></button>
             <button aria-label="Zoom out" className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomOut size={14}/></button>
           </div>
-          <div className="absolute bottom-8 right-3 bg-white/95 border border-gray-200 rounded shadow-sm p-3 backdrop-blur-sm" style={{maxWidth:250}} role="group" aria-label="Map legend">
-            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Colour by</label>
-            <select value={encKey} onChange={e=>setColorOverride(e.target.value)}
-              className="w-full text-[12px] border border-gray-200 rounded px-2 py-1 bg-white mb-2 focus:outline-none focus:border-[#1e3a7b]">
-              {ENCODINGS.map(o=><option key={o.key} value={o.key}>{o.label}</option>)}
-            </select>
-            {/* Counts and words carry the meaning, not the colour on its own —
-                the palette clears every CVD gate but sits below 3:1 against the
-                basemap, and a labelled legend is the method's relief for that. */}
+          {/* A legend, not a second control panel. Everything adjustable lives
+              in the sidebar; this box only says what the colours mean. Two
+              panels with dropdowns is one panel too many. */}
+          <div className="absolute bottom-8 right-3 bg-white/95 border border-gray-200 rounded shadow-sm px-3 py-2.5 backdrop-blur-sm" style={{maxWidth:230}} role="group" aria-label="Map legend">
+            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{enc.label}</div>
             <div className="space-y-1">
               {legend.map(b=>(
                 <div key={b.key} className={`flex items-center gap-2 ${b.n===0?"opacity-40":""}`}>
-                  <svg width={14} height={14} viewBox="-7 -7 14 14" className="shrink-0" aria-hidden>
-                    <path d={markPath(b.shape,5)} fill={b.color} stroke={BASEMAP.surface} strokeWidth={1.5} strokeLinejoin="round"/>
-                  </svg>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{background:b.color,boxShadow:`0 0 0 1.5px ${BASEMAP.surface}`}}/>
                   <span className="text-[11px] text-gray-600 flex-1 leading-tight">{b.label}</span>
                   <span className="text-[10px] font-mono text-gray-400 tabular-nums">{b.n.toLocaleString()}</span>
                 </div>
               ))}
             </div>
-            <p className="text-[10px] text-gray-400 mt-2 leading-snug">{enc.note}</p>
-            {colorOverride&&<button onClick={()=>setColorOverride(null)} className="text-[10px] text-[#1e3a7b] hover:underline mt-1">follow filter</button>}
           </div>
           {filtered.length===0&&(
             <div className="absolute inset-0 flex items-center justify-center bg-white/80">
@@ -1800,6 +1791,7 @@ export default function App() {
   // which is the whole point of a transparency register.
   const [filters,setFilters]          = useState<Filters>(()=>fromQuery(window.location.search.slice(1)));
   const [mapLayers,setMapLayers]      = useState<MapLayers>({markers:true,boundaries:true,labels:true});
+  const [colorBy,setColorBy]          = useState<string|null>(null);   // null = follow the filter
 
 
   const handleViewDetail = (id:string) => { setSelId(id); setScreen("project-detail"); };
@@ -1858,11 +1850,11 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} layers={mapLayers} setLayers={setMapLayers}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} layers={mapLayers} setLayers={setMapLayers} colorBy={colorBy} setColorBy={setColorBy}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
-          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers}/>}
+          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers} colorBy={colorBy}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
