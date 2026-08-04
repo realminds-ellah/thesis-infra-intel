@@ -64,6 +64,15 @@ DOC_FIELDS = ["advertisement", "contractAgreement", "noticeOfAward",
               "noticeToProceed", "programOfWork", "engineeringDesign"]
 
 
+def parse_amount(series):
+    """Some money values carry thousands separators ("10,947,829.50"). Parsing
+    without stripping them returns NaN silently — it dropped 3,063 national rows
+    from an earlier run of this file with no error and no warning."""
+    return pd.to_numeric(
+        series.astype(str).str.replace(",", "", regex=False).str.strip(),
+        errors="coerce")
+
+
 def as_list(x):
     return [] if x is None or isinstance(x, float) else list(x)
 
@@ -106,8 +115,8 @@ def main() -> int:
 
     # ── national baseline, computed before narrowing ─────────────────────────
     nat = df[df.category.astype(str).str.contains("Flood", case=False, na=False)].copy()
-    nat["abcN"] = pd.to_numeric(nat.abc, errors="coerce")
-    nat["awN"] = pd.to_numeric(nat.awardAmount, errors="coerce")
+    nat["abcN"] = parse_amount(nat.abc)
+    nat["awN"] = parse_amount(nat.awardAmount)
     nat["ratio"] = nat.awN / nat.abcN
     nat = nat.dropna(subset=["ratio"])
     nat["whole"] = np.abs(nat.ratio * 100 - np.round(nat.ratio * 100)) < 0.01
@@ -136,7 +145,7 @@ def main() -> int:
     # ── the office ───────────────────────────────────────────────────────────
     office = df[df.province == args.deo].copy()
     office["ident"] = office.bidders.map(lambda x: winner_identity(x)[0])
-    office["amt"] = pd.to_numeric(office.awardAmount, errors="coerce").fillna(office.budget)
+    office["amt"] = parse_amount(office.awardAmount).fillna(office.budget)
     named = office[office.ident != ""]
     conc = named.groupby("ident").amt.agg(["sum", "size"])
     conc["share"] = conc["sum"] / conc["sum"].sum()
@@ -147,8 +156,8 @@ def main() -> int:
     d = df[df.category.astype(str).str.contains("Flood", case=False, na=False)
            & (df.province == args.deo)].copy().reset_index(drop=True)
     n = len(d)
-    d["abcN"] = pd.to_numeric(d.abc, errors="coerce")
-    d["awN"] = pd.to_numeric(d.awardAmount, errors="coerce")
+    d["abcN"] = parse_amount(d.abc)
+    d["awN"] = parse_amount(d.awardAmount)
     d["ratio"] = d.awN / d.abcN
     ad = pd.to_datetime(d.advertisementDate, errors="coerce")
     bs = pd.to_datetime(d.bidSubmissionDeadline, errors="coerce")

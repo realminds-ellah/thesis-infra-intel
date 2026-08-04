@@ -295,6 +295,44 @@ the boundaries shown are the same ones the flags were computed against.
 
 ---
 
+## Filtering
+
+The register is filtered by faceted multi-select, not by dropdowns. Four
+principles, each of which the previous sidebar broke:
+
+- **Every facet is multi-select.** A single-select municipality dropdown forces a
+  choice between Calumpit and Hagonoy when the question usually spans several.
+- **Every option carries a live count**, computed against all *other* active
+  filters with its own facet excluded. Without the exclusion, selecting one status
+  drops every other status to zero and the panel stops informing.
+- **Delivery states, not just paperwork status.** DPWH's five status values
+  describe documents. `overdue` (256), `stalled` (125), `rebuilt at the same site`
+  (142) and `completed with nothing disbursed` (962) describe the ground.
+- **State lives in the URL.** A filtered view is a shareable link, which is the
+  point of a public register.
+
+### "Completed but damaged"
+
+There is no such field in any public dataset, and inventing one would be a guess.
+The closest honest proxy is **recurrence**: work carried out again at the same
+coordinate in a *later* year. A flood-control structure that has to be redone is
+one that failed, was washed out, or was never there. 142 contracts sit on sites
+rebuilt in a later year, and 117 of those already carry a records flag.
+
+Same-year repeats are excluded — those are normally phases of one job rather than
+a rebuild.
+
+### The amount filter
+
+The old control was a single handle over a hard-coded ₱5M–₱100M. That silently
+excluded the **twelve largest contracts in the register — ₱1.66 B, 3% of all
+value** — which is precisely the tail an auditor cares about. It also filtered on
+`budget`, the column verification showed to be the approved budget on 55% of rows
+and the award on 43%.
+
+It is now a dual-handle range over `awardAmount`, bounded by the real data
+(₱950K–₱209.5M), with the distribution drawn behind it.
+
 ## What is deliberately absent
 
 The consolidated data request asks DPWH for five categories. Two arrived free.

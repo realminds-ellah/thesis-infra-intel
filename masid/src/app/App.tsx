@@ -25,6 +25,8 @@ import {
   PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
+import { FilterPanel } from "./FilterPanel";
+import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -761,114 +763,9 @@ function TopNav({screen,onNavigate,onToggleSidebar,onToggleNotifications,unreadC
 
 // ─── Left Sidebar ─────────────────────────────────────────────────────────────
 
-function LeftSidebar({collapsed,filters,onToggleStatus,projects}:{
-  collapsed:boolean;filters:Record<ProjectStatus,boolean>;onToggleStatus:(s:ProjectStatus)=>void;projects:Project[];
-}) {
-  const [budgetMax,setBudgetMax]=useState(100);
-  const [municipality,setMunicipality]=useState("all");
-  const [layersOn,setLayersOn]=useState([true,true,false,false]);
-  const municipalities=["All Municipalities","Angat","Balagtas","Baliuag","Bocaue","Bustos","Calumpit","Guiguinto","Hagonoy","Malolos","Marilao","Meycauayan","Norzagaray","Obando","Paombong","Pandi","Plaridel","Pulilan","San Jose del Monte","Sta. Maria"];
-  // Only layers backed by loaded data. River network and flood hazard zones need
-  // UP-NOAH / DPWH datasets that are not part of this build.
-  const layers=["Project Markers","Municipal Boundaries","Municipality Labels"];
-
-  const counts = useMemo(()=>({
-    completed: projects.filter(p=>p.status==="completed").length,
-    ongoing:   projects.filter(p=>p.status==="ongoing").length,
-    flagged:   projects.filter(p=>p.status==="flagged").length,
-    proposed:  projects.filter(p=>p.status==="proposed").length,
-    terminated:projects.filter(p=>p.status==="terminated").length,
-  }),[projects]);
-
-  if(collapsed) return (
-    <aside className="w-11 shrink-0 border-r border-gray-200 bg-white flex flex-col items-center py-3 gap-2" aria-label="Collapsed filter sidebar">
-      <div className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 cursor-pointer" title="Filters"><Filter size={14}/></div>
-      <div className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100 cursor-pointer" title="Layers"><Layers size={14}/></div>
-    </aside>
-  );
-
-  const activeFilterCount=[municipality!=="all",budgetMax<100].filter(Boolean).length;
-
-  return (
-    <aside className="w-60 shrink-0 border-r border-gray-200 bg-white flex flex-col overflow-hidden" aria-label="Filter sidebar">
-      <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-          Filters {activeFilterCount>0&&<span className="text-[10px] bg-[#1e3a7b] text-white rounded-full px-1.5 font-bold">{activeFilterCount}</span>}
-        </span>
-        <button onClick={()=>{setMunicipality("all");setBudgetMax(100);}} className="text-[11px] text-[#1e3a7b] hover:underline font-medium">Reset</button>
-      </div>
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5" style={{scrollbarWidth:"none"}}>
-        <div>
-          <label htmlFor="muni-select" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Municipality</label>
-          <select id="muni-select" value={municipality} onChange={e=>setMunicipality(e.target.value)}
-            className="w-full text-[12px] border border-gray-200 rounded px-2.5 py-1.5 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
-            {municipalities.map(m=><option key={m} value={m.toLowerCase()}>{m}</option>)}
-          </select>
-          {municipality!=="all"&&<div className="mt-1.5"><FilterChip label={municipality} onRemove={()=>setMunicipality("all")}/></div>}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
-          <div className="space-y-2">
-            {(["completed","ongoing","flagged","proposed","terminated"] as ProjectStatus[]).map(key=>{
-              const c=STATUS_CFG[key];
-              return (
-                <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
-                  <div onClick={()=>onToggleStatus(key)} role="checkbox" aria-checked={filters[key]} tabIndex={0}
-                    onKeyDown={e=>e.key===" "&&onToggleStatus(key)}
-                    className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all focus:outline-none focus:ring-2 focus:ring-[#1e3a7b]"
-                    style={filters[key]?{background:c.dot,borderColor:c.dot}:{background:"#fff",borderColor:"#d1d5db"}}>
-                    {filters[key]&&<Check size={9} color="#fff"/>}
-                  </div>
-                  <span className="flex-1 text-[12px] text-gray-600 group-hover:text-gray-900">{c.label}</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded font-medium" style={{background:c.bg,color:c.text}}>{counts[key]}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <label htmlFor="contractor-search" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Contractor</label>
-          <div className="relative"><Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input id="contractor-search" placeholder="Search contractor…" className="w-full pl-7 pr-3 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 placeholder-gray-400 focus:outline-none focus:border-[#1e3a7b]"/></div>
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="budget-range" className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Budget</label>
-            <span className="text-[11px] font-mono text-gray-500">≤ ₱{budgetMax}M</span>
-          </div>
-          <input id="budget-range" type="range" min={5} max={100} value={budgetMax} onChange={e=>setBudgetMax(+e.target.value)} className="w-full accent-[#1e3a7b]" aria-valuemin={5} aria-valuemax={100} aria-valuenow={budgetMax}/>
-          <div className="flex justify-between text-[10px] text-gray-400 mt-0.5"><span>₱5M</span><span>₱100M+</span></div>
-          {budgetMax<100&&<div className="mt-1.5"><FilterChip label={`Budget ≤ ₱${budgetMax}M`} onRemove={()=>setBudgetMax(100)}/></div>}
-        </div>
-        <div>
-          <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Map Layers</label>
-          <div className="space-y-2">
-            {layers.map((l,i)=>(
-              <div key={l} className="flex items-center justify-between">
-                <span className="text-[12px] text-gray-600">{l}</span>
-                <button onClick={()=>setLayersOn(p=>p.map((v,j)=>j===i?!v:v))} role="switch" aria-checked={layersOn[i]} aria-label={`Toggle ${l}`}
-                  className="w-8 rounded-full relative flex items-center transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b]"
-                  style={{background:layersOn[i]?"#1e3a7b":"#e2e8f0",height:18}}>
-                  <div className="absolute w-3.5 h-3.5 bg-white rounded-full shadow transition-transform" style={{left:2,transform:layersOn[i]?"translateX(14px)":"translateX(0)"}}/>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-gray-100 p-3">
-        <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Bulacan Summary</div>
-        <div className="grid grid-cols-2 gap-2">
-          {([[projects.length.toLocaleString(),"Projects","#eef2f9","#1e3a7b"],[String(counts.flagged),"Flagged","#fffbeb","#b45309"],[String(counts.completed),"Completed","#f0fdf4","#15803d"],[String(counts.ongoing),"Ongoing","#eff6ff","#1d4ed8"]] as [string,string,string,string][]).map(([v,l,bg,c])=>(
-            <div key={l} className="rounded p-2" style={{background:bg}}>
-              <div className="font-mono text-xl font-bold" style={{color:c}}>{v}</div>
-              <div className="text-[10px] text-gray-500">{l}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </aside>
-  );
-}
+// LeftSidebar was replaced by FilterPanel (src/app/FilterPanel.tsx): five status
+// checkboxes and a single-handle budget slider, versus faceted multi-select with
+// live counts, data-derived ranges and shareable URL state.
 
 // ─── Dashboard Screen ─────────────────────────────────────────────────────────
 
@@ -1063,7 +960,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 // ─── Map Screen ───────────────────────────────────────────────────────────────
 
-function MapScreen({projects,onViewDetail,filters,onToggleStatus}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Record<ProjectStatus,boolean>;onToggleStatus:(s:ProjectStatus)=>void}) {
+function MapScreen({projects,onViewDetail,filters,onClearFilters}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void}) {
   const [selectedId,setSelectedId]=useState("");
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   const [q,setQ]=useState("");
@@ -1074,7 +971,7 @@ function MapScreen({projects,onViewDetail,filters,onToggleStatus}:{projects:Proj
   const pg=usePagination(filtered.length,8);
 
   const selected=projects.find(p=>p.id===selectedId)??null;
-  const inactiveStatuses=(Object.keys(filters)as ProjectStatus[]).filter(k=>!filters[k]);
+  const nActive=activeCount(filters);
 
   const SlidePanel=({project}:{project:Project})=>{
     const c=STATUS_CFG[project.status];
@@ -1118,10 +1015,10 @@ function MapScreen({projects,onViewDetail,filters,onToggleStatus}:{projects:Proj
             <span className="font-mono">{PROJECTS.length-META.coverage.withCoordinates+OFF_MAP.length}</span> not mappable
           </span>
         </div>
-        {inactiveStatuses.length>0&&(
+        {nActive>0&&(
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-gray-400">Hidden:</span>
-            {inactiveStatuses.map(s=><FilterChip key={s} label={STATUS_CFG[s].label} onRemove={()=>onToggleStatus(s)}/>)}
+            <span className="text-[11px] text-gray-400">{nActive} filter{nActive===1?"":"s"} active</span>
+            <button onClick={onClearFilters} className="text-[11px] text-[#1e3a7b] hover:underline">clear all</button>
           </div>
         )}
         <div className="flex-1"/>
@@ -1792,9 +1689,11 @@ export default function App() {
   const [paletteOpen,setPalette]      = useState(false);
   const [createModalOpen,setCreate]   = useState(false);
   const [notifications,setNotifications] = useState(NOTIFICATIONS);
-  const [filters,setFilters]          = useState<Record<ProjectStatus,boolean>>({completed:true,ongoing:true,flagged:true,proposed:true,terminated:true});
+  // Filters initialise from the URL so a filtered view can be shared as a link,
+  // which is the whole point of a transparency register.
+  const [filters,setFilters]          = useState<Filters>(()=>fromQuery(window.location.search.slice(1)));
 
-  const toggleStatus  = (s:ProjectStatus) => setFilters(p=>({...p,[s]:!p[s]}));
+
   const handleViewDetail = (id:string) => { setSelId(id); setScreen("project-detail"); };
   const handleLogin   = (role:Role) => { setUserRole(role); setIsLoggedIn(true); setScreen(role==="public"?"transparency":"dashboard"); toast.success(`Welcome back${role==="public"?"":", A. Reyes"}!`); };
   const handleLogout  = () => { setIsLoggedIn(false); toast.info("Signed out."); };
@@ -1812,7 +1711,11 @@ export default function App() {
     return ()=>window.removeEventListener("keydown",handler);
   },[]);
 
-  const visibleProjects = PROJECTS.filter(p=>filters[p.status]);
+  const visibleProjects = useMemo(()=>applyFilters(filters),[filters]);
+  useEffect(()=>{
+    const qs=toQueryString(filters);
+    window.history.replaceState(null,"",qs?`?${qs}`:window.location.pathname);
+  },[filters]);
   const selectedProject = PROJECTS.find(p=>p.id===selectedProjectId)??PROJECTS[0];
   const unreadCount     = notifications.filter(n=>!n.read).length;
   const canCreate       = ["dpwh-admin","dpwh-engineer"].includes(userRole);
@@ -1847,11 +1750,11 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <LeftSidebar collapsed={sidebarCollapsed} filters={filters} onToggleStatus={toggleStatus} projects={PROJECTS}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
-          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onToggleStatus={toggleStatus}/>}
+          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
           {screen==="documents"    &&<DocumentsScreen/>}

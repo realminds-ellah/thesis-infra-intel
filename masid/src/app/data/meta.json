@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-03T14:13:11Z",
+  "generated": "2026-08-04T04:36:51Z",
   "areaOfInterest": "Bulacan 1st DEO",
   "coverage": {
     "projects": 1293,
@@ -8,6 +8,9 @@
     "yearMax": 2025,
     "totalBudget": 67747217854.71,
     "withCoordinates": 1191,
+    "overdue": 256,
+    "stalled": 125,
+    "atRebuiltSites": 142,
     "flagged": 310,
     "municipalitiesServed": [
       "Angat",
