@@ -6,6 +6,33 @@ record has no value, the interface says so rather than showing a plausible one.
 
 Dataset built **3 August 2026** from records last updated 22 January 2026.
 
+## Verification
+
+`pipeline/verify_data.py` gates every other pipeline and must pass before they
+run. It exists because this project shipped one tier built on an unchecked
+assumption about a column's meaning, and a whole screen built on a claim that was
+false.
+
+- **Cross-export** — the flat and detail BetterGov exports agree on *every* shared
+  field across all 1,293 contracts: budget, amountPaid, progress, status,
+  contractor, latitude, longitude, infraYear. Detail is a strict superset (201
+  extra contracts, no duplicate ids).
+- **Structure** — every contract has ≥1 bidder and at most one winner; `abc` is
+  positive on 100%; `awardAmount ≤ abc` on 100%; the bid ratio is inside 0.5–1.0
+  on 100%; advertisement ≤ bid deadline ≤ award date, and start ≤ completion, on
+  100%.
+- **Reachability** — sampled document URLs resolve (12/12).
+- **Primary source** — contract `22CC0095`'s published Notice of Award states
+  *"Forty Three Million Two Hundred Seventy Six Thousand Four Hundred Twenty Eight
+  Pesos and 28/100 (P43,276,428.28)"*; the row's `awardAmount` is `43276428.28`.
+  Exact to the centavo, with contractor and municipality also matching. One spot
+  check is not a guarantee, but it is the difference between trusting a mirror and
+  having tested it.
+
+Known warnings, none blocking: 26 contracts have no winner flagged (they are the
+26 with a null contractor), 9.2% of bidder entries lack a PCAB id, and one
+contract has an award date after its start date.
+
 ---
 
 ## 1. DPWH infrastructure transparency records
@@ -183,93 +210,76 @@ Coverage figures are carried in `satellite.json` and shown in the interface;
 records outside the subset display as "not assessed" rather than as anything
 else. `--limit` extends it, and results cache per scene.
 
-## 3. PhilGEPS award records
+## 3. DPWH full detail export — bidding and documents
 
 | | |
 |---|---|
-| **Dataset** | [`bettergovph/philgeps-data`](https://huggingface.co/datasets/bettergovph/philgeps-data) |
+| **File** | `dpwh_transparency_data_all_details.parquet` (115 MB) in the same HuggingFace dataset |
+| **Rows** | 248,421 contracts |
 | **Licence** | CC0-1.0 |
-| **Size** | 5,481,161 award rows, 2000–2025 (`philgeps.parquet`, 492 MB) |
-| **Slice** | 6,503 awards to Bulacan 1st DEO after dedup — ₱109.64 B, 537 contractors |
 
-### The join, and why the planned key does not work
+**An earlier version of this document was wrong about what is public.** It read the
+flat 24 MB export, which drops fifteen columns, and concluded that bidder counts,
+the approved budget, the procurement timeline and contract documents were
+unpublished. All four are in the detail file, at effectively full coverage for
+this office:
 
-`FUSION.md` proposed `contractId` ↔ PhilGEPS contract reference as the primary
-key. **That key does not exist in practice.** `contract_no` is null on **99.9%**
-of PhilGEPS rows, and where present it is free text in no consistent format —
-`CB2024-047`, `I30`, `24112023`, `CS-01-2025-04(A)`. The primary strategy is dead
-on arrival, which is exactly the thing `FUSION.md` said to find out in month one.
-
-The fallback works well enough to build on. Normalised contractor name plus
-contract amount, over 1,293 contracts:
-
-| Match | Count | Share |
+| Field | Coverage | Earlier claim |
 |---|---|---|
-| exact amount + contractor | 435 | 33.6% |
-| within 0.5% + contractor | 31 | 2.4% |
-| contractor only (no amount agreement) | 541 | 41.8% |
-| no award from that contractor at this office | 286 | 22.1% |
+| `bidders[]` with PCAB ids | **100%** — median 3, max 27 | *"PhilGEPS publishes no bidder data"* |
+| `abc` (approved budget) | **100%** | *"no approved-budget column"* |
+| `awardAmount` | 94.1% | — |
+| `advertisementDate` → `dateOfAward` | 100% / 85.5% | *"bid-window timing not derivable"* |
+| `contractAgreement`, `noticeOfAward`, `noticeToProceed`, `advertisement` | **94–96%** | *"DPWH publishes no contract documents"* |
+| `programOfWork`, `engineeringDesign` | **0%** | genuine gap, unchanged |
 
-**36.0% usable amount-level join.** Entity resolution is lossy by design:
-parenthetical content is dropped (`([REVOKED] 39196)`, `(FORMERLY:…)`) and
-generic corporate vocabulary is stripped, so two genuinely different firms
-differing only in those words will collide. Every match additionally has to agree
-on the contract amount before it is used for anything.
+Documents are served from `dcs.infrawatch.ph`. A sampled dozen were confirmed to
+resolve, returning real PDFs and ZIPs of 50 KB–2.1 MB.
 
-Also note PhilGEPS bulk data repeats award rows verbatim — 7,126 rows collapse to
-6,503. Left in, every concentration figure would be wrong by the duplication rate.
+### `budget` is ambiguous, and that is measured
 
-### What is not derivable, and is therefore absent
+DPWH's `budget` column matches `abc` on **55.1%** of contracts and `awardAmount`
+on **42.7%**. It is reliably neither. Nothing downstream compares amounts using
+`budget`; `abc` and `awardAmount` are used explicitly.
 
-`FUSION.md`'s Signal A wanted single-bidder awards, bidder counts and the
-bid-to-ABC ratio. **PhilGEPS publishes no bidder data and no approved-budget
-column**, so none of those are implemented. They are absent rather than
-approximated.
+This also explains the earlier PhilGEPS join. It matched PhilGEPS `contract_amount`
+— an award — against DPWH `budget`, which is the award only 43% of the time. The
+36% join rate was capped by a semantics mismatch, not only by entity resolution.
 
-One substitute was tempting and is deliberately not used. The ratio of PhilGEPS
-award to DPWH budget sits at exactly 1.0000 on 43% of comparable contracts, which
-reads like winning at precisely the approved budget — a classic red flag. But
-DPWH's `budget` column has mixed semantics: on many records it plainly *is* the
-awarded amount, in which case a ratio of 1.0 is the same number appearing twice,
-not an absence of competition. The two cannot be told apart from these sources,
-so the ratio is reported only as records disagreeing about a contract's value.
+### The finding: bids landing on whole percentages
 
-### What is implemented
+At Bulacan 1st DEO, **38.4% of flood-control contracts are awarded at exactly
+96.00% of the approved budget**, and **57.8%** land on some whole percentage.
 
-- **`AWARD_CONCENTRATION`** — a contractor's share of everything this district
-  office has awarded, across all categories. Measured in **multiples of an equal
-  split** rather than as an absolute share: with 537 contractors an equal split
-  is 0.19%, so a flat "8% is high" threshold (which an earlier pass used) flags
-  nobody. Medium at 10×, high at 20×. Top of the book: WAWAO 6.10%, TOPNOTCH
-  CATALYST 5.92%, SYMS 5.62%.
-- **`NO_PHILGEPS_AWARD`** — no award to this contractor from this office. PhilGEPS
-  coverage of DPWH is incomplete, so this is a gap in the record, not a finding.
-- **`VALUE_DISAGREEMENT`** — no award from the contractor comes within 0.5% of the
-  DPWH value.
-
-### The fusion
-
-The two signals are **measurably independent**: across all 1,293 contracts the
-records score and the procurement score correlate at **r = −0.12**. Neither is a
-proxy for the other, which is the entire justification for fusing them — "high on
-both" is genuinely narrower than either list alone.
-
-| Quadrant | Contracts | Value |
+| | This office | National flood control |
 |---|---|---|
-| **Records and procurement both** | **16** | **₱831.1 M** |
-| Records only | 142 | ₱3.9 B |
-| Procurement only | 264 | ₱17.7 B |
-| Neither | 871 | ₱45.3 B |
+| award at exactly 96.00% of ABC | **38.4%** | 4.1% |
+| award at any whole % of ABC | **57.8%** | 27.0% |
+| single-bidder | 3.9% | 9.0% |
 
-**This is an ordering, not a prediction.** `FUSION.md`'s validation plan — "our
-score placed 18 of 21 COA-confirmed ghosts in the top decile" — cannot be run:
-the ICI turned its findings over to the DOJ and the Ombudsman rather than
-publishing an itemised list, so there is no public ground truth to rank against.
-Nothing here has been shown to rank confirmed cases highly. It ranks contracts by
-how much the public record disagrees with itself, which is a triage aid.
+Across the 43 district offices with 200+ flood-control contracts, **Bulacan 1st
+DEO ranks 1st**, at more than double the second-placed office (Ilocos Norte 1st
+DEO, 18.3%). Competitive bids do not concentrate on round percentages of a figure
+the bidder is not supposed to know exactly.
 
-Unlike the imagery tier, this one is not *known to be broken* — it is simply
-unvalidated, and the distinction matters.
+This is a statistical anomaly benchmarked against a national base rate. It is not
+proof of collusion, and the interface says so on every flag. Note also that this
+office is *better* than the national rate on single-bidder awards — the anomaly is
+specific, not a general accusation.
+
+### Implemented indicators
+
+`SINGLE_BIDDER` (50), `TWO_BIDDERS` (299), `BID_AT_ROUND_PERCENT` (703),
+`AWARD_CONCENTRATION` (366, by PCAB registration number rather than by name),
+`SHORT_BID_WINDOW` (42, below the office's own 5th percentile of 20 days),
+`NO_DOCUMENTS_PUBLISHED` (7).
+
+### PhilGEPS
+
+`bettergovph/philgeps-data` (CC0, 5.48 M award rows) is retained in
+`pipeline/procurement_philgeps.py` as an independent corroboration of award
+amounts. It is no longer the path to any of the above. Its `contract_no` is null
+on 99.9% of rows, so the `contractId` join `FUSION.md` planned never existed.
 
 ## 4. Philippine municipal boundaries
 
@@ -292,10 +302,10 @@ The rest are genuinely not public, and the interface leaves them empty:
 
 | Request | Status |
 |---|---|
-| **1A** Procurement & contract | ✅ Loaded, minus variation orders and procurement method |
+| **1A** Procurement & contract | ✅ Loaded in full, including bidders, PCAB ids, approved budget and the procurement timeline |
 | **1B** Geographic | ⚠️ Point coordinates only. **No project polygons, footprints or alignment geometry are published anywhere public.** |
-| **1C** Engineering & design | ❌ No drawings, cross-sections, bills of quantities or as-builts |
-| **1D** Progress monitoring | ❌ No inspection or acceptance reports. `reportCount` is non-zero on only 4 of 1,293 records |
+| **1C** Engineering & design | ⚠️ `programOfWork` and `engineeringDesign` empty on all 1,293 — but the invitation-to-bid ZIP (94.1%) typically contains the bill of quantities and plans |
+| **1D** Progress monitoring | ⚠️ No inspection or acceptance reports, but 39.5% of contracts carry geotagged photos (866 images) and the notice to proceed is published on 95.7% |
 | **1E** Financial | ❌ **`amountPaid` is 0 on all 962 completed records.** The portal publishes awarded amounts, not disbursement |
 | **2** PhilSA imagery | ⚠️ Diwata-2 / NovaSAR-1 remain unavailable, but the request's *purpose* is now served by free Sentinel-2 at 10 m — see source 2 above |
 

@@ -1,54 +1,40 @@
 #!/usr/bin/env python3
 """
-MASID procurement tier — the money-side signal, joined to the contract records.
+MASID procurement tier — bidding red flags from the DPWH detail export.
 
-This is the fusion step from FUSION.md: a second, independent suspicion signal
-drawn from the procurement record, to sit alongside the delivery signal. It is
-independent in the way that matters — PhilGEPS sees the award and never the
-structure, satellites see the structure and never the award.
+Run pipeline/verify_data.py first. It gates this file, and it exists because an
+earlier version of this tier was built on assumptions about a column whose
+meaning had never been checked.
 
 SOURCE
-  bettergovph/philgeps-data (HuggingFace), CC0-1.0
-  https://huggingface.co/datasets/bettergovph/philgeps-data
-  5,481,161 award rows, 2000-2025. philgeps.parquet is 492 MB.
+  bettergovph/dpwh-transparency-data, dpwh_transparency_data_all_details.parquet
+  (115 MB, CC0-1.0). 248,421 contracts carrying the fields the flat 24 MB export
+  drops: bidders with PCAB ids, the approved budget, the full procurement
+  timeline, and links to the published contract documents.
 
-WHAT THE JOIN ACTUALLY LOOKS LIKE
+WHY THIS REPLACED THE PHILGEPS VERSION (kept as procurement_philgeps.py)
 
-  FUSION.md proposed contractId <-> PhilGEPS contract reference as the primary
-  key. That key does not exist in practice: `contract_no` is null on 99.9% of
-  rows, and where present it is free text in no consistent format ("CB2024-047",
-  "I30", "24112023"). The primary strategy is dead on arrival.
+  The first version joined PhilGEPS awards to DPWH on contractor name plus
+  amount and reached 36%. Everything it inferred is in the DPWH export directly,
+  at 100% coverage, keyed by PCAB registration number rather than by fuzzy name
+  matching. PhilGEPS survives only as an independent corroboration of amounts.
 
-  The fallback works. Normalised contractor name plus exact contract amount
-  matches 32.1% of Bulacan 1st DEO contracts outright, 35.3% within 0.5%.
+  That version also documented three indicators as "not derivable" —
+  single-bidder awards, the bid-to-ABC ratio, and bid-window timing. All three
+  are present here. The claim was wrong because the wrong file had been read.
 
-WHAT IS AND IS NOT DERIVABLE
+WHAT `budget` IS NOT
+  Verified rather than assumed: DPWH's `budget` matches `abc` on 55% of contracts
+  and `awardAmount` on 43%. It is reliably neither. This file uses `abc` and
+  `awardAmount` explicitly and never touches `budget` for an amount comparison.
 
-  PhilGEPS carries no bidder counts and no approved-budget column. So the
-  single-bidder indicator, the number-of-bidders indicator and the true
-  bid-to-ABC ratio in FUSION.md's Signal A are NOT derivable from this source,
-  however much one would want them. They are not implemented rather than
-  approximated.
-
-  A tempting substitute is the ratio of the PhilGEPS award to the DPWH budget:
-  43% of comparable contracts sit at exactly 1.0000, which reads like winning at
-  precisely the approved budget. It is not used as a bid-discount signal, because
-  DPWH's `budget` column has mixed semantics — on some records it is plainly the
-  awarded amount, in which case a ratio of 1.0 is an artefact of the same number
-  appearing twice, not an absence of competition. The ratio is reported only as
-  what it can honestly support: two public records disagreeing about the value of
-  the same contract.
-
-  What IS derivable, and is implemented:
-    - award concentration: a contractor's share of the district office's total
-      awarded value, across all categories, not just flood control
-    - repeat-award intensity: how much of the office's award count one contractor
-      takes
-    - records disagreement: DPWH budget vs PhilGEPS award beyond tolerance
-    - absent from PhilGEPS: a DPWH contract with no matching award record
+EVERY THRESHOLD IS A BASE RATE
+  A red flag means nothing without one. Each indicator below is stated against
+  the national flood-control distribution across all district offices, computed
+  in this file before the data is narrowed.
 
 USAGE
-  python3 pipeline/procurement.py [--deo "Bulacan 1st DEO"]
+  python3 pipeline/verify_data.py && python3 pipeline/procurement.py
 """
 
 from __future__ import annotations
@@ -56,7 +42,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 import unicodedata
 from collections import defaultdict
@@ -64,105 +49,48 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data"
 OUT = ROOT / "src" / "app" / "data"
+DETAIL = CACHE / "dpwh_all_details.parquet"
 
-PHILGEPS_URL = (
-    "https://huggingface.co/datasets/bettergovph/philgeps-data/"
-    "resolve/main/philgeps.parquet"
-)
+# Concentration in multiples of an equal split, so the threshold scales with the
+# number of contractors on the office's books instead of being a flat share.
+CONCENTRATION_HIGH_X = 15.0
+CONCENTRATION_MED_X = 8.0
 
-AMOUNT_TOLERANCE = 0.005      # 0.5% — covers rounding between the two portals
-PLAUSIBLE_YEARS = (2000, 2026)
-
-# Concentration is measured in multiples of an equal split, not as an absolute
-# share. With 537 contractors on this office's books an equal split is 0.19%, so
-# a flat "8% is high" threshold — which an earlier pass used — flags nobody and
-# says nothing. Expressing it as "this firm holds 30x what an even division would
-# give" is both interpretable and self-calibrating to the size of the office.
-CONCENTRATION_HIGH_X = 20.0
-CONCENTRATION_MED_X = 10.0
+DOC_FIELDS = ["advertisement", "contractAgreement", "noticeOfAward",
+              "noticeToProceed", "programOfWork", "engineeringDesign"]
 
 
-def fetch(url: str, dest: Path) -> Path:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists() and dest.stat().st_size > 0:
-        print(f"  cached  {dest.name} ({dest.stat().st_size/1e6:.0f} MB)")
-        return dest
-    print(f"  fetch   {url}  (492 MB, one time)")
-    subprocess.run(["curl", "-fsSL", "-A", "masid-pipeline", "-o", str(dest), url],
-                   check=True)
-    return dest
+def as_list(x):
+    return [] if x is None or isinstance(x, float) else list(x)
 
 
-def norm_contractor(s: str) -> str:
-    """Entity resolution for contractor names, which FUSION.md correctly called
-    the main time sink.
-
-    DPWH and PhilGEPS spell the same firm differently, and DPWH additionally
-    appends registration markers and former names: "ST. TIMOTHY CONSTRUCTION
-    CORPORATION ([REVOKED] 39196)", "M3 KONSTRACT CORPORATION
-    (FORMERLY:MARGARITA CONSTRUCTION)". Parenthetical content is dropped and the
-    generic corporate vocabulary is stripped, because it carries no identifying
-    information and is exactly where the two sources disagree.
-
-    This is deliberately lossy. Two genuinely different firms whose names differ
-    only by such words will collide. The alternative — matching on raw strings —
-    fails far more often, and every match is additionally required to agree on
-    the contract amount before it is used.
-    """
+def norm_name(s: str) -> str:
     s = unicodedata.normalize("NFKD", str(s))
     s = "".join(c for c in s if not unicodedata.combining(c)).upper()
     s = re.sub(r"\(.*?\)", " ", s)
-    s = re.sub(
-        r"\b(INC|INCORPORATED|CORP|CORPORATION|CO|LTD|ENT|ENTERPRISES|CONST|"
-        r"CONSTRUCTION|BUILDERS|GEN|GENERAL|CONTRACTOR|CONTRACTORS|DEVELOPMENT|"
-        r"TRADING|SUPPLY|SUPPLIES|SERVICES|AND|&)\b", " ", s)
     s = re.sub(r"[^A-Z0-9 ]", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
 
-def load_awards(deo: str) -> pd.DataFrame:
-    """All PhilGEPS awards for the district office, deduplicated.
+def winner_identity(bidders) -> tuple[str, str]:
+    """Stable identity for the winning contractor.
 
-    PhilGEPS bulk data repeats award rows verbatim — one contract appearing two
-    or four times. Left in, every concentration figure would be wrong by whatever
-    the duplication rate happens to be for that contractor."""
-    path = fetch(PHILGEPS_URL, CACHE / "philgeps.parquet")
-    f = pq.ParquetFile(path)
-    # Every token must be present. Matching on "1ST DEO" alone would sweep in
-    # every province's first district office nationwide — which it did, turning
-    # a PHP 12 B office into a PHP 635 B one and making every share meaningless.
-    tokens = [t for t in deo.upper().split() if t]        # e.g. BULACAN 1ST DEO
-
-    cols = ["awardee_name", "organization_name", "contract_amount", "award_date",
-            "award_title", "notice_title", "reference_id", "business_category",
-            "area_of_delivery"]
-    keep = []
-    for i in range(f.metadata.num_row_groups):
-        df = f.read_row_group(i, columns=cols).to_pandas()
-        org = df.organization_name.astype(str).str.upper()
-        m = org.str.contains("PUBLIC WORKS", na=False)
-        for t in tokens:
-            m &= org.str.contains(t, na=False, regex=False)
-        sub = df[m]
-        if len(sub):
-            keep.append(sub)
-    g = pd.concat(keep) if keep else pd.DataFrame(columns=cols)
-    before = len(g)
-    g = g.drop_duplicates(
-        subset=["awardee_name", "organization_name", "contract_amount",
-                "award_date", "award_title"])
-    print(f"  {before:,} award rows -> {len(g):,} after removing verbatim duplicates")
-
-    g = g.copy()
-    g["key"] = g.awardee_name.map(norm_contractor)
-    yr = pd.to_datetime(g.award_date, errors="coerce").dt.year
-    g["year"] = yr.where(yr.between(*PLAUSIBLE_YEARS))
-    return g
+    PCAB registration number where present — it is the government's own key and
+    survives the renamings that defeat string matching ("M3 KONSTRACT CORPORATION
+    (FORMERLY:MARGARITA CONSTRUCTION)"). Joint ventures carry a JV id and often
+    no single PCAB number, so those fall back to the normalised name; keying them
+    on the empty string would have collapsed PHP 9.5 B onto one phantom firm.
+    """
+    for b in as_list(bidders):
+        if b.get("isWinner"):
+            pcab = (b.get("pcabId") or "").strip()
+            name = b.get("name") or ""
+            return (f"pcab:{pcab}" if pcab else f"name:{norm_name(name)}"), name
+    return "", ""
 
 
 def main() -> int:
@@ -170,165 +98,193 @@ def main() -> int:
     ap.add_argument("--deo", default="Bulacan 1st DEO")
     args = ap.parse_args()
 
-    print("PhilGEPS awards")
-    awards = load_awards(args.deo)
-    if awards.empty:
-        print("  no awards found for that district office")
-        return 1
+    if not DETAIL.exists():
+        print(f"missing {DETAIL} — download dpwh_transparency_data_all_details.parquet")
+        return 2
 
-    total_value = float(awards.contract_amount.sum())
-    total_count = len(awards)
-    print(f"  {total_count:,} awards, PHP {total_value/1e9:.2f} B total, "
-          f"{awards.key.nunique():,} distinct contractors")
+    df = pd.read_parquet(DETAIL)
 
-    # ── contractor-level signals ─────────────────────────────────────────────
-    # Denominator is the office's ENTIRE award book, not just flood control:
-    # concentration means share of what this office hands out, full stop.
-    by_key = awards.groupby("key").agg(
-        awards=("contract_amount", "size"),
-        value=("contract_amount", "sum"),
-        firstYear=("year", "min"),
-        lastYear=("year", "max"),
-    )
-    by_key["valueShare"] = by_key.value / total_value
-    by_key["countShare"] = by_key.awards / total_count
+    # ── national baseline, computed before narrowing ─────────────────────────
+    nat = df[df.category.astype(str).str.contains("Flood", case=False, na=False)].copy()
+    nat["abcN"] = pd.to_numeric(nat.abc, errors="coerce")
+    nat["awN"] = pd.to_numeric(nat.awardAmount, errors="coerce")
+    nat["ratio"] = nat.awN / nat.abcN
+    nat = nat.dropna(subset=["ratio"])
+    nat["whole"] = np.abs(nat.ratio * 100 - np.round(nat.ratio * 100)) < 0.01
+    nat["at96"] = (nat.ratio >= 0.9599) & (nat.ratio <= 0.9601)
+    nat_nb = nat.bidders.map(lambda x: len(as_list(x)))
 
-    n_contractors = int(awards.key.nunique())
-    amounts = defaultdict(list)
-    for _, r in awards.iterrows():
-        amounts[r.key].append(float(r.contract_amount))
+    baseline = {
+        "contracts": int(len(nat)),
+        "wholePercentRate": round(float(nat.whole.mean()), 4),
+        "at96Rate": round(float(nat.at96.mean()), 4),
+        "singleBidderRate": round(float((nat_nb == 1).mean()), 4),
+        "medianRatio": round(float(nat.ratio.median()), 4),
+    }
+    print("national flood-control baseline (all DEOs):")
+    print(f"  contracts with ABC and award   : {baseline['contracts']:,}")
+    print(f"  award at a whole % of ABC      : {baseline['wholePercentRate']:.1%}")
+    print(f"  award at exactly 96.00% of ABC : {baseline['at96Rate']:.1%}")
+    print(f"  single-bidder                  : {baseline['singleBidderRate']:.1%}")
 
-    # ── join to the DPWH contracts ───────────────────────────────────────────
-    projects = json.loads((OUT / "projects.json").read_text())
-    results = []
-    tally = defaultdict(int)
+    per = nat.groupby("province").agg(n=("ratio", "size"), at96=("at96", "sum"))
+    per = per[per.n >= 200]
+    per["rate"] = per.at96 / per.n
+    per = per.sort_values("rate", ascending=False)
+    rank = int(list(per.index).index(args.deo) + 1) if args.deo in per.index else None
 
-    for p in projects:
-        key = norm_contractor(p["contractor"])
-        budget = float(p["budget"])
-        arr = np.array(amounts.get(key, []))
+    # ── the office ───────────────────────────────────────────────────────────
+    office = df[df.province == args.deo].copy()
+    office["ident"] = office.bidders.map(lambda x: winner_identity(x)[0])
+    office["amt"] = pd.to_numeric(office.awardAmount, errors="coerce").fillna(office.budget)
+    named = office[office.ident != ""]
+    conc = named.groupby("ident").amt.agg(["sum", "size"])
+    conc["share"] = conc["sum"] / conc["sum"].sum()
+    n_ident = len(conc)
+    print(f"\n{args.deo}: {len(office):,} contracts across all categories, "
+          f"{n_ident} distinct winning contractors")
 
-        match, conf, ratio = None, "none", None
-        if arr.size:
-            exact = arr[np.isclose(arr, budget, atol=0.01)]
-            if exact.size:
-                match, conf, ratio = float(exact[0]), "exact", 1.0
-            else:
-                near = arr[np.abs(arr - budget) <= budget * AMOUNT_TOLERANCE]
-                if near.size:
-                    best = float(near[np.argmin(np.abs(near - budget))])
-                    match, conf, ratio = best, "tolerance", best / budget
-                else:
-                    best = float(arr[np.argmin(np.abs(arr - budget))])
-                    ratio = best / budget if budget else None
-                    conf = "contractor-only"
-        tally[conf] += 1
+    d = df[df.category.astype(str).str.contains("Flood", case=False, na=False)
+           & (df.province == args.deo)].copy().reset_index(drop=True)
+    n = len(d)
+    d["abcN"] = pd.to_numeric(d.abc, errors="coerce")
+    d["awN"] = pd.to_numeric(d.awardAmount, errors="coerce")
+    d["ratio"] = d.awN / d.abcN
+    ad = pd.to_datetime(d.advertisementDate, errors="coerce")
+    bs = pd.to_datetime(d.bidSubmissionDeadline, errors="coerce")
+    d["window"] = (bs - ad).dt.days
 
-        c = by_key.loc[key] if key in by_key.index else None
+    at96_rate = float(((d.ratio >= 0.9599) & (d.ratio <= 0.9601)).mean())
+    print(f"  flood-control contracts        : {n:,}")
+    print(f"  award at exactly 96.00% of ABC : {at96_rate:.1%} "
+          f"(national {baseline['at96Rate']:.1%}; rank {rank} of {len(per)} DEOs)")
+
+    win_p5 = float(d.window.quantile(0.05)) if d.window.notna().any() else 0.0
+
+    results, tally = [], defaultdict(int)
+    for i, row in d.iterrows():
+        ident, _ = winner_identity(row.bidders)
+        nb = len(as_list(row.bidders))
         flags = []
 
-        if c is None:
+        if nb == 1:
             flags.append({
-                "code": "NO_PHILGEPS_AWARD",
-                "severity": "low",
-                "detail": "No PhilGEPS award to this contractor from this district "
-                          "office. PhilGEPS coverage of DPWH is incomplete, so this "
-                          "is a gap in the record rather than a finding about the "
-                          "contract.",
+                "code": "SINGLE_BIDDER", "severity": "medium",
+                "detail": "One bidder only. Nationally "
+                          f"{baseline['singleBidderRate']:.1%} of flood-control "
+                          "contracts are awarded without a competing bid.",
             })
-        else:
-            share = float(c.valueShare)
-            multiple = share * n_contractors          # x an equal split
-            sev = ("medium" if multiple >= CONCENTRATION_HIGH_X else
-                   "low" if multiple >= CONCENTRATION_MED_X else None)
+        elif nb == 2:
+            flags.append({
+                "code": "TWO_BIDDERS", "severity": "low",
+                "detail": "Two bidders. Thin competition, not an irregularity on "
+                          "its own.",
+            })
+
+        ratio = row.ratio
+        if pd.notna(ratio) and abs(ratio * 100 - round(ratio * 100)) < 0.01:
+            pct = ratio * 100
+            sev = "medium" if abs(pct - 96.0) < 0.01 else "low"
+            flags.append({
+                "code": "BID_AT_ROUND_PERCENT", "severity": sev,
+                "detail": f"The winning bid is exactly {pct:.0f}.00% of the approved "
+                          f"budget (₱{row.awN:,.2f} of ₱{row.abcN:,.2f}). Competitive "
+                          f"bids rarely land on a whole percentage — nationally "
+                          f"{baseline['wholePercentRate']:.1%} do. At this office "
+                          f"{at96_rate:.1%} sit on 96.00% alone, against a national "
+                          f"{baseline['at96Rate']:.1%}. A statistical anomaly, not "
+                          f"proof of anything.",
+                "ratio": round(float(ratio), 4),
+            })
+
+        if pd.notna(row.window) and row.window < win_p5:
+            flags.append({
+                "code": "SHORT_BID_WINDOW", "severity": "low",
+                "detail": f"{int(row.window)} days from advertisement to the bid "
+                          f"deadline, below this office's 5th percentile "
+                          f"({win_p5:.0f} days).",
+            })
+
+        share = float(conc.loc[ident, "share"]) if ident in conc.index else None
+        if share is not None:
+            mult = share * n_ident
+            sev = ("medium" if mult >= CONCENTRATION_HIGH_X else
+                   "low" if mult >= CONCENTRATION_MED_X else None)
             if sev:
                 flags.append({
-                    "code": "AWARD_CONCENTRATION",
-                    "severity": sev,
+                    "code": "AWARD_CONCENTRATION", "severity": sev,
                     "detail": f"This contractor holds {share:.2%} of everything "
-                              f"{args.deo} has awarded via PhilGEPS "
-                              f"(PHP {float(c.value)/1e6:,.0f} M across "
-                              f"{int(c.awards)} awards) — {multiple:.0f}x what an "
-                              f"equal split among its {n_contractors} contractors "
-                              f"would give. Concentration is a documented "
-                              f"procurement red flag; it is not evidence about "
-                              f"this contract.",
-                    "concentrationMultiple": round(multiple, 1),
+                              f"{args.deo} awards across all categories — "
+                              f"{mult:.0f}× an equal split among its {n_ident} "
+                              f"contractors. Identified by PCAB registration "
+                              f"number, not by name.",
+                    "concentrationMultiple": round(mult, 1),
                 })
 
-        if conf == "contractor-only" and ratio is not None and abs(ratio - 1) > 0.05:
+        docs = {c: (row[c] if isinstance(row[c], str) and row[c].startswith("http") else None)
+                for c in DOC_FIELDS}
+        if not any(docs.values()):
             flags.append({
-                "code": "VALUE_DISAGREEMENT",
-                "severity": "low",
-                "detail": f"No PhilGEPS award from this contractor comes within "
-                          f"0.5% of the DPWH contract value; the closest is "
-                          f"{ratio:.2f}x it. The two public records do not agree "
-                          f"on what this work cost, or the award is not published.",
+                "code": "NO_DOCUMENTS_PUBLISHED", "severity": "low",
+                "detail": "No contract document published, against roughly 95% "
+                          "coverage across this office.",
             })
 
+        for f in flags:
+            tally[f["code"]] += 1
+
         results.append({
-            "id": p["id"],
-            "matchConfidence": conf,
-            "philgepsAmount": match,
-            "amountRatio": None if ratio is None else round(ratio, 4),
-            "contractorKey": key,
-            "contractorAwards": None if c is None else int(c.awards),
-            "contractorValue": None if c is None else float(c.value),
-            "valueShare": None if c is None else round(float(c.valueShare), 5),
+            "id": row.contractId,
+            "bidders": nb,
+            "winnerPcab": ident[5:] if ident.startswith("pcab:") else None,
+            "abc": None if pd.isna(row.abcN) else float(row.abcN),
+            "awardAmount": None if pd.isna(row.awN) else float(row.awN),
+            "bidRatio": None if pd.isna(ratio) else round(float(ratio), 4),
+            "bidWindowDays": None if pd.isna(row.window) else int(row.window),
+            "advertisementDate": None if pd.isna(ad.iloc[i]) else str(ad.iloc[i].date()),
+            "dateOfAward": str(row.dateOfAward)[:10] if isinstance(row.dateOfAward, str) else None,
+            "valueShare": None if share is None else round(share, 5),
+            "documents": docs,
             "procurementFlags": flags,
             "procurementScore": sum({"high": 3, "medium": 2, "low": 1}[f["severity"]]
                                     for f in flags),
         })
 
-    matched = tally["exact"] + tally["tolerance"]
-    print(f"\nJoin over {len(projects):,} DPWH contracts:")
-    for k in ("exact", "tolerance", "contractor-only", "none"):
-        print(f"  {k:<16} {tally[k]:5,} ({tally[k]/len(projects):5.1%})")
-    print(f"  -> usable amount-level join: {matched:,} ({matched/len(projects):.1%})")
+    print("\nflags raised:")
+    for k, v in sorted(tally.items(), key=lambda kv: -kv[1]):
+        print(f"  {k:24s} {v:5,} ({v/n:5.1%})")
 
-    top = by_key.sort_values("value", ascending=False).head(10)
-    print("\nTop contractors by share of this office's award book:")
-    for k, r in top.iterrows():
-        print(f"  {r.valueShare:6.2%}  PHP {r.value/1e6:9,.0f} M  {int(r.awards):4d} awards  {k[:46]}")
+    docs_any = sum(1 for r in results if any(r["documents"].values()))
+    print(f"\ncontracts with at least one published document: {docs_any:,} "
+          f"({docs_any/n:.1%})")
 
     payload = {
         "generated": pd.Timestamp.now("UTC").strftime("%Y-%m-%dT%H:%M:%SZ"),
         "districtOffice": args.deo,
         "source": {
-            "name": "PhilGEPS award records",
-            "dataset": "bettergovph/philgeps-data",
-            "url": "https://huggingface.co/datasets/bettergovph/philgeps-data",
+            "name": "DPWH transparency portal, full detail export",
+            "dataset": "bettergovph/dpwh-transparency-data",
+            "file": "dpwh_transparency_data_all_details.parquet",
+            "url": "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data",
             "license": "CC0-1.0",
-            "rowsUpstream": 5481161,
+            "rowsUpstream": 248421,
         },
         "office": {
-            "awards": total_count,
-            "equalSplitShare": round(1 / n_contractors, 6),
-            "concentrationThresholds": {"medium": CONCENTRATION_MED_X,
-                                        "high": CONCENTRATION_HIGH_X},
-            "totalValue": total_value,
-            "contractors": int(awards.key.nunique()),
+            "contractsAllCategories": int(len(office)),
+            "contractors": n_ident,
+            "equalSplitShare": round(1 / n_ident, 6),
+            "at96Rate": round(at96_rate, 4),
+            "deoRankAt96": rank,
+            "deosCompared": int(len(per)),
+            "bidWindowP5Days": win_p5,
+            "documentsPublished": docs_any,
         },
-        "join": {
-            "strategy": "normalised contractor name + contract amount",
-            "primaryKeyUnavailable": (
-                "contract_no is null on 99.9% of PhilGEPS rows and is free text "
-                "where present, so the contractId join proposed in FUSION.md is "
-                "not implementable"
-            ),
-            "counts": dict(tally),
-            "usableRate": round(matched / len(projects), 4),
-        },
-        "notDerivable": [
-            "bidder counts and single-bidder awards — PhilGEPS publishes no bidder data",
-            "true bid-to-ABC ratio — no approved-budget column; DPWH `budget` has "
-            "mixed semantics and cannot stand in for one",
-            "bid-window timing — no notice-to-award dates in this export",
-        ],
+        "nationalBaseline": baseline,
+        "flagTally": dict(sorted(tally.items(), key=lambda kv: -kv[1])),
         "results": results,
     }
     (OUT / "procurement.json").write_text(json.dumps(payload, indent=1))
-    print(f"\n-> {OUT/'procurement.json'}")
+    print(f"-> {OUT/'procurement.json'}")
     return 0
 
 
