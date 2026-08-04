@@ -934,106 +934,160 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
     const hz=HAZARD_BY_ID.get(project.id);
     const sat=SAT_BY_ID.get(project.id);
     const docs=pr?(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>pr.documents[k]):[];
-    const Row=({l,v,mono}:{l:string;v:React.ReactNode;mono?:boolean})=>(
-      <div className="flex items-start justify-between gap-3 py-1.5 border-b border-gray-50 last:border-0">
-        <span className="text-[11px] text-gray-400 shrink-0">{l}</span>
-        <span className={`text-[12px] text-gray-800 text-right ${mono?"font-mono":""}`}>{v}</span>
+    const flags=[...project.auditFlags.map(f=>({...f,label:FLAG_LABELS[f.code]??f.code})),
+                 ...(pr?.procurementFlags??[]).map(f=>({...f,label:PROC_FLAG_LABELS[f.code]??f.code}))];
+    const saved=pr?.abc&&pr?.awardAmount?pr.abc-pr.awardAmount:null;
+
+    const Section=({title,children}:{title:string;children:React.ReactNode})=>(
+      <section className="pt-4 mt-4 border-t border-gray-100 first:pt-0 first:mt-0 first:border-0">
+        <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">{title}</h4>
+        {children}
+      </section>
+    );
+    const Fact=({l,v,sub}:{l:string;v:React.ReactNode;sub?:string})=>(
+      <div className="flex items-baseline justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+        <span className="text-[12px] text-gray-500 shrink-0">{l}</span>
+        <span className="text-right">
+          <span className="text-[13px] text-gray-900 font-medium">{v}</span>
+          {sub&&<span className="block text-[10px] text-gray-400 mt-0.5">{sub}</span>}
+        </span>
       </div>
     );
+    const dt=(d:string|null|undefined)=>d?new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—";
+
     return (
-      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col" style={{width:420,zIndex:1000}}>
-        <div className="flex items-start gap-2 p-4 border-b border-gray-100 shrink-0">
+      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col" style={{width:440,zIndex:1000}}>
+        <div className="flex items-start gap-2 px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-mono text-gray-400 mb-1">{project.id}</div>
-            <h3 className="text-[13px] font-bold text-gray-900 leading-snug">{project.name}</h3>
-            <div className="text-[11px] text-gray-500 mt-0.5">{project.municipality}, Bulacan</div>
+            <div className="text-[10px] font-mono text-gray-400">{project.id}</div>
+            <h3 className="text-[14px] font-bold text-gray-900 leading-snug mt-1">{project.name}</h3>
+            <div className="text-[12px] text-gray-500 mt-1 flex items-center gap-1"><MapPin size={11}/>{project.municipality}, Bulacan</div>
+            <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+              <StatusBadge status={project.status}/>
+              {project.auditFlags.length>0&&(
+                <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:"#fff4ec",color:"#c05621"}}>
+                  <AlertTriangle size={10}/>Flagged for review
+                </span>
+              )}
+              {hz?.hazard&&hz.hazard!=="none"&&<span className="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">{hz.hazard} flood risk</span>}
+            </div>
           </div>
-          <button onClick={()=>setSelectedId("")} aria-label="Close panel" className="p-1 text-gray-400 hover:text-gray-600 rounded shrink-0"><X size={15}/></button>
+          <button onClick={()=>setSelectedId("")} aria-label="Close panel" className="p-1 text-gray-400 hover:text-gray-600 rounded shrink-0"><X size={16}/></button>
         </div>
 
-        {/* A real map of the surroundings, replacing a decorative polygon that
-            drew the same invented coastline for every contract in the register. */}
         {project.lat!=null&&project.lng!=null?(
           <div className="border-b border-gray-100 shrink-0">
-            <ProjectMap project={project as Project&{lat:number;lng:number}} enc={enc}
-              onPick={id=>setSelectedId(id)}/>
-            <div className="px-4 py-1.5 text-[10px] text-gray-400 flex items-center justify-between">
+            <ProjectMap project={project as Project&{lat:number;lng:number}} enc={enc} onPick={id=>setSelectedId(id)}/>
+            <div className="px-5 py-1.5 text-[10px] text-gray-400 flex items-center justify-between">
               <span className="font-mono">{project.lat.toFixed(5)}, {project.lng.toFixed(5)}</span>
-              <span>other contracts in frame are clickable</span>
+              <span>nearby contracts are clickable</span>
             </div>
           </div>
         ):(
-          <div className="border-b border-gray-100 px-4 py-6 text-center shrink-0">
+          <div className="border-b border-gray-100 px-5 py-6 text-center shrink-0">
             <MapPin size={20} className="text-gray-300 mx-auto mb-1.5"/>
-            <div className="text-[12px] text-gray-500">No location was published for this contract</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">so it cannot be shown on a map, or inspected from one</div>
+            <div className="text-[12px] text-gray-600 font-medium">No location was published</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">so this contract cannot be found on the ground, or checked from a map</div>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{scrollbarWidth:"none"}}>
-          <div className="flex items-center gap-2 flex-wrap">
-            <StatusBadge status={project.status}/>
-            {project.auditFlags.length>0&&(
-              <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:"#fff4ec",color:"#c05621"}}>
-                <AlertTriangle size={10}/>Flagged for review
-              </span>
-            )}
-            {hz?.hazard&&hz.hazard!=="none"&&<span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">{hz.hazard} flood risk</span>}
-            {(project as never as {siteRebuilds?:number}).siteRebuilds ?<span className="text-[10px] px-2 py-0.5 rounded bg-orange-50 text-orange-700">built again later</span>:null}
+        <div className="flex-1 overflow-y-auto px-5 py-4" style={{scrollbarWidth:"none"}}>
+          {/* The three numbers that answer "what did this cost and was it competed" */}
+          <div className="grid grid-cols-3 gap-2 mb-1">
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold text-gray-900">{pr?.awardAmount?peso(pr.awardAmount):"—"}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">awarded</div>
+            </div>
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold" style={{color:pr?.bidRatio&&Math.abs(pr.bidRatio*100-96)<0.01?"#c05621":"#111827"}}>
+                {pr?.bidRatio?`${(pr.bidRatio*100).toFixed(2)}%`:"—"}
+              </div>
+              <div className="text-[10px] text-gray-500 mt-0.5">of budget</div>
+            </div>
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold" style={{color:(pr?.bidders??0)===1?"#c0272d":"#111827"}}>{pr?.bidders??"—"}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">{pr?.bidders===1?"bidder":"bidders"}</div>
+            </div>
           </div>
 
-          <AuditFlags project={project} compact/>
-          {pr&&pr.procurementFlags.length>0&&(
-            <div className="space-y-1.5">
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5"><Banknote size={11}/>About the deal</div>
-              {pr.procurementFlags.map(f=>(
-                <div key={f.code} className="rounded border p-2.5 text-[11px]" style={{background:SEVERITY_CFG[f.severity].bg,borderColor:SEVERITY_CFG[f.severity].color+"33"}}>
-                  <div className="font-semibold mb-0.5" style={{color:SEVERITY_CFG[f.severity].color}}>{PROC_FLAG_LABELS[f.code]??f.code}</div>
-                  <div className="text-gray-700 leading-relaxed">{f.detail}</div>
+          {flags.length>0&&(
+            <Section title={`What's flagged — ${flags.length}`}>
+              <div className="space-y-2">
+                {flags.map(f=>{
+                  const sv=SEVERITY_CFG[f.severity];
+                  return (
+                    <div key={f.code} className="rounded border px-3 py-2.5" style={{background:sv.bg,borderColor:sv.color+"33"}}>
+                      <div className="text-[12px] font-semibold mb-1" style={{color:sv.color}}>{f.label}</div>
+                      <div className="text-[11px] text-gray-700 leading-relaxed">{f.detail}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 leading-relaxed mt-2">
+                A flag means the public record disagrees with itself. It is a reason to look,
+                not proof that anything was done wrong.
+              </p>
+            </Section>
+          )}
+
+          <Section title="The contract">
+            <Fact l="Contractor" v={project.contractor.replace(/\s*\(.*$/,"")}/>
+            <Fact l="Approved budget" v={pr?.abc?pesoFull(pr.abc):"—"}/>
+            <Fact l="Awarded for" v={pr?.awardAmount?pesoFull(pr.awardAmount):"—"}
+              sub={saved?`₱${saved.toLocaleString("en-PH",{maximumFractionDigits:0})} below the approved budget`:undefined}/>
+            <Fact l="Reported progress" v={`${project.completion}%`}/>
+            <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
+          </Section>
+
+          <Section title="Timeline">
+            <div className="space-y-0">
+              {[["Advertised",pr?.advertisementDate],["Awarded",pr?.dateOfAward],
+                ["Started",project.startDate],["Due to finish",project.endDate]].map(([l,d],i,arr)=>(
+                <div key={l as string} className="flex gap-3">
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-2 h-2 rounded-full mt-1.5" style={{background:d?"#1e3a7b":"#e5e7eb"}}/>
+                    {i<arr.length-1&&<div className="w-px flex-1 bg-gray-200 my-0.5"/>}
+                  </div>
+                  <div className="pb-3 flex-1 flex items-baseline justify-between gap-2">
+                    <span className="text-[12px] text-gray-500">{l as string}</span>
+                    <span className="text-[12px] font-mono text-gray-800">{dt(d as string)}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          )}
+          </Section>
 
-          <div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">The contract</div>
-            <Row l="Contractor" v={project.contractor.replace(/\s*\(.*$/,"")}/>
-            <Row l="Approved budget" v={pr?.abc?pesoFull(pr.abc):"—"} mono/>
-            <Row l="Awarded for" v={pr?.awardAmount?pesoFull(pr.awardAmount):"—"} mono/>
-            {pr?.bidRatio&&<Row l="Share of budget" v={`${(pr.bidRatio*100).toFixed(2)}%`} mono/>}
-            <Row l="Companies that bid" v={pr?.bidders??"—"} mono/>
-            <Row l="Started" v={project.startDate??"—"} mono/>
-            <Row l="Due to finish" v={project.endDate??"—"} mono/>
-            <Row l="Reported progress" v={`${project.completion}%`} mono/>
-            <Row l="Funding" v={<span className="text-[11px]">{project.fundingSource}</span>}/>
-          </div>
-
-          <div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Documents</div>
+          <Section title={`Documents — ${docs.length}`}>
             {docs.length?(
               <div className="space-y-1">
                 {docs.map(k=>(
                   <a key={k} href={pr!.documents[k]!} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-2 px-2.5 py-2 rounded border border-gray-100 hover:border-[#1e3a7b]/30 hover:bg-blue-50/30 text-[12px] text-gray-700">
-                    <FileText size={13} style={{color:"#1e3a7b"}}/><span className="flex-1">{DOC_LABELS[k]}</span><ExternalLink size={11} className="text-gray-300"/>
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded border border-gray-100 hover:border-[#1e3a7b]/30 hover:bg-blue-50/30 text-[12px] text-gray-700">
+                    <FileText size={14} style={{color:"#1e3a7b"}}/><span className="flex-1">{DOC_LABELS[k]}</span><ExternalLink size={11} className="text-gray-300"/>
                   </a>
                 ))}
               </div>
             ):<div className="text-[12px] text-gray-400">None published for this contract</div>}
-          </div>
+          </Section>
 
-          {sat&&(
-            <div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Satellite check</div>
-              <div className="rounded border p-2.5 text-[11px]" style={{background:VERDICT_CFG[sat.verdict].bg,borderColor:VERDICT_CFG[sat.verdict].color+"33"}}>
-                <div className="font-semibold mb-0.5" style={{color:VERDICT_CFG[sat.verdict].color}}>{VERDICT_CFG[sat.verdict].label}</div>
-                <div className="text-gray-600 leading-relaxed">{VERDICT_CFG[sat.verdict].note}</div>
-              </div>
-            </div>
+          {(hz||sat)&&(
+            <Section title="On the ground">
+              {hz&&hz.level!=null&&(
+                <Fact l="Flood risk at this spot"
+                  v={hz.level>0?`${hz.hazard} hazard`:"outside the flood model"}
+                  sub={hz.level===0&&hz.metresToHazard!=null?`${hz.metresToHazard.toLocaleString()} m from the nearest flood-prone area`:undefined}/>
+              )}
+              {sat&&(
+                <div className="mt-2 rounded border px-3 py-2.5" style={{background:VERDICT_CFG[sat.verdict].bg,borderColor:VERDICT_CFG[sat.verdict].color+"33"}}>
+                  <div className="text-[12px] font-semibold mb-1" style={{color:VERDICT_CFG[sat.verdict].color}}>{VERDICT_CFG[sat.verdict].label}</div>
+                  <div className="text-[11px] text-gray-600 leading-relaxed">{VERDICT_CFG[sat.verdict].note}</div>
+                </div>
+              )}
+            </Section>
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 shrink-0">
+        <div className="px-5 py-3.5 border-t border-gray-100 shrink-0">
           <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"#1e3a7b"}}>Open full record<ArrowRight size={14}/></button>
         </div>
       </div>

@@ -77,14 +77,13 @@ function clusterIcon(cluster: { getChildCount(): number; getAllChildMarkers(): L
   const fill = share === 0 ? "#046b04" : share < 0.25 ? "#f7c948"
     : share < 0.5 ? "#e8722c" : "#c0272d";
   const size = n < 10 ? 32 : n < 100 ? 40 : 48;
-  const pct = Math.round(share * 100);
-  // Just the count. A second line of 8px text inside a 32px circle is not
-  // readable at map scale — the colour already carries the share, and the exact
-  // figure is on hover for anyone who wants it.
+  // Just the count, nothing else. The colour carries the share flagged and the
+  // legend says so; a percentage crammed into the bubble only made the number
+  // harder to read.
   return L.divIcon({
     className: "masid-cluster",
     iconSize: L.point(size, size),
-    html: `<div title="${n} contracts · ${pct}% flagged for review"
+    html: `<div title="${n} contracts"
         style="width:${size}px;height:${size}px;border-radius:50%;
         background:${fill};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
         display:flex;align-items:center;justify-content:center;
