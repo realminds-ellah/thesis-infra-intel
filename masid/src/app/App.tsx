@@ -22,7 +22,7 @@ import {
   PROJECTS, CONTRACTORS, META, MUNI_BREAKDOWN, STATUS_PIE, BUDGET_BY_YEAR,
   FLAG_BREAKDOWN, FLAGGED_VALUE, MAP_BOUNDS, FLAG_LABELS, SEVERITY_CFG,
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
-  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
+  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY, YEAR_STATS,
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel, type MapLayers } from "./FilterPanel";
@@ -847,14 +847,32 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded border border-gray-200 p-4">
-            <div className="text-[12px] font-bold text-gray-700">Contract Value Awarded by Year (₱M)</div>
-            <div className="text-[11px] text-gray-400 mb-3">Disbursement is not published by the transparency portal, so no spend series is shown.</div>
+            <div className="text-[12px] font-bold text-gray-700">Contract value awarded, by year (₱M)</div>
+            <div className="text-[11px] text-gray-400 mb-3">Spending rose roughly 58-fold between 2016 and 2024.</div>
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={BUDGET_BY_YEAR} margin={{top:0,right:8,bottom:0,left:8}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/><XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/><YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
-                <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>`₱${v.toLocaleString()}M`}/><Legend iconType="square" iconSize={8} wrapperStyle={{fontSize:11}}/>
-                <Bar dataKey="clean"   name="No flags"     stackId="v" fill={NAVY}/>
-                <Bar dataKey="flagged" name="Flagged"      stackId="v" fill={AMBER} radius={[2,2,0,0]}/>
+              <BarChart data={YEAR_STATS} margin={{top:0,right:8,bottom:0,left:8}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                <XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[`₱${v.toLocaleString()}M`,"awarded"]}/>
+                <Bar dataKey="valueM" name="Awarded" fill="#2a78d6" radius={[2,2,0,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white rounded border border-gray-200 p-4">
+            <div className="text-[12px] font-bold text-gray-700">Share won at exactly 96.00% of the approved budget</div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              Absent through 2018, then 51% in 2020 and never below 36% since. The national rate is 3.9%.
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={YEAR_STATS} margin={{top:0,right:8,bottom:0,left:8}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                <XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}
+                  domain={[0,0.65]} tickFormatter={(v:number)=>`${Math.round(v*100)}%`}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}}
+                  formatter={(v:number,_n,p:{payload:{at96:number;withRatio:number}})=>[`${(v*100).toFixed(0)}%  (${p.payload.at96} of ${p.payload.withRatio})`,"at 96.00%"]}/>
+                <Bar dataKey="at96Rate" name="At 96.00%" fill="#e8722c" radius={[2,2,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
           </div>

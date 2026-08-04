@@ -24,10 +24,11 @@ import { useMemo } from "react";
 import { Check, Filter, Layers, Search, X } from "lucide-react";
 
 import {
-  type Filters, applyFilters, countBy, AMOUNT_BOUNDS, LABELS, activeCount,
+  type Filters, applyFilters, countBy, AMOUNT_BOUNDS, YEAR_BOUNDS, LABELS, activeCount,
   emptyFilters, toQuery,
 } from "./filters";
-import { META, PROJECTS, type ProjectStatus } from "./data";
+import { META, PROJECTS, PROC_BY_ID, HAZARD_BY_ID, type ProjectStatus } from "./data";
+import { Download } from "lucide-react";
 import type { Role } from "./roles";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ENCODINGS } from "./mapColor";
@@ -44,6 +45,37 @@ const STATUS_TINT: Record<ProjectStatus, { dot: string; bg: string; text: string
 };
 
 export interface MapLayers { markers: boolean; boundaries: boolean; labels: boolean }
+
+/**
+ * Download whatever is currently filtered, with the derived columns included —
+ * flags, bid ratio, hazard — so the export carries the analysis and not just the
+ * portal's own fields. A register you cannot take away with you is half a
+ * register.
+ */
+function exportCsv(rows: ReturnType<typeof applyFilters>) {
+  const head = ["contractId", "description", "municipality", "contractor", "stage",
+    "approvedBudget", "awardAmount", "bidRatio", "bidders", "startDate", "endDate",
+    "progress", "latitude", "longitude", "floodHazard", "metresToHazard",
+    "problemCount", "problems"];
+  const esc = (v: unknown) => {
+    const t = v == null ? "" : String(v);
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const body = rows.map(p => {
+    const pr = PROC_BY_ID.get(p.id), hz = HAZARD_BY_ID.get(p.id);
+    return [p.id, p.description, p.municipality, p.contractor, p.dpwhStatus,
+      pr?.abc ?? "", pr?.awardAmount ?? "", pr?.bidRatio ?? "", pr?.bidders ?? "",
+      p.startDate ?? "", p.endDate ?? "", p.completion,
+      p.lat ?? "", p.lng ?? "", hz?.hazard ?? "", hz?.metresToHazard ?? "",
+      p.auditFlags.length, p.auditFlags.map(f => f.code).join(" ")].map(esc).join(",");
+  });
+  const blob = new Blob([[head.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `masid-bulacan-1st-deo-${rows.length}-contracts.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 export function FilterPanel({
   filters, setFilters, collapsed, role = "dpwh-admin", layers, setLayers, colorBy, setColorBy,
@@ -177,6 +209,18 @@ export function FilterPanel({
         </div>
 
         <div>
+          <label htmlFor="year-select" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Infrastructure year</label>
+          <select id="year-select"
+            value={filters.years ? String(filters.years[0]) : "all"}
+            onChange={e => setFilters({ ...filters, years: e.target.value === "all" ? null : [Number(e.target.value), Number(e.target.value)] })}
+            className="w-full text-[12px] border border-gray-200 rounded px-2.5 py-1.5 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
+            <option value="all">All years</option>
+            {Array.from({ length: YEAR_BOUNDS[1] - YEAR_BOUNDS[0] + 1 }, (_, i) => YEAR_BOUNDS[0] + i)
+              .map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+
+        <div>
           <label htmlFor="colour-by" className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Colour dots by</label>
           <select id="colour-by"
             value={colorBy ?? suggestEncoding(filters as never)}
@@ -202,6 +246,13 @@ export function FilterPanel({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="border-t border-gray-100 px-3 pt-2.5">
+        <button onClick={() => exportCsv(result)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] border border-gray-200 rounded text-gray-600 hover:border-[#1e3a7b]/40 hover:text-[#1e3a7b]">
+          <Download size={12} />Export these {result.length.toLocaleString()} as CSV
+        </button>
       </div>
 
       <div className="border-t border-gray-100 p-3">

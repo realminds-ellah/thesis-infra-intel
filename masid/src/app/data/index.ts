@@ -483,3 +483,49 @@ export interface HazardRun {
 }
 export const HAZARD = hazardRaw as unknown as HazardRun;
 export const HAZARD_BY_ID = new Map(HAZARD.results.map(r => [r.id, r]));
+
+/**
+ * Year-by-year comparison.
+ *
+ * BetterGov's flood-control map (CC0, bettergovph/bettergov) has a "Projects by
+ * Year" chart, and it is the right idea — this adopts it and adds the columns
+ * their data cannot produce, because they plot the register rather than audit it.
+ *
+ * The reason it is worth showing: the round-number bidding pattern has a start
+ * date. It is absent through 2018, appears at 3% in 2019, and jumps to 51% in
+ * 2020 — where it stays. A yearly view is the only place that shows up.
+ *
+ * Reported as TWO series on two charts rather than one chart with two axes.
+ * Value and percentage do not share a scale, and a dual-axis chart can be made
+ * to show any relationship the author wants.
+ */
+export interface YearStat {
+  year: number;
+  projects: number;
+  value: number;
+  valueM: number;
+  flagged: number;
+  flaggedRate: number;
+  at96: number;
+  at96Rate: number;
+  singleBidder: number;
+  withRatio: number;
+}
+
+export const YEAR_STATS: YearStat[] = (() => {
+  const years = [...new Set(PROJECTS.map(p => p.infraYear).filter((y): y is number => y != null))].sort();
+  return years.map(year => {
+    const g = PROJECTS.filter(p => p.infraYear === year);
+    const ratios = g.map(p => PROC_BY_ID.get(p.id)?.bidRatio).filter((r): r is number => r != null);
+    const at96 = ratios.filter(r => Math.abs(r * 100 - 96) < 0.01).length;
+    const flagged = g.filter(p => p.auditFlags.length > 0).length;
+    const value = g.reduce((s, p) => s + p.budget, 0);
+    return {
+      year, projects: g.length, value, valueM: Math.round(value / 1e6),
+      flagged, flaggedRate: g.length ? flagged / g.length : 0,
+      at96, at96Rate: ratios.length ? at96 / ratios.length : 0,
+      singleBidder: g.filter(p => PROC_BY_ID.get(p.id)?.bidders === 1).length,
+      withRatio: ratios.length,
+    };
+  });
+})();

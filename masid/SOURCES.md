@@ -295,6 +295,57 @@ the boundaries shown are the same ones the flags were computed against.
 
 ---
 
+## Relationship to BetterGov.ph
+
+[bettergov.ph/flood-control-projects/map](https://bettergov.ph/flood-control-projects/map)
+already publishes a national flood-control register — Leaflet map with marker
+clustering, filters on year, region, province, type of work and district office,
+charts by year/region/work-type/contractor, a sortable table and CSV export. The
+code is [`bettergovph/bettergov`](https://github.com/bettergovph/bettergov),
+released **CC0**.
+
+MASID is not a second register and should not try to be one. BetterGov plots what
+the portal says; this audits it. The division:
+
+**Adopted from them, because they got it right**
+
+- *Projects by year* — extended below with the columns their data cannot produce
+- Infrastructure-year filter
+- CSV export of the filtered set, with the derived columns included
+
+**What this adds that a register cannot**
+
+| | |
+|---|---|
+| Coordinate integrity | 37 contracts whose coordinate contradicts their own description; 102 with none at all. A register plots coordinates; it does not test them |
+| Bidding red flags | the 96.00% cluster, single-bidder, bid-window, ABC ratio — none derivable from the flat export they index |
+| Flood-hazard join | whether the flood control is where the flooding is |
+| Rebuild recurrence | 142 contracts on sites built again in a later year |
+| Contract documents | 1,286 contracts indexed to their published PDFs |
+| Satellite delivery | the imagery tier, including its measured failure |
+| Data verification | a gate that must pass before any of the above is generated |
+
+### Year comparison
+
+The reason this earns its place rather than duplicating theirs:
+
+| year | projects | value ₱B | flagged | at 96.00% | 1 bidder |
+|---|---|---|---|---|---|
+| 2016 | 25 | 0.40 | 68% | **0%** | 0% |
+| 2018 | 98 | 2.53 | 33% | **0%** | 12% |
+| 2019 | 79 | 2.03 | 35% | **3%** | 8% |
+| 2020 | 70 | 2.27 | 24% | **51%** | 19% |
+| 2022 | 127 | 5.02 | 19% | **59%** | 2% |
+| 2024 | 313 | 23.29 | 14% | **50%** | 0% |
+
+**The round-number bidding pattern has a start date.** Absent through 2018, 3% in
+2019, then 51% in 2020 and never below 36% since. Only a yearly view shows that,
+and only with a bid-to-ABC ratio computed per contract.
+
+Shown as two charts, not one with two axes: value and percentage do not share a
+scale, and a dual-axis chart can be made to show any relationship its author
+wants.
+
 ## Filtering
 
 Faceted multi-select, with live counts computed against all *other* active
