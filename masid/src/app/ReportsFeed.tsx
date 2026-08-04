@@ -35,9 +35,32 @@ import {
   MessageSquare, CornerDownRight, Link2, Send,
 } from "lucide-react";
 
-import { PROJECTS, type Project } from "./data";
+import { PROJECTS, PROC_BY_ID, type Project } from "./data";
 
 const KEY = "masid.reports.v1";
+
+/**
+ * How the feed can be ordered.
+ *
+ * Only one of these is a measurement. "Furthest from the coordinate" ranks by
+ * the gap between where the reporter's device says they stood and where DPWH
+ * says the project is — a number neither party chose, and the most useful thing
+ * this feed produces. A report taken 3 km from the published point is worth
+ * looking at whether or not anybody upvoted it.
+ *
+ * Masid and comment counts measure attention. They are offered because people
+ * expect them, and labelled so nobody mistakes a busy thread for a verified one.
+ */
+export type SortKey = "new" | "masid" | "discussed" | "distance" | "value";
+
+const SORTS: { key: SortKey; label: string; hint: string }[] = [
+  { key: "new", label: "Newest", hint: "Most recently captured first" },
+  { key: "distance", label: "Furthest from the coordinate",
+    hint: "Ranked by the gap between where the photo was taken and where DPWH says the project is — the one ordering here backed by a measurement rather than by opinion" },
+  { key: "masid", label: "Most masid", hint: "Most marked as worth attention. Measures attention, not accuracy" },
+  { key: "discussed", label: "Most discussed", hint: "Most comments. Also attention, not accuracy" },
+  { key: "value", label: "Biggest contract", hint: "Largest awarded amount of the contract reported on" },
+];
 
 export interface Comment {
   id: string;
@@ -391,7 +414,7 @@ function Thread({ report, role, onComment, onVote }: {
 
 export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject: (id: string) => void; role?: string }) {
   const [reports, setReports] = useState<CitizenReport[]>(load);
-  const [sort, setSort] = useState<"new" | "masid">("new");
+  const [sort, setSort] = useState<SortKey>("new");
   const [capturing, setCapturing] = useState(false);
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -414,9 +437,19 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
 
   useEffect(() => save(reports), [reports]);
 
-  const sorted = useMemo(() => [...reports].sort(
-    sort === "new" ? (a, b) => b.capturedAt - a.capturedAt : (a, b) => b.masid - a.masid
-  ), [reports, sort]);
+  const sorted = useMemo(() => {
+    const value = (r: CitizenReport) =>
+      PROC_BY_ID.get(r.projectId)?.awardAmount ?? 0;
+    const cmp: Record<SortKey, (a: CitizenReport, b: CitizenReport) => number> = {
+      new: (a, b) => b.capturedAt - a.capturedAt,
+      masid: (a, b) => b.masid - a.masid,
+      discussed: (a, b) => b.comments.length - a.comments.length,
+      // The only sort here backed by a measurement rather than by opinion.
+      distance: (a, b) => (b.metresFromContract ?? -1) - (a.metresFromContract ?? -1),
+      value: (a, b) => value(b) - value(a),
+    };
+    return [...reports].sort(cmp[sort]);
+  }, [reports, sort]);
 
   const vote = (id: string) => {
     if (voted.has(id)) return;
@@ -458,12 +491,20 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
 
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-gray-400">Sort</span>
-          {([["new", "Newest"], ["masid", "Most masid"]] as const).map(([k, l]) => (
-            <button key={k} onClick={() => setSort(k)}
-              className={`text-[12px] px-2.5 py-1 rounded-full border ${sort === k
-                ? "border-[#1e3a7b] bg-[#1e3a7b] text-white" : "border-gray-200 text-gray-600 hover:bg-white"}`}>{l}</button>
+          {SORTS.map(({ key, label, hint }) => (
+            <button key={key} onClick={() => setSort(key)} title={hint}
+              className={`text-[12px] px-2.5 py-1 rounded-full border ${sort === key
+                ? "border-[#1e3a7b] bg-[#1e3a7b] text-white" : "border-gray-200 text-gray-600 hover:bg-white"}`}>{label}</button>
           ))}
           <span className="ml-auto text-[11px] text-gray-400">{reports.length} report{reports.length === 1 ? "" : "s"}</span>
+        </div>
+        {sort === "distance" && (
+          <p className="text-[11px] text-gray-500 -mt-1">
+            The only ordering here that is measured rather than voted on: how far the reporter&apos;s
+            device was from the coordinate DPWH published.
+          </p>
+        )}
+        <div className="hidden">
         </div>
 
         {sorted.length === 0 && (

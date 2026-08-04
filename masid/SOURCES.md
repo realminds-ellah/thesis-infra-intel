@@ -337,6 +337,14 @@ accurate one nobody saw, and any public vote can be brigaded. The count is
 presented as what it is — how many people looked and agreed — never as a
 verification status.
 
+**Sorting.** Newest, furthest from the coordinate, most masid, most discussed,
+biggest contract. Only one of those is a measurement: *furthest from the
+coordinate* ranks by the gap between where the reporter's device says they stood
+and where DPWH says the project is — a number neither party chose. A report taken
+3 km from the published point deserves attention whether or not anyone upvoted
+it. The vote and comment orderings are offered because people expect them, and
+labelled so a busy thread is not mistaken for a verified one.
+
 **Discussion.** Reports carry comment threads, flat with a single level of reply.
 Deeper nesting is where threads stop being read, and on a register naming real
 companies an argument buried four levels down is worse than none.
