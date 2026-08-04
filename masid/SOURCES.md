@@ -325,6 +325,13 @@ the portal says; this audits it. The division:
 - **The municipal boundaries the coordinate checks run against**, drawn as an
   overlay, so a "location doesn't match the description" flag can be seen rather
   than taken on trust.
+- **Cluster bubbles coloured by contents, not by count.** leaflet.markercluster
+  ships green/yellow/orange bubbles keyed to how many markers they hold — green
+  under 10, orange above 100. Those are the same three hues the dots use for
+  something else entirely, so a green bubble read as "clean" when it only meant
+  "small". Each bubble now shows the share of contracts inside it that are
+  flagged for review, on the same traffic light: green 0%, yellow under 25%,
+  orange under 50%, red above. The count stays in the middle.
 - The view fits the 2nd–98th percentile of coordinates, not all of them. Three
   contracts sit tens of kilometres outside Bulacan — which is the point of the
   location checks — and fitting to those zooms the map out to Batangas and makes

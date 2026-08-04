@@ -26,6 +26,7 @@ import "leaflet/dist/leaflet.css";
 
 import { BOUNDARIES, META, type Project } from "./data";
 import { colorOf, type Encoding } from "./mapColor";
+import type { Marker as LMarker } from "leaflet";
 
 const BULACAN_CENTRE: [number, number] = [14.86, 120.83];
 
@@ -55,6 +56,41 @@ function FitToProjects({ projects }: { projects: Project[] }) {
   return null;
 }
 
+/**
+ * Cluster bubbles coloured by what is inside them, not by how many.
+ *
+ * leaflet.markercluster ships green/yellow/orange bubbles keyed to COUNT — green
+ * under 10, yellow to 100, orange above. On this map those are the same three
+ * hues the dots use for something else entirely: green means no flags, orange
+ * means several. A green bubble reading "clean" when it only meant "small" is
+ * worse than no colour at all.
+ *
+ * So a bubble takes the share of contracts inside it that are flagged for
+ * review, on the same traffic light the dots use. The count stays in the middle;
+ * the ring shows the share.
+ */
+function clusterIcon(cluster: { getChildCount(): number; getAllChildMarkers(): LMarker[] }) {
+  const kids = cluster.getAllChildMarkers();
+  const n = cluster.getChildCount();
+  const flagged = kids.filter(m => (m.options as { flagged?: boolean }).flagged).length;
+  const share = n ? flagged / n : 0;
+  const fill = share === 0 ? "#046b04" : share < 0.25 ? "#f7c948"
+    : share < 0.5 ? "#e8722c" : "#c0272d";
+  const size = n < 10 ? 34 : n < 100 ? 42 : 50;
+  const pct = Math.round(share * 100);
+  return L.divIcon({
+    className: "masid-cluster",
+    iconSize: L.point(size, size),
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;
+        background:${fill};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        color:#fff;font-family:Inter,sans-serif;line-height:1">
+        <span style="font-size:${n > 999 ? 11 : 13}px;font-weight:700">${n}</span>
+        <span style="font-size:8px;opacity:.9">${pct}% flagged</span>
+      </div>`,
+  });
+}
+
 export function LeafletMap({
   projects, enc, selectedId, onSelect, showBoundaries, cluster = true,
 }: {
@@ -79,6 +115,8 @@ export function LeafletMap({
         color: "#ffffff", weight: 1.5,
         fillColor: colorOf(p, enc), fillOpacity: 0.95,
       }}
+      // read back by clusterIcon to colour the bubble by contents
+      {...{ flagged: p.auditFlags.length > 0 } as object}
       eventHandlers={{ click: () => onSelect(p.id) }}>
       <Popup>
         <div style={{ minWidth: 190 }}>
@@ -138,7 +176,7 @@ export function LeafletMap({
 
       {cluster
         ? <MarkerClusterGroup chunkedLoading maxClusterRadius={45} spiderfyOnMaxZoom
-            showCoverageOnHover={false}>{markers}</MarkerClusterGroup>
+            showCoverageOnHover={false} iconCreateFunction={clusterIcon}>{markers}</MarkerClusterGroup>
         : markers}
 
       <FitToProjects projects={projects} />
