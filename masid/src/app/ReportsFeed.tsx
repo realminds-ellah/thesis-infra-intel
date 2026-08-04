@@ -32,7 +32,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, X, Eye, Clock, MapPin, AlertTriangle, Video, Loader2, Search,
-  MessageSquare, CornerDownRight, Link2, Send,
+  MessageSquare, CornerDownRight, Link2, Send, Info,
 } from "lucide-react";
 
 import { PROJECTS, PROC_BY_ID, type Project } from "./data";
@@ -82,14 +82,6 @@ export const STATUS_CFG: Record<ReportStatus, { label: string; color: string; bg
   "not-confirmed":{ label: "Not confirmed",        color: "#c05621", bg: "#fff4ec", step: 4, note: "An inspector went and did not find what the report described. That is an outcome, not a judgement on the reporter." },
   closed:         { label: "Closed",               color: "#6b6b64", bg: "#f0f0ee", step: 5, note: "No further action planned." },
 };
-
-const STEPS: { key: ReportStatus; short: string; step: number }[] = [
-  { key: "submitted", short: "Submitted", step: 1 },
-  { key: "reviewing", short: "Reviewed", step: 2 },
-  { key: "queued", short: "Queued", step: 3 },
-  { key: "validated", short: "Inspected", step: 4 },
-  { key: "closed", short: "Closed", step: 5 },
-];
 
 /** Roles that may move a report along. A reporter cannot validate themselves. */
 const OFFICIAL = new Set(["DPWH Admin", "DPWH Engineer", "Field Inspector", "LGU Coordinator"]);
@@ -500,6 +492,10 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null);
+  const [info, setInfo] = useState<Set<string>>(new Set());
+
+  /** Status config, tolerant of a value written before it existed. */
+  const st = (r: CitizenReport) => STATUS_CFG[r.status] ?? STATUS_CFG.submitted;
 
   const addComment = (reportId: string, text: string, replyTo?: string) =>
     setReports(reports.map(r => r.id === reportId ? {
@@ -614,11 +610,20 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                 {/* Where the report has got to. Without this the feed is a wall
                     of photographs and nothing says which ones anyone acted on. */}
                 <div className="px-4 pt-3 pb-2.5 border-b border-gray-100">
+                  {/* One box, colour-coded. The five-segment strip that used to
+                      sit here spent a lot of furniture on a single fact; where a
+                      report sits in the sequence is available on demand instead. */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 rounded font-semibold"
-                      style={{ background: (STATUS_CFG[r.status] ?? STATUS_CFG.submitted).bg, color: (STATUS_CFG[r.status] ?? STATUS_CFG.submitted).color }}>
-                      {(STATUS_CFG[r.status] ?? STATUS_CFG.submitted).label}
+                    <span className="text-[11px] px-2.5 py-1 rounded font-semibold flex items-center gap-1.5"
+                      style={{ background: st(r).bg, color: st(r).color }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: st(r).color }} />
+                      {st(r).label}
                     </span>
+                    <button onClick={() => {
+                        const n = new Set(info); n.has(r.id) ? n.delete(r.id) : n.add(r.id); setInfo(n);
+                      }}
+                      aria-label="What does this status mean?"
+                      className="text-gray-300 hover:text-[#1e3a7b]"><Info size={13} /></button>
                     {r.statusBy && (
                       <span className="text-[10px] text-gray-400">set by {r.statusBy} · {ago(r.statusAt ?? Date.now())}</span>
                     )}
@@ -634,31 +639,24 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 mt-2">
-                    {STEPS.map((st, i) => {
-                      const at = STATUS_CFG[r.status].step;
-                      const done = st.step <= at;
-                      const isOutcome = st.key === "validated" && r.status === "not-confirmed";
-                      return (
-                        <div key={st.key} className="flex-1 flex items-center gap-1" title={st.short}>
-                          <div className="h-1 flex-1 rounded-full" style={{
-                            background: done
-                              ? (isOutcome ? STATUS_CFG["not-confirmed"].color : STATUS_CFG[r.status].color)
-                              : "#e5e7eb",
-                          }} />
-                          {i === STEPS.length - 1 && null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    {STEPS.map(st => (
-                      <span key={st.key} className="text-[9px] text-gray-400" style={{ flex: 1 }}>
-                        {st.key === "validated" && r.status === "not-confirmed" ? "Not confirmed" : st.short}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">{STATUS_CFG[r.status].note}</p>
+                  {info.has(r.id) && (
+                    <div className="mt-2 rounded border border-gray-100 bg-gray-50 p-3">
+                      <p className="text-[11px] text-gray-600 leading-relaxed mb-2">{st(r).note}</p>
+                      <div className="space-y-1">
+                        {(Object.keys(STATUS_CFG) as ReportStatus[]).map(k => (
+                          <div key={k} className={`flex items-baseline gap-2 ${k === r.status ? "" : "opacity-45"}`}>
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" style={{ background: STATUS_CFG[k].color }} />
+                            <span className="text-[11px] font-medium text-gray-700 shrink-0" style={{ minWidth: 128 }}>{STATUS_CFG[k].label}</span>
+                            <span className="text-[10px] text-gray-500 leading-snug">{STATUS_CFG[k].note}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-2 leading-relaxed">
+                        Validated and Not confirmed are both outcomes of a site visit, not judgements on
+                        whoever reported. Only DPWH, an LGU or an inspector can move a report along.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <img src={r.image} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
