@@ -92,7 +92,7 @@ export function SatelliteScreen({ initialId, onOpenRecord }:
               const n = counts.get(v) ?? 0, on = verdicts.has(v);
               return (
                 <button key={v} onClick={() => toggle(v)} disabled={n === 0}
-                  className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 ${
+                  className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 whitespace-nowrap ${
                     on ? "text-white" : n === 0 ? "border-gray-100 text-gray-300" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
                   style={on ? { background: VERDICT_CFG[v].color, borderColor: VERDICT_CFG[v].color } : undefined}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? "#fff" : VERDICT_CFG[v].color }} />

@@ -489,21 +489,21 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-400">Sort</span>
-          {SORTS.map(({ key, label, hint }) => (
-            <button key={key} onClick={() => setSort(key)} title={hint}
-              className={`text-[12px] px-2.5 py-1 rounded-full border ${sort === key
-                ? "border-[#1e3a7b] bg-[#1e3a7b] text-white" : "border-gray-200 text-gray-600 hover:bg-white"}`}>{label}</button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* A dropdown, not chips. Five labels this long wrapped inside their
+              own pills and turned the row into a block of broken text. */}
+          <label htmlFor="feed-sort" className="text-[11px] text-gray-400">Sort by</label>
+          <select id="feed-sort" value={sort} onChange={e => setSort(e.target.value as SortKey)}
+            className="text-[12px] border border-gray-200 rounded px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
+            {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
           <span className="ml-auto text-[11px] text-gray-400">{reports.length} report{reports.length === 1 ? "" : "s"}</span>
         </div>
-        {sort === "distance" && (
-          <p className="text-[11px] text-gray-500 -mt-1">
-            The only ordering here that is measured rather than voted on: how far the reporter&apos;s
-            device was from the coordinate DPWH published.
-          </p>
-        )}
+        <p className="text-[11px] text-gray-500 -mt-2">
+          {sort === "distance"
+            ? "The only ordering here that is measured rather than voted on: how far the reporter's device was from the coordinate DPWH published."
+            : SORTS.find(o => o.key === sort)?.hint}
+        </p>
         <div className="hidden">
         </div>
 
