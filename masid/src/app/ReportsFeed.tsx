@@ -48,10 +48,69 @@ export interface CitizenReport {
   lng: number | null;
   metresFromContract: number | null;
   masid: number;
+  /** Seeded example, never a real submission. Badged wherever it appears. */
+  demo?: boolean;
 }
 
+/**
+ * Seeded sample reports, so the feed shows what it is for before anyone has
+ * posted to it.
+ *
+ * Two rules held here, because these attach to REAL contracts with REAL named
+ * contractors:
+ *
+ *  1. The photos are obvious placeholders — flat panels with the word SAMPLE
+ *    across them — not fabricated site imagery. A synthetic photograph of a
+ *    riverbank, attached to a named company's contract, is exactly the kind of
+ *    thing this tool exists to catch. It is not going to manufacture one.
+ *  2. The notes are observational and make no accusation. Every card carries a
+ *    DEMO badge, and demo reports never count toward anything.
+ *
+ * They exist to show the range of the interaction: a report that lands on the
+ * coordinate, one that lands a long way off it, one about condition.
+ */
+const placeholder = (label: string, tint: string) =>
+  "data:image/svg+xml;utf8," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">
+      <rect width="640" height="420" fill="${tint}"/>
+      <text x="320" y="196" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="30" font-weight="700" fill="#ffffff" opacity="0.9">SAMPLE</text>
+      <text x="320" y="228" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="15" fill="#ffffff" opacity="0.75">${label}</text>
+      <text x="320" y="256" text-anchor="middle" font-family="Inter,sans-serif"
+        font-size="12" fill="#ffffff" opacity="0.6">not a real photograph</text>
+    </svg>`);
+
+const HOUR = 3600_000;
+const DEMO: CitizenReport[] = [
+  {
+    id: "demo-1", projectId: "23CC0190", demo: true,
+    note: "Walked the stretch this morning. A concrete revetment is here and looks continuous along the bank. No project billboard that I could find.",
+    image: placeholder("placeholder for a site photo", "#4a6b52"),
+    capturedAt: Date.now() - 5 * HOUR,
+    lat: 14.81240, lng: 120.71600, metresFromContract: 42, masid: 12,
+  },
+  {
+    id: "demo-2", projectId: "24CC0546", demo: true,
+    note: "Went to the coordinate given for this one. It is a rice field. The pumping station the title describes is not at this spot — asking around, people point further up the road.",
+    image: placeholder("placeholder for a site photo", "#8a7a4a"),
+    capturedAt: Date.now() - 26 * HOUR,
+    lat: 14.85210, lng: 120.83140, metresFromContract: 3120, masid: 47,
+  },
+  {
+    id: "demo-3", projectId: "18CC0051", demo: true,
+    note: "Section of the dike here is cracked and the edge has slumped toward the water. Same spot was worked on again in a later contract, which matches what the register says.",
+    image: placeholder("placeholder for a site photo", "#6b5a4a"),
+    capturedAt: Date.now() - 3 * 24 * HOUR,
+    lat: 14.77230, lng: 120.75310, metresFromContract: 18, masid: 31,
+  },
+];
+
 const load = (): CitizenReport[] => {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? "null");
+    return Array.isArray(saved) && saved.length ? saved : DEMO;
+  } catch { return DEMO; }
 };
 const save = (r: CitizenReport[]) => localStorage.setItem(KEY, JSON.stringify(r));
 
@@ -305,6 +364,12 @@ export function ReportsFeed({ onOpenProject }: { onOpenProject: (id: string) => 
               <div className="flex-1 min-w-0">
                 <img src={r.image} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
                 <div className="p-4">
+                  {r.demo && (
+                    <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded mb-2"
+                      style={{ background: "#fef9e7", color: "#b45309" }}>
+                      <AlertTriangle size={9}/>DEMO — seeded example, not a real report
+                    </div>
+                  )}
                   {r.note && <p className="text-[13px] text-gray-800 leading-relaxed mb-2.5">{r.note}</p>}
                   {p && (
                     <button onClick={() => onOpenProject(p.id)}
