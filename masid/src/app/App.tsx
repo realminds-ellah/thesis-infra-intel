@@ -1887,7 +1887,11 @@ export default function App() {
   const [userRole,setUserRole]        = useState<Role>("dpwh-admin");
   const [screen,setScreen]            = useState<Screen>("dashboard");
   const [sidebarCollapsed,setSidebar] = useState(false);
-  const [selectedProjectId,setSelId]  = useState(PROJECTS[0].id);
+  // Null until someone picks one. Seeding it with PROJECTS[0] meant every screen
+  // that reads a "selected" project was handed an arbitrary contract nobody
+  // chose — the satellite workbench opened on it instead of on the top of its
+  // own sorted queue. Screens that need a fallback still apply one below.
+  const [selectedProjectId,setSelId]  = useState<string|null>(null);
   const [notificationsOpen,setNotifs] = useState(false);
   const [paletteOpen,setPalette]      = useState(false);
   const [createModalOpen,setCreate]   = useState(false);
@@ -1961,7 +1965,7 @@ export default function App() {
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
           {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers} colorBy={colorBy}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
-          {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail}/>}
+          {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail} reviewerLabel={ROLE_CFG[userRole].label}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
           {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail} role={ROLE_LABELS_PUBLIC[userRole]}/>}
           {screen==="contractors"  &&<ContractorsScreen/>}
