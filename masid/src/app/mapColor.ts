@@ -159,7 +159,6 @@ export const ENCODINGS: Encoding[] = [
     bins: [
       { key: "completed", label: "Completed", color: TRAFFIC.good, shape: "circle", test: p => p.status === "completed" },
       { key: "ongoing", label: "Ongoing", color: CAT_3[0], shape: "circle", test: p => p.status === "ongoing" },
-      { key: "flagged", label: "Flagged for review", color: TRAFFIC.concern, shape: "circle", test: p => p.status === "flagged" },
       { key: "other", label: "Proposed or terminated", color: NEUTRAL, shape: "circle", test: p => p.status === "proposed" || p.status === "terminated" },
     ],
   },

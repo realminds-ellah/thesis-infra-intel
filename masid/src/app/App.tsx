@@ -27,6 +27,8 @@ import {
 import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
+import { ProjectMap } from "./ProjectMap";
+import { HAZARD_BY_ID } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
@@ -92,7 +94,6 @@ const INTEGRATIONS = [
 const STATUS_CFG: Record<ProjectStatus,{label:string;dot:string;bg:string;text:string}> = {
   completed: { label:"Completed",          dot:"#16a34a", bg:"#dcfce7", text:"#15803d" },
   ongoing:   { label:"Ongoing",            dot:"#2563eb", bg:"#dbeafe", text:"#1d4ed8" },
-  flagged:   { label:"Flagged for Review", dot:"#f59e0b", bg:"#fef3c7", text:"#b45309" },
   proposed:  { label:"Proposed",           dot:"#94a3b8", bg:"#f1f5f9", text:"#64748b" },
   terminated:{ label:"Terminated",         dot:"#dc2626", bg:"#fee2e2", text:"#b91c1c" },
 };
@@ -978,7 +979,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
   const legend=useMemo(()=>legendFor(enc,projects),[enc,projects]);
   const [q,setQ]=useState("");
   const sort=useSort<Project>();
-  const flagged=projects.filter(p=>p.status==="flagged").length;
+  const flagged=projects.filter(p=>p.auditFlags.length>0).length;
   const filtered=useMemo(()=>projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())||p.municipality.toLowerCase().includes(q.toLowerCase())),[projects,q]);
   const sorted=useMemo(()=>sort.apply(filtered),[filtered,sort.apply]);
   const pg=usePagination(filtered.length,8);
@@ -987,28 +988,106 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
   const nActive=activeCount(filters);
 
   const SlidePanel=({project}:{project:Project})=>{
-    const c=STATUS_CFG[project.status];
+    const pr=PROC_BY_ID.get(project.id);
+    const hz=HAZARD_BY_ID.get(project.id);
+    const sat=SAT_BY_ID.get(project.id);
+    const docs=pr?(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>pr.documents[k]):[];
+    const Row=({l,v,mono}:{l:string;v:React.ReactNode;mono?:boolean})=>(
+      <div className="flex items-start justify-between gap-3 py-1.5 border-b border-gray-50 last:border-0">
+        <span className="text-[11px] text-gray-400 shrink-0">{l}</span>
+        <span className={`text-[12px] text-gray-800 text-right ${mono?"font-mono":""}`}>{v}</span>
+      </div>
+    );
     return (
-      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-10" style={{width:296}}>
-        <div className="flex items-start gap-2 p-4 border-b border-gray-100">
-          <div className="flex-1 min-w-0"><div className="text-[10px] font-mono text-gray-400 mb-1">{project.id}</div><h3 className="text-[13px] font-bold text-gray-900 leading-snug">{project.name}</h3></div>
+      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-10" style={{width:420}}>
+        <div className="flex items-start gap-2 p-4 border-b border-gray-100 shrink-0">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-mono text-gray-400 mb-1">{project.id}</div>
+            <h3 className="text-[13px] font-bold text-gray-900 leading-snug">{project.name}</h3>
+            <div className="text-[11px] text-gray-500 mt-0.5">{project.municipality}, Bulacan</div>
+          </div>
           <button onClick={()=>setSelectedId("")} aria-label="Close panel" className="p-1 text-gray-400 hover:text-gray-600 rounded shrink-0"><X size={15}/></button>
         </div>
-        <div className="h-28 relative" style={{background:"linear-gradient(135deg,#ccdce8,#dde6f0)"}}>
-          <svg viewBox="0 0 296 112" className="w-full h-full absolute inset-0"><rect width={296} height={112} fill="#cddde8"/><polygon points="38,4 42,24 46,54 42,88 38,112 75,112 130,108 158,94 162,72 160,52 154,34 122,18 84,8 55,6" fill="#dde6f0" stroke="#1e3a7b" strokeWidth={0.8}/>{(()=>{const{x,y}=toXY(project.lng,project.lat);const nx=(x/MB.W)*296,ny=(y/MB.H)*112;return(<><circle cx={nx} cy={ny} r={9} fill={c.dot} opacity={0.15}/><circle cx={nx} cy={ny} r={4.5} fill={c.dot} stroke="white" strokeWidth={1.5}/></>);})()}</svg>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3.5" style={{scrollbarWidth:"none"}}>
-          <div className="flex items-center gap-2 flex-wrap"><StatusBadge status={project.status}/>{project.status==="flagged"&&<span className="text-[11px] text-amber-600 flex items-center gap-1"><AlertTriangle size={11}/>Needs Review</span>}</div>
-          <AuditFlags project={project} compact/>
-          <div className="space-y-2.5">
-            {[{icon:<Building2 size={12} className="text-gray-400"/>,l:"Contractor",v:project.contractor},{icon:<MapPin size={12} className="text-gray-400"/>,l:"Location",v:`${project.municipality}, Bulacan`},{icon:<Banknote size={12} className="text-gray-400"/>,l:"Budget",v:pesoFull(project.budget),m:true}].map(({icon,l,v,m})=>(
-              <div key={l} className="flex items-start gap-2"><div className="mt-0.5 shrink-0">{icon}</div><div className="flex-1 min-w-0"><div className="text-[10px] text-gray-400">{l}</div><div className={`text-[12px] font-medium text-gray-800 ${m?"font-mono":""}`}>{v}</div></div></div>
-            ))}
-            <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 flex items-center gap-1"><Percent size={11}/>Completion</span><span className="text-[12px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+
+        {/* A real map of the surroundings, replacing a decorative polygon that
+            drew the same invented coastline for every contract in the register. */}
+        {project.lat!=null&&project.lng!=null?(
+          <div className="border-b border-gray-100 shrink-0">
+            <ProjectMap project={project as Project&{lat:number;lng:number}} enc={enc}
+              onPick={id=>setSelectedId(id)}/>
+            <div className="px-4 py-1.5 text-[10px] text-gray-400 flex items-center justify-between">
+              <span className="font-mono">{project.lat.toFixed(5)}, {project.lng.toFixed(5)}</span>
+              <span>other contracts in frame are clickable</span>
+            </div>
           </div>
+        ):(
+          <div className="border-b border-gray-100 px-4 py-6 text-center shrink-0">
+            <MapPin size={20} className="text-gray-300 mx-auto mb-1.5"/>
+            <div className="text-[12px] text-gray-500">No location was published for this contract</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">so it cannot be shown on a map, or inspected from one</div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{scrollbarWidth:"none"}}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusBadge status={project.status}/>
+            {hz?.hazard&&hz.hazard!=="none"&&<span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">{hz.hazard} flood risk</span>}
+            {(project as never as {siteRebuilds?:number}).siteRebuilds ?<span className="text-[10px] px-2 py-0.5 rounded bg-orange-50 text-orange-700">built again later</span>:null}
+          </div>
+
+          <AuditFlags project={project} compact/>
+          {pr&&pr.procurementFlags.length>0&&(
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5"><Banknote size={11}/>About the deal</div>
+              {pr.procurementFlags.map(f=>(
+                <div key={f.code} className="rounded border p-2.5 text-[11px]" style={{background:SEVERITY_CFG[f.severity].bg,borderColor:SEVERITY_CFG[f.severity].color+"33"}}>
+                  <div className="font-semibold mb-0.5" style={{color:SEVERITY_CFG[f.severity].color}}>{PROC_FLAG_LABELS[f.code]??f.code}</div>
+                  <div className="text-gray-700 leading-relaxed">{f.detail}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">The contract</div>
+            <Row l="Contractor" v={project.contractor.replace(/\s*\(.*$/,"")}/>
+            <Row l="Approved budget" v={pr?.abc?pesoFull(pr.abc):"—"} mono/>
+            <Row l="Awarded for" v={pr?.awardAmount?pesoFull(pr.awardAmount):"—"} mono/>
+            {pr?.bidRatio&&<Row l="Share of budget" v={`${(pr.bidRatio*100).toFixed(2)}%`} mono/>}
+            <Row l="Companies that bid" v={pr?.bidders??"—"} mono/>
+            <Row l="Started" v={project.startDate??"—"} mono/>
+            <Row l="Due to finish" v={project.endDate??"—"} mono/>
+            <Row l="Reported progress" v={`${project.completion}%`} mono/>
+            <Row l="Funding" v={<span className="text-[11px]">{project.fundingSource}</span>}/>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Documents</div>
+            {docs.length?(
+              <div className="space-y-1">
+                {docs.map(k=>(
+                  <a key={k} href={pr!.documents[k]!} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 px-2.5 py-2 rounded border border-gray-100 hover:border-[#1e3a7b]/30 hover:bg-blue-50/30 text-[12px] text-gray-700">
+                    <FileText size={13} style={{color:"#1e3a7b"}}/><span className="flex-1">{DOC_LABELS[k]}</span><ExternalLink size={11} className="text-gray-300"/>
+                  </a>
+                ))}
+              </div>
+            ):<div className="text-[12px] text-gray-400">None published for this contract</div>}
+          </div>
+
+          {sat&&(
+            <div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Satellite check</div>
+              <div className="rounded border p-2.5 text-[11px]" style={{background:VERDICT_CFG[sat.verdict].bg,borderColor:VERDICT_CFG[sat.verdict].color+"33"}}>
+                <div className="font-semibold mb-0.5" style={{color:VERDICT_CFG[sat.verdict].color}}>{VERDICT_CFG[sat.verdict].label}</div>
+                <div className="text-gray-600 leading-relaxed">{VERDICT_CFG[sat.verdict].note}</div>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="p-4 border-t border-gray-100">
-          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style={{background:"#1e3a7b"}}>View Full Details<ArrowRight size={14}/></button>
+
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"#1e3a7b"}}>Open full record<ArrowRight size={14}/></button>
         </div>
       </div>
     );

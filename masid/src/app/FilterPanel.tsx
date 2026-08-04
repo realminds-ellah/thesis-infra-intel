@@ -17,6 +17,7 @@ import {
   type CoordState, type DocState, type HazardState,
   applyFilters, countBy, AMOUNT_BOUNDS, YEAR_BOUNDS, AMOUNT_HISTOGRAM,
   PRESETS, LABELS, PROBLEM_LABELS, PROC_CODES, problemCounts, activeCount, emptyFilters, toQuery,
+  CONCERNS, type ConcernKey,
 } from "./filters";
 import { META, VERDICT_CFG, type Verdict, type ProjectStatus } from "./data";
 import type { Role } from "./roles";
@@ -124,7 +125,7 @@ export function FilterPanel({ filters, setFilters, collapsed, role = "dpwh-admin
     procFlags: countBy.procFlags(filters), quadrant: countBy.quadrant(filters),
     satellite: countBy.satellite(filters), coords: countBy.coords(filters),
     docs: countBy.docs(filters), hazard: countBy.hazard(filters),
-    problems: problemCounts(filters),
+    problems: problemCounts(filters), concerns: countBy.concerns(filters),
   }), [filters]);
 
   const toggle = <K extends keyof Filters>(dim: K, v: string) => {
@@ -202,18 +203,53 @@ export function FilterPanel({ filters, setFilters, collapsed, role = "dpwh-admin
               </div>
             </>),
             finished: (<>
-              {(["completed", "ongoing", "proposed", "terminated"] as ProjectStatus[]).map(k => (
-                <Opt key={k} label={LABELS.status[k]} n={c.status.get(k) ?? 0}
-                  on={filters.status.has(k)} toggle={() => toggle("status", k)} />
-              ))}
-              <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
-                {(["overdue", "stalled", "rebuilt", "unpaid"] as DeliveryState[]).map(k => (
-                  <Opt key={k} label={LABELS.delivery[k]} n={c.delivery.get(k) ?? 0}
-                    on={filters.delivery.has(k)} toggle={() => toggle("delivery", k)} />
-                ))}
+              {/* Stage is what DPWH itself reports, and every project is exactly
+                  one of these — so the four together always add to the register.
+                  Nothing about problems belongs here: a defective structure is
+                  still a finished one, and mixing the two is what made the app
+                  under-report completions by 245. */}
+              <div className="grid grid-cols-2 gap-1.5">
+                {(["completed", "ongoing", "proposed", "terminated"] as ProjectStatus[]).map(k => {
+                  const n = c.status.get(k) ?? 0, on = filters.status.has(k);
+                  return (
+                    <button key={k} onClick={() => toggle("status", k)} disabled={n === 0 && !on}
+                      className={`text-left px-2.5 py-2 rounded border transition-colors ${
+                        on ? "border-[#1e3a7b] bg-blue-50" : n === 0 ? "border-gray-100 opacity-40" : "border-gray-200 hover:border-gray-300"}`}>
+                      <div className={`font-mono text-[15px] font-bold ${on ? "text-[#1e3a7b]" : "text-gray-700"}`}>{n.toLocaleString()}</div>
+                      <div className="text-[11px] text-gray-500 leading-tight">{LABELS.status[k]}</div>
+                    </button>
+                  );
+                })}
               </div>
             </>),
             problems: (<>
+              {/* Six chips instead of eighteen tickboxes. The individual checks
+                  are still filterable, one disclosure down, for whoever needs
+                  them — but nobody arrives at a public register wanting to tick
+                  "UNLOCATABLE_COORD". */}
+              <div className="flex flex-wrap gap-1.5">
+                {CONCERNS.map(cn => {
+                  const n = c.concerns.get(cn.key) ?? 0, on = filters.concerns.has(cn.key);
+                  return (
+                    <button key={cn.key} title={cn.hint} onClick={() => toggle("concerns", cn.key)}
+                      disabled={n === 0 && !on}
+                      className={`text-[11px] pl-2.5 pr-1.5 py-1 rounded-full border flex items-center gap-1.5 transition-colors ${
+                        on ? "border-[#1e3a7b] bg-[#1e3a7b] text-white"
+                           : n === 0 ? "border-gray-100 text-gray-300"
+                           : "border-gray-200 text-gray-600 hover:border-[#1e3a7b]/40 hover:bg-blue-50"}`}>
+                      {cn.label}
+                      <span className={`font-mono text-[10px] px-1 rounded ${on ? "bg-white/20" : "bg-gray-100 text-gray-500"}`}>{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 leading-snug pt-2">
+                A flag means the public record disagrees with itself. It is a reason to look,
+                not proof that anything was done wrong.
+              </p>
+              <details className="pt-1">
+                <summary className="text-[11px] text-[#1e3a7b] cursor-pointer hover:underline">Show the individual checks</summary>
+                <div className="space-y-1.5 pt-2">
               {[...c.problems.keys()]
                 .sort((a, b) => (c.problems.get(b) ?? 0) - (c.problems.get(a) ?? 0))
                 .map(k => {
@@ -221,10 +257,8 @@ export function FilterPanel({ filters, setFilters, collapsed, role = "dpwh-admin
                   return <Opt key={k} label={PROBLEM_LABELS[k] ?? k} n={c.problems.get(k) ?? 0}
                     on={(filters[dim] as Set<string>).has(k)} toggle={() => toggle(dim, k)} />;
                 })}
-              <p className="text-[10px] text-gray-400 leading-snug pt-1">
-                A flag means the public record disagrees with itself. It is a reason to look,
-                not proof that anything was done wrong.
-              </p>
+                </div>
+              </details>
             </>),
             cost: (<>
               <RangeControl bounds={AMOUNT_BOUNDS} value={filters.amount} format={peso}

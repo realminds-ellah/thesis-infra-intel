@@ -473,7 +473,14 @@ def main() -> int:
         score = sum(weight[f["severity"]] for f in flags)
 
         municipality = decl or geoc or "Unspecified"
-        status = "flagged" if flags else STATUS_MAP.get(dpwh_status, "proposed")
+
+        # Status is the lifecycle stage DPWH reports and NOTHING else. An earlier
+        # version overwrote it with "flagged" whenever a check tripped, which hid
+        # 245 completed contracts inside a status that is not a lifecycle stage at
+        # all — the app said 717 completed where DPWH says 962, and no filter
+        # could recover them. A flagged project is still completed; a defective
+        # one would be too. Conditions live in auditFlags, never in the stage.
+        status = STATUS_MAP.get(dpwh_status, "proposed")
 
         projects.append({
             "id": str(r["contractId"]),

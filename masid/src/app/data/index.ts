@@ -12,7 +12,10 @@ import procurementRaw from "./procurement.json";
 import hazardRaw from "./hazard.json";
 import metaRaw from "./meta.json";
 
-export type ProjectStatus = "completed" | "ongoing" | "flagged" | "proposed" | "terminated";
+/** Lifecycle stage only. "Flagged" is deliberately absent: it is a condition a
+ *  contract can carry at any stage, and putting it here hid 245 completed
+ *  contracts from the completed count. Use `auditFlags.length` for that. */
+export type ProjectStatus = "completed" | "ongoing" | "proposed" | "terminated";
 export type FlagSeverity = "high" | "medium" | "low";
 
 export interface AuditFlag {
@@ -114,7 +117,7 @@ export const SEVERITY_CFG: Record<FlagSeverity, { label: string; color: string; 
 
 // ─── Derived aggregates ───────────────────────────────────────────────────────
 
-const STATUS_KEYS: ProjectStatus[] = ["completed", "ongoing", "flagged", "proposed", "terminated"];
+const STATUS_KEYS: ProjectStatus[] = ["completed", "ongoing", "proposed", "terminated"];
 
 /** Per-municipality status counts, busiest first. */
 export const MUNI_BREAKDOWN = (() => {
@@ -137,7 +140,6 @@ export const STATUS_PIE = (
   [
     { name: "Completed", key: "completed", color: "#16a34a" },
     { name: "Ongoing", key: "ongoing", color: "#2563eb" },
-    { name: "Flagged", key: "flagged", color: "#f59e0b" },
     { name: "Proposed", key: "proposed", color: "#94a3b8" },
     { name: "Terminated", key: "terminated", color: "#dc2626" },
   ] as const

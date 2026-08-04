@@ -310,6 +310,61 @@ one company bid". Records-tier and procurement-tier flags are merged into one
 list, because which pipeline produced a flag matters to the method and not at all
 to a resident asking what is wrong with the project outside their house.
 
+### Stage and condition are separate, and that is not cosmetic
+
+An earlier version put `flagged for review` in the same list as `completed`,
+`ongoing` and so on. It is not a lifecycle stage — it is a condition a contract
+can carry at any stage — and treating it as one hid **245 completed contracts
+inside "flagged"**. The app reported 717 completed where DPWH reports 962, and no
+filter could recover them.
+
+Status is now the stage DPWH itself reports and nothing else:
+
+```
+Finished        962      A defective structure is still a finished one.
+Being built     263      A flagged contract is still at whatever stage it is at.
+Not started yet  68      962 + 263 + 68 = 1,293, the whole register.
+Cancelled         0
+```
+
+Everything else — late, rebuilt, unlocatable, single-bidder — lives in the
+conditions, where a contract can carry several at once or none.
+
+This is also why **"completed but defective" is not offered as a status.** It
+would repeat exactly the same mistake: tag a project defective and it drops out
+of the completed count, and you could never ask "how many finished projects are
+defective?" because the answer would be zero by construction. There is also no
+public dataset that records defects. The closest honest signal is *"same spot was
+built again later"* (142 contracts), shown as the inference it is. COA's
+published fraud audit reports do name specific Bulacan 1st DEO contracts as ghost
+or relocated — extracting those would give a recorded field rather than an
+inference, and is the obvious next step.
+
+### Six chips instead of eighteen tickboxes
+
+The individual checks are all still filterable, one disclosure down. Above them
+sit six bundles, because nobody arrives at a public register wanting to tick
+`UNLOCATABLE_COORD`:
+
+| Chip | Contracts | Bundles |
+|---|---|---|
+| Running late | 256 | past its finish date |
+| Built more than once | 142 | same coordinate, later year |
+| Can't be found on a map | 191 | missing, mismatched, unlocatable, outside province, duplicated |
+| No paperwork published | 7 | no contract document at all |
+| Nowhere near flooding | 3 | over 1 km from any modelled flood extent |
+| Something odd about the deal | 652 | won at exactly 96%, one bidder, short bid window, revoked contractor |
+
+### Clicking a project
+
+Opens a real map of its surroundings — the actual municipal boundaries, every
+other contract in frame (clickable), a scale bar measured from the extent — with
+the full contract underneath: approved budget against awarded amount, bidder
+count, dates, every flag, and live links to the published documents.
+
+It replaces a decorative polygon inherited from the design export that drew the
+same invented coastline for every contract in the register.
+
 ### The panel changes with the role
 
 The six roles do different jobs, and one panel serving all of them serves none
