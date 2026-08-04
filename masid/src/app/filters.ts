@@ -23,7 +23,7 @@
  */
 
 import {
-  PROJECTS, PROC_BY_ID, SAT_BY_ID, FUSED_BY_ID, FLAG_LABELS, PROC_FLAG_LABELS,
+  PROJECTS, PROC_BY_ID, SAT_BY_ID, FUSED_BY_ID, HAZARD_BY_ID, FLAG_LABELS, PROC_FLAG_LABELS,
   type Project, type ProjectStatus, type Quadrant, type Verdict,
 } from "./data";
 
@@ -32,6 +32,7 @@ export type BidderBand = "1" | "2" | "3-5" | "6+";
 export type RatioBand = "at96" | "whole" | "other";
 export type CoordState = "published" | "missing" | "mismatch" | "outside";
 export type DocState = "complete" | "partial" | "none";
+export type HazardState = "high" | "medium" | "low" | "edge" | "far" | "unknown";
 
 export interface Filters {
   q: string;
@@ -49,6 +50,7 @@ export interface Filters {
   satellite: Set<Verdict | "not-assessed">;
   coords: Set<CoordState>;
   docs: Set<DocState>;
+  hazard: Set<HazardState>;
 }
 
 export const emptyFilters = (): Filters => ({
@@ -57,7 +59,7 @@ export const emptyFilters = (): Filters => ({
   years: null, amount: null,
   bidders: new Set(), ratio: new Set(), recordFlags: new Set(),
   procFlags: new Set(), quadrant: new Set(), satellite: new Set(),
-  coords: new Set(), docs: new Set(),
+  coords: new Set(), docs: new Set(), hazard: new Set(),
 });
 
 // ─── derived per-project attributes ───────────────────────────────────────────
@@ -82,6 +84,18 @@ export const coordState = (p: Project): CoordState => {
   if (codes.includes("OUTSIDE_PROVINCE") || codes.includes("UNLOCATABLE_COORD")) return "outside";
   if (codes.includes("MUNI_MISMATCH")) return "mismatch";
   return "published";
+};
+
+/** Hazard at the coordinate, with "outside but adjacent" kept separate from
+ *  "nowhere near" — the distinction that stops a normal edge-sited revetment
+ *  being read as a misplaced one. */
+export const hazardState = (p: Project): HazardState => {
+  const h = HAZARD_BY_ID.get(p.id);
+  if (!h || h.level == null) return "unknown";
+  if (h.level >= 3) return "high";
+  if (h.level === 2) return "medium";
+  if (h.level === 1) return "low";
+  return (h.metresToHazard ?? 0) > 1000 ? "far" : "edge";
 };
 
 export const docState = (p: Project): DocState => {
@@ -134,6 +148,7 @@ const preds = (f: Filters): Record<keyof Filters, Pred> => ({
     f.satellite.has((SAT_BY_ID.get(p.id)?.verdict ?? "not-assessed") as Verdict | "not-assessed"),
   coords: p => f.coords.size === 0 || f.coords.has(coordState(p)),
   docs: p => f.docs.size === 0 || f.docs.has(docState(p)),
+  hazard: p => f.hazard.size === 0 || f.hazard.has(hazardState(p)),
 });
 
 export function applyFilters(f: Filters, source: Project[] = PROJECTS): Project[] {
@@ -176,6 +191,7 @@ export const countBy = {
     p => [(SAT_BY_ID.get(p.id)?.verdict ?? "not-assessed") as string]),
   coords: (f: Filters) => facetCounts(f, "coords", p => [coordState(p)]),
   docs: (f: Filters) => facetCounts(f, "docs", p => [docState(p)]),
+  hazard: (f: Filters) => facetCounts(f, "hazard", p => [hazardState(p)]),
 };
 
 // ─── bounds, taken from the data rather than hard-coded ───────────────────────
@@ -245,6 +261,11 @@ export const PRESETS: Preset[] = [
     build: () => ({ ...emptyFilters(), coords: new Set<CoordState>(["missing", "mismatch", "outside"]) }),
   },
   {
+    key: "offhazard", label: "Away from flood risk",
+    hint: "Over a kilometre from any modelled 100-year flood extent. Only 3 contracts — and all three already carry a coordinate flag",
+    build: () => ({ ...emptyFilters(), hazard: new Set<HazardState>(["far"]) }),
+  },
+  {
     key: "nodocs", label: "Undocumented",
     hint: "No contract document published",
     build: () => ({ ...emptyFilters(), docs: new Set<DocState>(["none"]) }),
@@ -254,7 +275,7 @@ export const PRESETS: Preset[] = [
 // ─── URL state ────────────────────────────────────────────────────────────────
 
 const SETS: (keyof Filters)[] = ["status", "delivery", "municipality", "bidders",
-  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs"];
+  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs", "hazard"];
 
 export function toQuery(f: Filters): string {
   const p = new URLSearchParams();
@@ -304,6 +325,11 @@ export const LABELS = {
   ratio: { at96: "Exactly 96.00% of ABC", whole: "Other whole percentage", other: "Not a whole percentage" } as Record<RatioBand, string>,
   coords: { published: "Published and consistent", missing: "No coordinate", mismatch: "Contradicts description", outside: "Outside the province" } as Record<CoordState, string>,
   docs: { complete: "All four documents", partial: "Some documents", none: "None published" } as Record<DocState, string>,
+  hazard: {
+    high: "High flood hazard", medium: "Medium hazard", low: "Low hazard",
+    edge: "Outside, within 1 km", far: "Over 1 km from any flood zone",
+    unknown: "No coordinate",
+  } as Record<HazardState, string>,
   flags: FLAG_LABELS,
   procFlags: PROC_FLAG_LABELS,
 };

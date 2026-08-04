@@ -14,7 +14,7 @@ import { ChevronDown, ChevronRight, Search, X, Link2, RotateCcw } from "lucide-r
 
 import {
   type Filters, type DeliveryState, type BidderBand, type RatioBand,
-  type CoordState, type DocState,
+  type CoordState, type DocState, type HazardState,
   applyFilters, countBy, AMOUNT_BOUNDS, YEAR_BOUNDS, AMOUNT_HISTOGRAM,
   PRESETS, LABELS, activeCount, emptyFilters, toQuery,
 } from "./filters";
@@ -119,7 +119,7 @@ export function FilterPanel({ filters, setFilters, collapsed }:
     ratio: countBy.ratio(filters), recordFlags: countBy.recordFlags(filters),
     procFlags: countBy.procFlags(filters), quadrant: countBy.quadrant(filters),
     satellite: countBy.satellite(filters), coords: countBy.coords(filters),
-    docs: countBy.docs(filters),
+    docs: countBy.docs(filters), hazard: countBy.hazard(filters),
   }), [filters]);
 
   const toggle = <K extends keyof Filters>(dim: K, v: string) => {
@@ -255,6 +255,17 @@ export function FilterPanel({ filters, setFilters, collapsed }:
                 on={filters.municipality.has(k)} toggle={() => toggle("municipality", k)} />
             ))}
           </div>
+        </Group>
+
+        <Group title="Flood risk at the site" count={filters.hazard.size}>
+          <p className="text-[10px] text-gray-400 leading-snug pb-1">
+            UP NOAH modelled 100-year flood extent. Read &ldquo;outside&rdquo; with the distance —
+            a revetment belongs at the edge of a flood zone.
+          </p>
+          {(["high","medium","low","edge","far","unknown"] as HazardState[]).map(k => (
+            <Opt key={k} label={LABELS.hazard[k]} n={c.hazard.get(k) ?? 0}
+              on={filters.hazard.has(k)} toggle={() => toggle("hazard", k)} />
+          ))}
         </Group>
 
         <Group title="Evidence available" count={filters.docs.size + filters.satellite.size}>

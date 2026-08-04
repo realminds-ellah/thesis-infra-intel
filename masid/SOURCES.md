@@ -335,57 +335,77 @@ It is now a dual-handle range over `awardAmount`, bounded by the real data
 
 ## Map colour
 
-Markers are coloured by a selectable encoding, and the encoding **follows the
-filter** — setting a delivery filter colours by delivery concern without being
-asked. The legend always shows labels and live counts.
+Markers use a **traffic light** — green, amber, orange, red — chosen because on a
+public accountability map that vocabulary is understood instantly and by
+everyone, and that legibility is the product.
 
-Every palette was run through a validator against the map's **actual** surface
-and against **all pairs**, not adjacent ones: on a map any two categories can end
-up side by side.
+The cost is real and is paid rather than ignored.
 
-Two results changed the design.
-
-**The obvious palette fails.** Green / amber / orange / red — the status colours
-already used for badges — collapse as a map encoding:
+**Red and green cannot be separated on the protan axis.** A dozen traffic-light
+candidates were run through a validator against the map's real surface
+(`#f2f2f0`) and against *all* pairs — on a map any two categories can end up
+adjacent. Every candidate that still looked like a traffic light scored between
+ΔE 1.6 and 7.5. The set shipped is the best of them:
 
 ```
-red ↔ green     ΔE 4.1 (deutan)      — the classic red-green failure
-orange ↔ amber  ΔE 13.6 (normal)     — below the 15 floor even with full colour vision
-all five        below 3:1 on surface
+#046b04  #f7c948  #e8722c  #c0272d
+CVD ΔE 7.5 (protan) · tritan 14.1 · normal-vision 16.9 · contrast WARN
 ```
 
-They are kept for badges, where an icon and a word carry the meaning, and are not
-used to colour marks.
+7.5 sits in the band the method permits **only with secondary encoding**. So the
+secondary encoding is not decoration here — it is what makes the palette legal:
 
-**Most of these dimensions are ordinal, not categorical.** Audit priority,
-delivery concern, thinness of competition and award size are all *ordered*, and
-ordered data wants a single-hue ramp rather than distinct hues. That also
-sidesteps the three-slot ceiling that applies to categorical palettes on
-all-pairs forms, because a ramp is validated on monotone lightness instead.
+**Every mark also carries a shape** — circle, square, triangle, diamond, cross —
+and the legend draws that shape beside its label and count. A viewer who cannot
+separate the hues reads the silhouette instead and loses nothing.
 
-Validated 2026-08-04, light mode, surface `#f2f2f0`:
+Award amount keeps a single-hue sequential ramp (`#6da7ec #3987e5 #256abf
+#104281`, all checks pass). Magnitude is not a traffic light: a large contract is
+not "bad".
 
-| Palette | Use | Result |
+The basemap was desaturated to neutral greys — it was a saturated blue that both
+competed with the data and pushed the ramp's light end below the contrast floor
+against it. Marker drop-shadows were removed: at this density several hundred
+merged into a grey smear, and the 2 px surface ring is enough.
+
+## Flood hazard
+
+| | |
+|---|---|
+| **Dataset** | `bettergovph/project-noah-hazard-maps` → `Flood/100yr/Bulacan.zip` |
+| **Upstream** | UP NOAH (Nationwide Operational Assessment of Hazards) |
+| **CRS** | GCS_WGS_1984 — same datum as the DPWH coordinates, no reprojection |
+| **Geometry** | 261,710 polygon parts; `Var` 1 low / 2 medium / 3 high |
+
+For a flood-control register this is the question the money is meant to answer,
+and until now nothing here asked it. Every coordinate is tested against the
+modelled 100-year extent; those outside get the distance to the nearest hazard
+polygon.
+
+| At the published coordinate | Contracts | |
 |---|---|---|
-| `#6da7ec #3987e5 #256abf #104281` | 4-step ordinal | all checks pass |
-| `#6da7ec #3987e5 #256abf #184f95 #0d366b` | 5-step ordinal | all checks pass |
-| `#2a78d6 #eb6834 #1baf7a` | 3-slot categorical, all-pairs | all checks pass |
+| High hazard | 596 | 46.1% |
+| Medium | 210 | 16.2% |
+| Low | 76 | 5.9% |
+| Outside, within 1 km | 306 | 23.7% |
+| **Over 1 km from any flood zone** | **3** | 0.2% |
+| No coordinate | 102 | 7.9% |
 
-The categorical set carries a contrast warning (orange 2.85:1, aqua 2.51:1). The
-relief rule applies and is met: the legend is always visible, always labelled and
-always counted, so identity is never colour alone.
+**The distance measure is what makes this honest.** Without it the headline would
+read "309 contracts sit outside any modelled flood zone" — 24%, and misleading.
+A revetment or floodwall *belongs* at the edge of a flood zone; 306 of those 309
+are within a kilometre, which is exactly where you would expect them.
 
-Reported status has five values. Past three the palette cannot clear the
-all-pairs floors, so *proposed* and *terminated* fold into "Other" rather than
-being given colours that cannot be told apart.
+Only 3 are genuinely far out (median 26.7 km, max 75.8 km) — **and all three
+already carry a coordinate flag** (`UNLOCATABLE_COORD` or `OUTSIDE_PROVINCE`).
+So this tier corroborates the records tier rather than finding anything new,
+which is a more useful result than a fourth independent signal: two methods that
+disagree about geography would be a problem, and they agree.
 
-**The basemap was desaturated** to neutral greys. It was a saturated blue, which
-both competed with the data and pushed the light end of the ordinal ramp below
-the 2:1 floor against it. Marker drop-shadows were also removed — at this density
-several hundred of them merged into a grey smear; the 2 px surface ring around
-each mark is the separator, and it is enough.
+NOAH models fluvial flooding and does not claim to cover every drainage or
+coastal mechanism, so "outside the model" is never on its own a finding.
 
-## What is deliberately absent
+## What is deliberately absent## What is deliberately absent
 
 The consolidated data request asks DPWH for five categories. Two arrived free.
 The rest are genuinely not public, and the interface leaves them empty:

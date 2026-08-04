@@ -26,7 +26,7 @@ import {
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel } from "./FilterPanel";
-import { ENCODINGS, ENCODING_BY_KEY, colorOf, legendFor, suggestEncoding, BASEMAP, type Encoding } from "./mapColor";
+import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -397,7 +397,7 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
 
 // ─── Map components ───────────────────────────────────────────────────────────
 
-function MapMarker({p,selected,onClick,fill}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void;fill:string}) {
+function MapMarker({p,selected,onClick,fill,shape}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void;fill:string;shape:MarkShape}) {
   const [hov,setHov]=useState(false);
   const {x,y}=toXY(p.lng,p.lat);
   const c={dot:fill};
@@ -405,7 +405,7 @@ function MapMarker({p,selected,onClick,fill}:{p:Project&{lat:number;lng:number};
     <g transform={`translate(${x},${y})`} onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{cursor:"pointer"}} role="button" aria-label={p.name}>
       
       {selected&&<circle r={12} fill="none" stroke={c.dot} strokeWidth={2} opacity={0.85}/>}
-      <circle r={selected?7:4.5} fill={c.dot} stroke={BASEMAP.surface} strokeWidth={2} style={{transition:"r 0.12s"}}/>
+      <path d={markPath(shape,selected?7:4.8)} fill={c.dot} stroke={BASEMAP.surface} strokeWidth={2} strokeLinejoin="round"/>
       {hov&&!selected&&(
         <g transform="translate(12,-44)">
           <rect x={0} y={0} width={172} height={40} rx={4} fill="white" style={{filter:"drop-shadow(0 2px 10px rgba(0,0,0,.18))"}}/>
@@ -455,7 +455,7 @@ function MapSVG({projects,selectedId,onSelect,enc}:{projects:Project[];selectedI
       ))}
       {projects.filter(p=>p.lat!=null&&p.lng!=null
         &&p.lat>=MB.minLat&&p.lat<=MB.maxLat&&p.lng>=MB.minLng&&p.lng<=MB.maxLng)
-        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)}/>)}
+        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)} shape={shapeOf(p,enc)}/>)}
       {/* Scale bar measured from the current extent — a fixed "10 km" label would
           be wrong the moment the bounds change. */}
       {(()=>{
@@ -1056,7 +1056,9 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters}:{projects:Proj
             <div className="space-y-1">
               {legend.map(b=>(
                 <div key={b.key} className={`flex items-center gap-2 ${b.n===0?"opacity-40":""}`}>
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{background:b.color,boxShadow:`0 0 0 1.5px ${BASEMAP.surface}`}}/>
+                  <svg width={14} height={14} viewBox="-7 -7 14 14" className="shrink-0" aria-hidden>
+                    <path d={markPath(b.shape,5)} fill={b.color} stroke={BASEMAP.surface} strokeWidth={1.5} strokeLinejoin="round"/>
+                  </svg>
                   <span className="text-[11px] text-gray-600 flex-1 leading-tight">{b.label}</span>
                   <span className="text-[10px] font-mono text-gray-400 tabular-nums">{b.n.toLocaleString()}</span>
                 </div>
