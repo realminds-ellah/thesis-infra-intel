@@ -309,9 +309,26 @@ the portal says; this audits it. The division:
 
 **Adopted from them, because they got it right**
 
+- **Leaflet with real tiles, marker clustering and popups.** The map here was a
+  hand-drawn SVG of Bulacan: the zoom buttons did nothing, 1,189 dots overlapped
+  into a smear, and there was no ground under them. Theirs was simply better.
 - *Projects by year* — extended below with the columns their data cannot produce
 - Infrastructure-year filter
 - CSV export of the filtered set, with the derived columns included
+
+**Added on top of their map**
+
+- **A satellite basemap** (Esri World Imagery). Being able to see the ground
+  under a contract is the premise of the whole project — a coordinate sitting in
+  open water, in the middle of a subdivision, or on a bank with nothing on it is
+  legible at a glance in a way no amount of tabular flagging achieves.
+- **The municipal boundaries the coordinate checks run against**, drawn as an
+  overlay, so a "location doesn't match the description" flag can be seen rather
+  than taken on trust.
+- The view fits the 2nd–98th percentile of coordinates, not all of them. Three
+  contracts sit tens of kilometres outside Bulacan — which is the point of the
+  location checks — and fitting to those zooms the map out to Batangas and makes
+  the other 1,188 unreadable.
 
 **What this adds that a register cannot**
 

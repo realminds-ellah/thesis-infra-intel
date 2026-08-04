@@ -28,6 +28,7 @@ import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
+import { LeafletMap } from "./LeafletMap";
 import { HAZARD_BY_ID } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
@@ -399,86 +400,10 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
 
 // ─── Map components ───────────────────────────────────────────────────────────
 
-function MapMarker({p,selected,onClick,fill,shape}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void;fill:string;shape:MarkShape}) {
-  const [hov,setHov]=useState(false);
-  const {x,y}=toXY(p.lng,p.lat);
-  const c={dot:fill};
-  return (
-    <g transform={`translate(${x},${y})`} onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{cursor:"pointer"}} role="button" aria-label={p.name}>
-      
-      {selected&&<circle r={12} fill="none" stroke={c.dot} strokeWidth={2} opacity={0.85}/>}
-      <path d={markPath(shape,selected?7:4.8)} fill={c.dot} stroke={BASEMAP.surface} strokeWidth={2} strokeLinejoin="round"/>
-      {hov&&!selected&&(
-        <g transform="translate(12,-44)">
-          <rect x={0} y={0} width={172} height={40} rx={4} fill="white" style={{filter:"drop-shadow(0 2px 10px rgba(0,0,0,.18))"}}/>
-          <text x={8} y={16} fontSize={10.5} fontWeight={600} fill="#0d1f3c" style={{fontFamily:"Inter, sans-serif"}}>{p.name.length>26?p.name.slice(0,26)+"…":p.name}</text>
-          <text x={8} y={32} fontSize={9.5} fill="#64748b" style={{fontFamily:"Inter, sans-serif"}}>{p.municipality} · {peso(p.budget)}</text>
-        </g>
-      )}
-    </g>
-  );
-}
-
-/**
- * Bulacan drawn from geoBoundaries ADM3 polygons — the same boundaries the
- * pipeline reverse-geocodes against. The mock drew a decorative province blob;
- * a map whose flags read "this coordinate is in the wrong municipality" has to
- * show the actual lines that judgement was made against.
- */
-function MapSVG({projects,selectedId,onSelect,enc,layers}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void;enc:Encoding;layers:MapLayers}) {
-  const ringPath=(ring:[number,number][])=>
-    ring.map(([lng,lat],i)=>{const{x,y}=toXY(lng,lat);return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join("")+"Z";
-  const paths=useMemo(()=>BOUNDARIES.map(b=>({
-    name:b.name,
-    d:b.rings.map(ringPath).join(" "),
-    served:META.coverage.municipalitiesServed.includes(b.name),
-    label:(()=>{
-      const pts=b.rings.flat();
-      const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length;
-      const cy=pts.reduce((s,p)=>s+p[1],0)/pts.length;
-      return toXY(cx,cy);
-    })(),
-  })),[]);
-  const step=(v:number)=>Math.round(v*10)/10;
-  const glats:number[]=[]; for(let v=step(MB.minLat);v<=MB.maxLat;v+=0.1) glats.push(step(v));
-  const glngs:number[]=[]; for(let v=step(MB.minLng);v<=MB.maxLng;v+=0.1) glngs.push(step(v));
-  return (
-    <svg viewBox={`0 0 ${MB.W} ${MB.H}`} className="w-full h-full" aria-label="Map of Bulacan Province with flood control project locations" role="img">
-      <rect width={MB.W} height={MB.H} fill={BASEMAP.surface}/>
-      {glats.map(lat=>{const{y}=toXY(MB.minLng,lat);return(<g key={`la${lat}`}><line x1={0} y1={y} x2={MB.W} y2={y} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={5} y={y-3} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lat.toFixed(1)}°N</text></g>);})}
-      {glngs.map(lng=>{const{x}=toXY(lng,MB.minLat);return(<g key={`ln${lng}`}><line x1={x} y1={0} x2={x} y2={MB.H} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={x+3} y={MB.H-6} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lng.toFixed(1)}°E</text></g>);})}
-      {/* Municipalities this district office's own records describe are filled;
-          the rest of the province is drawn but left pale for context. */}
-      {layers.boundaries&&paths.map(p=><path key={p.name} d={p.d} fill={p.served?BASEMAP.servedFill:BASEMAP.otherFill} stroke={BASEMAP.stroke} strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.85:0.4}/>)}
-      {layers.labels&&paths.filter(p=>p.served).map(p=>(
-        <text key={`t${p.name}`} x={p.label.x} y={p.label.y} textAnchor="middle" fontSize={7} fill={BASEMAP.label} fontFamily="Inter,sans-serif" fontWeight={700} letterSpacing={0.5} style={{userSelect:"none",pointerEvents:"none"}}>
-          {p.name.replace("City of ","").toUpperCase()}
-        </text>
-      ))}
-      {layers.markers&&projects.filter(p=>p.lat!=null&&p.lng!=null
-        &&p.lat>=MB.minLat&&p.lat<=MB.maxLat&&p.lng>=MB.minLng&&p.lng<=MB.maxLng)
-        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)} shape={shapeOf(p,enc)}/>)}
-      {/* Scale bar measured from the current extent — a fixed "10 km" label would
-          be wrong the moment the bounds change. */}
-      {(()=>{
-        const midLat=(MB.minLat+MB.maxLat)/2;
-        const kmPerPx=((MB.maxLng-MB.minLng)*111.32*Math.cos(midLat*Math.PI/180))/MB.W;
-        const km=[1,2,5,10,20,50].reverse().find(k=>k/kmPerPx<=110)??1;
-        const w=km/kmPerPx;
-        return (
-          <g transform={`translate(70,${MB.H-32})`}>
-            <rect x={-8} y={-3} width={w+16} height={18} rx={3} fill="white" opacity={0.88}/>
-            <line x1={0} y1={8} x2={w} y2={8} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <line x1={0} y1={5} x2={0} y2={11} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <line x1={w} y1={5} x2={w} y2={11} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <text x={w/2} y={6} textAnchor="middle" fontSize={7} fill="#1e3a7b" fontFamily="DM Mono,monospace" dominantBaseline="auto">{km} km</text>
-          </g>
-        );
-      })()}
-      <g transform={`translate(${MB.W-40},26)`}><circle r={15} fill="white" opacity={0.88}/><polygon points="0,-11 -4,-2 4,-2" fill="#1e3a7b"/><line x1={0} y1={-2} x2={0} y2={10} stroke="#1e3a7b" strokeWidth={1.5}/><text x={0} y={-13} textAnchor="middle" fontSize={9} fill="#1e3a7b" fontFamily="Inter,sans-serif" fontWeight={700}>N</text></g>
-    </svg>
-  );
-}
+// MapMarker and MapSVG were removed with the hand-drawn map they served. The
+// register now uses Leaflet (src/app/LeafletMap.tsx): real tiles, working zoom,
+// marker clustering and a satellite basemap — the parts BetterGov.ph's
+// flood-control map got right, plus the imagery layer an audit tool needs.
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
@@ -1140,26 +1065,9 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
-          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId} enc={enc} layers={layers}/>
-          <div className="absolute left-3 bottom-8 flex flex-col gap-1">
-            <button aria-label="Zoom in"  className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomIn  size={14}/></button>
-            <button aria-label="Zoom out" className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomOut size={14}/></button>
-          </div>
-          {/* A legend, not a second control panel. Everything adjustable lives
-              in the sidebar; this box only says what the colours mean. Two
-              panels with dropdowns is one panel too many. */}
-          <div className="absolute bottom-8 right-3 bg-white/95 border border-gray-200 rounded shadow-sm px-3 py-2.5 backdrop-blur-sm" style={{maxWidth:230}} role="group" aria-label="Map legend">
-            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{enc.label}</div>
-            <div className="space-y-1">
-              {legend.map(b=>(
-                <div key={b.key} className={`flex items-center gap-2 ${b.n===0?"opacity-40":""}`}>
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{background:b.color,boxShadow:`0 0 0 1.5px ${BASEMAP.surface}`}}/>
-                  <span className="text-[11px] text-gray-600 flex-1 leading-tight">{b.label}</span>
-                  <span className="text-[10px] font-mono text-gray-400 tabular-nums">{b.n.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <LeafletMap projects={filtered} enc={enc} selectedId={selectedId}
+            onSelect={setSelectedId} showBoundaries={layers.boundaries}
+            cluster={layers.markers}/>
           {filtered.length===0&&(
             <div className="absolute inset-0 flex items-center justify-center bg-white/80">
               <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={()=>(Object.keys(filters) as ProjectStatus[]).forEach(k=>!filters[k]&&onToggleStatus(k))}/>
