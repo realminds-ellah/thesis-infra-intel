@@ -23,7 +23,7 @@
  */
 
 import {
-  PROJECTS, PROC_BY_ID, SAT_BY_ID, FUSED_BY_ID, FLAG_LABELS, PROC_FLAG_LABELS,
+  PROJECTS, PROC_BY_ID, SAT_BY_ID, FUSED_BY_ID, HAZARD_BY_ID, FLAG_LABELS, PROC_FLAG_LABELS,
   type Project, type ProjectStatus, type Quadrant, type Verdict,
 } from "./data";
 
@@ -32,6 +32,7 @@ export type BidderBand = "1" | "2" | "3-5" | "6+";
 export type RatioBand = "at96" | "whole" | "other";
 export type CoordState = "published" | "missing" | "mismatch" | "outside";
 export type DocState = "complete" | "partial" | "none";
+export type HazardState = "high" | "medium" | "low" | "edge" | "far" | "unknown";
 
 export interface Filters {
   q: string;
@@ -49,6 +50,7 @@ export interface Filters {
   satellite: Set<Verdict | "not-assessed">;
   coords: Set<CoordState>;
   docs: Set<DocState>;
+  hazard: Set<HazardState>;
 }
 
 export const emptyFilters = (): Filters => ({
@@ -57,7 +59,7 @@ export const emptyFilters = (): Filters => ({
   years: null, amount: null,
   bidders: new Set(), ratio: new Set(), recordFlags: new Set(),
   procFlags: new Set(), quadrant: new Set(), satellite: new Set(),
-  coords: new Set(), docs: new Set(),
+  coords: new Set(), docs: new Set(), hazard: new Set(),
 });
 
 // ─── derived per-project attributes ───────────────────────────────────────────
@@ -82,6 +84,18 @@ export const coordState = (p: Project): CoordState => {
   if (codes.includes("OUTSIDE_PROVINCE") || codes.includes("UNLOCATABLE_COORD")) return "outside";
   if (codes.includes("MUNI_MISMATCH")) return "mismatch";
   return "published";
+};
+
+/** Hazard at the coordinate, with "outside but adjacent" kept separate from
+ *  "nowhere near" — the distinction that stops a normal edge-sited revetment
+ *  being read as a misplaced one. */
+export const hazardState = (p: Project): HazardState => {
+  const h = HAZARD_BY_ID.get(p.id);
+  if (!h || h.level == null) return "unknown";
+  if (h.level >= 3) return "high";
+  if (h.level === 2) return "medium";
+  if (h.level === 1) return "low";
+  return (h.metresToHazard ?? 0) > 1000 ? "far" : "edge";
 };
 
 export const docState = (p: Project): DocState => {
@@ -134,6 +148,7 @@ const preds = (f: Filters): Record<keyof Filters, Pred> => ({
     f.satellite.has((SAT_BY_ID.get(p.id)?.verdict ?? "not-assessed") as Verdict | "not-assessed"),
   coords: p => f.coords.size === 0 || f.coords.has(coordState(p)),
   docs: p => f.docs.size === 0 || f.docs.has(docState(p)),
+  hazard: p => f.hazard.size === 0 || f.hazard.has(hazardState(p)),
 });
 
 export function applyFilters(f: Filters, source: Project[] = PROJECTS): Project[] {
@@ -176,6 +191,7 @@ export const countBy = {
     p => [(SAT_BY_ID.get(p.id)?.verdict ?? "not-assessed") as string]),
   coords: (f: Filters) => facetCounts(f, "coords", p => [coordState(p)]),
   docs: (f: Filters) => facetCounts(f, "docs", p => [docState(p)]),
+  hazard: (f: Filters) => facetCounts(f, "hazard", p => [hazardState(p)]),
 };
 
 // ─── bounds, taken from the data rather than hard-coded ───────────────────────
@@ -215,46 +231,65 @@ export interface Preset { key: string; label: string; hint: string; build: () =>
 
 export const PRESETS: Preset[] = [
   {
-    key: "attention", label: "Needs attention",
-    hint: "Past its completion date and still unfinished, or barely started",
+    key: "problems", label: "Something looks wrong",
+    hint: "Every project where at least one check found a problem",
+    build: () => ({ ...emptyFilters(), quadrant: new Set<Quadrant>(["both", "records-only", "procurement-only"]) }),
+  },
+  {
+    key: "attention", label: "Running late",
+    hint: "Past its finish date and still unfinished, or barely started",
     build: () => ({ ...emptyFilters(), delivery: new Set<DeliveryState>(["overdue", "stalled"]) }),
   },
   {
-    key: "rebuilt", label: "Rebuilt sites",
-    hint: "Work done again at the same coordinate in a later year — the closest signal in this data that a structure failed or was never there",
+    key: "rebuilt", label: "Built more than once",
+    hint: "The same spot was built again in a later year — usually because the first one failed or was never there",
     build: () => ({ ...emptyFilters(), delivery: new Set<DeliveryState>(["rebuilt"]) }),
   },
   {
-    key: "both", label: "Both signals",
-    hint: "Contract record and bidding pattern both flagged — the top of the audit queue",
-    build: () => ({ ...emptyFilters(), quadrant: new Set<Quadrant>(["both"]) }),
-  },
-  {
-    key: "at96", label: "The 96.00% club",
-    hint: "Won at exactly 96.00% of the approved budget, against a 3.9% national rate",
-    build: () => ({ ...emptyFilters(), ratio: new Set<RatioBand>(["at96"]) }),
-  },
-  {
-    key: "nocomp", label: "Thin competition",
-    hint: "One or two bidders",
+    key: "nocomp", label: "Barely any competition",
+    hint: "Only one or two companies bid for the work",
     build: () => ({ ...emptyFilters(), bidders: new Set<BidderBand>(["1", "2"]) }),
   },
   {
-    key: "badcoord", label: "Location problems",
-    hint: "No coordinate published, or one that contradicts the contract description",
+    key: "at96", label: "Suspiciously round bids",
+    hint: "Won at exactly 96% of the approved budget. Nearly 4 in 10 contracts here do this, against 4 in 100 nationally",
+    build: () => ({ ...emptyFilters(), ratio: new Set<RatioBand>(["at96"]) }),
+  },
+  {
+    key: "badcoord", label: "Can't be found on a map",
+    hint: "No location published, or one that contradicts the written description",
     build: () => ({ ...emptyFilters(), coords: new Set<CoordState>(["missing", "mismatch", "outside"]) }),
   },
   {
-    key: "nodocs", label: "Undocumented",
-    hint: "No contract document published",
+    key: "nodocs", label: "No paperwork",
+    hint: "Not one contract document was published",
     build: () => ({ ...emptyFilters(), docs: new Set<DocState>(["none"]) }),
   },
+  {
+    key: "offhazard", label: "Nowhere near a flood zone",
+    hint: "Over a kilometre from any area the government's own flood model covers",
+    build: () => ({ ...emptyFilters(), hazard: new Set<HazardState>(["far"]) }),
+  },
 ];
+
+/** All problems, records and procurement alike, as one list a citizen can scan. */
+export function problemCounts(f: Filters): Map<string, number> {
+  const a = facetCounts(f, "recordFlags", p => p.auditFlags.map(x => x.code));
+  const b = facetCounts(f, "procFlags", p => (PROC_BY_ID.get(p.id)?.procurementFlags ?? []).map(x => x.code));
+  const out = new Map(a);
+  for (const [k, v] of b) out.set(k, (out.get(k) ?? 0) + v);
+  return out;
+}
+
+/** Which filter set a problem code belongs to, so one merged list can drive both. */
+export const PROC_CODES = new Set(["SINGLE_BIDDER", "TWO_BIDDERS", "BID_AT_ROUND_PERCENT",
+  "AWARD_CONCENTRATION", "SHORT_BID_WINDOW", "NO_DOCUMENTS_PUBLISHED"]);
+
 
 // ─── URL state ────────────────────────────────────────────────────────────────
 
 const SETS: (keyof Filters)[] = ["status", "delivery", "municipality", "bidders",
-  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs"];
+  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs", "hazard"];
 
 export function toQuery(f: Filters): string {
   const p = new URLSearchParams();
@@ -295,15 +330,68 @@ export function activeCount(f: Filters): number {
   return n;
 }
 
+/**
+ * Plain-language names for everything the register can flag.
+ *
+ * These replace the internal codes (MUNI_MISMATCH, BID_AT_ROUND_PERCENT) that
+ * only make sense to whoever wrote the pipeline. A resident looking up the
+ * project outside their house should be able to read every option here once and
+ * know what it means.
+ *
+ * Records-tier and procurement-tier flags are deliberately merged into one list.
+ * The distinction matters to the method and not at all to the person asking
+ * whether something is wrong with a project on their street.
+ */
+export const PROBLEM_LABELS: Record<string, string> = {
+  // where it is
+  MISSING_COORDS: "No location was published",
+  MUNI_MISMATCH: "Location doesn't match the written description",
+  OUTSIDE_PROVINCE: "Location falls outside Bulacan",
+  UNLOCATABLE_COORD: "Location isn't a real place on the map",
+  OUTSIDE_DEO_AREA: "Location is outside this district's area",
+  COORD_DUPLICATE: "Exact same spot as another project",
+  BOUNDARY_ADJACENT: "Location sits just over a town border",
+  // who built it
+  CONTRACTOR_REVOKED: "Contractor's registration was revoked",
+  AWARD_CONCENTRATION: "Contractor wins an unusually large share of work here",
+  // how it was awarded
+  SINGLE_BIDDER: "Only one company bid",
+  TWO_BIDDERS: "Only two companies bid",
+  BID_AT_ROUND_PERCENT: "Winning bid was a suspiciously round number",
+  SHORT_BID_WINDOW: "Very little time was given to bid",
+  // paperwork
+  NO_DOCUMENTS_PUBLISHED: "No documents published",
+  STATUS_PROGRESS_CONFLICT: "Marked finished, but progress says otherwise",
+  DATE_ANOMALY: "Finish date is before the start date",
+};
+
 export const LABELS = {
   delivery: {
-    overdue: "Overdue", stalled: "Stalled",
-    rebuilt: "Rebuilt at same site", unpaid: "Completed, nothing disbursed",
+    overdue: "Past its finish date",
+    stalled: "Barely started and already late",
+    rebuilt: "Same spot was built again later",
+    unpaid: "Marked finished, but no payment recorded",
   } as Record<DeliveryState, string>,
-  bidders: { "1": "1 bidder", "2": "2 bidders", "3-5": "3–5 bidders", "6+": "6 or more" } as Record<BidderBand, string>,
-  ratio: { at96: "Exactly 96.00% of ABC", whole: "Other whole percentage", other: "Not a whole percentage" } as Record<RatioBand, string>,
-  coords: { published: "Published and consistent", missing: "No coordinate", mismatch: "Contradicts description", outside: "Outside the province" } as Record<CoordState, string>,
-  docs: { complete: "All four documents", partial: "Some documents", none: "None published" } as Record<DocState, string>,
+  bidders: { "1": "Only 1 company bid", "2": "Only 2 companies bid", "3-5": "3 to 5 companies bid", "6+": "6 or more companies bid" } as Record<BidderBand, string>,
+  ratio: {
+    at96: "Won at exactly 96% of the budget",
+    whole: "Won at another round percentage",
+    other: "Won at an ordinary amount",
+  } as Record<RatioBand, string>,
+  coords: {
+    published: "Location looks right", missing: "No location published",
+    mismatch: "Location doesn't match the description", outside: "Location is outside Bulacan",
+  } as Record<CoordState, string>,
+  docs: { complete: "All four documents", partial: "Some documents", none: "No documents" } as Record<DocState, string>,
+  hazard: {
+    high: "In a high flood-risk area", medium: "In a medium flood-risk area",
+    low: "In a low flood-risk area", edge: "Just outside a flood-risk area",
+    far: "Far from any flood-risk area", unknown: "No location published",
+  } as Record<HazardState, string>,
+  status: {
+    completed: "Finished", ongoing: "Being built", flagged: "Something flagged",
+    proposed: "Not started yet", terminated: "Cancelled",
+  } as Record<string, string>,
   flags: FLAG_LABELS,
   procFlags: PROC_FLAG_LABELS,
 };

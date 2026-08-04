@@ -9,6 +9,7 @@ import contractorsRaw from "./contractors.json";
 import boundariesRaw from "./boundaries.json";
 import satelliteRaw from "./satellite.json";
 import procurementRaw from "./procurement.json";
+import hazardRaw from "./hazard.json";
 import metaRaw from "./meta.json";
 
 export type ProjectStatus = "completed" | "ongoing" | "flagged" | "proposed" | "terminated";
@@ -453,3 +454,30 @@ export const TRIAGE = (() => {
 export const PRIORITY = FUSED
   .filter(f => f.quadrant === "both")
   .sort((a, b) => b.budget - a.budget);
+
+
+// ─── Flood hazard ─────────────────────────────────────────────────────────────
+// UP NOAH 100-year modelled flood extent, joined by point-in-polygon. For a
+// flood-control register this asks the question the money is meant to answer.
+//
+// Read it with the distance, not without: 306 contracts sit outside the modelled
+// extent but within a kilometre of it, which is where you build a revetment. Only
+// 3 are further out — and all three already carry a coordinate flag, so this
+// corroborates the records tier rather than finding anything new.
+
+export interface HazardResult {
+  id: string;
+  hazard: "none" | "low" | "medium" | "high" | null;
+  level: number | null;
+  metresToHazard: number | null;
+}
+export interface HazardRun {
+  generated: string;
+  source: { name: string; dataset: string; file: string; url: string; crs: string; polygonParts: number };
+  caveat: string;
+  farThresholdMetres: number;
+  tally: Record<string, number>;
+  results: HazardResult[];
+}
+export const HAZARD = hazardRaw as unknown as HazardRun;
+export const HAZARD_BY_ID = new Map(HAZARD.results.map(r => [r.id, r]));

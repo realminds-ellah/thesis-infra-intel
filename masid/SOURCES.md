@@ -297,19 +297,46 @@ the boundaries shown are the same ones the flags were computed against.
 
 ## Filtering
 
-The register is filtered by faceted multi-select, not by dropdowns. Four
-principles, each of which the previous sidebar broke:
+Faceted multi-select, with live counts computed against all *other* active
+filters — so selecting one option never zeroes every other option and leaves the
+panel silent.
 
-- **Every facet is multi-select.** A single-select municipality dropdown forces a
-  choice between Calumpit and Hagonoy when the question usually spans several.
-- **Every option carries a live count**, computed against all *other* active
-  filters with its own facet excluded. Without the exclusion, selecting one status
-  drops every other status to zero and the panel stops informing.
-- **Delivery states, not just paperwork status.** DPWH's five status values
-  describe documents. `overdue` (256), `stalled` (125), `rebuilt at the same site`
-  (142) and `completed with nothing disbursed` (962) describe the ground.
-- **State lives in the URL.** A filtered view is a shareable link, which is the
-  point of a public register.
+### Plain language, not internal codes
+
+Every option is written the way someone outside DPWH would say it. `MUNI_MISMATCH`
+reads "Location doesn't match the written description"; `BID_AT_ROUND_PERCENT`
+reads "Winning bid was a suspiciously round number"; `SINGLE_BIDDER` reads "Only
+one company bid". Records-tier and procurement-tier flags are merged into one
+list, because which pipeline produced a flag matters to the method and not at all
+to a resident asking what is wrong with the project outside their house.
+
+### The panel changes with the role
+
+The six roles do different jobs, and one panel serving all of them serves none
+well. Each role gets its own group order, its own quick questions, and its own
+default map colouring:
+
+| Role | Opens on | Map colours by |
+|---|---|---|
+| Public | Where is it? · Is it finished? · What might be wrong? | Anything wrong |
+| LGU coordinator | Where is it? · Is it finished? · Flood-prone? | Delivery concern |
+| Field inspector | **Can it be found on a map?** · Is it finished? · Where is it? | Delivery concern |
+| DPWH engineer | Is it finished? · Where is it? · How much? | Delivery concern |
+| DPWH admin | Where · Finished · What's wrong (full register) | Anything wrong |
+| PSA analyst | **Satellite imagery** · Can it be found on a map? · Where | Flood risk |
+
+Two rules hold throughout:
+
+- **Roles change what is shown first, never what is available.** Every group
+  remains reachable under "More filters". Hiding public spending data from
+  someone because of their job title is the opposite of the point.
+- **Nobody sees a different number.** Counts, flags and totals are identical for
+  every role; only the arrangement and the wording change.
+
+### State lives in the URL
+
+A filtered view is a shareable link. A transparency finding that cannot be sent
+to someone else is not much of a finding.
 
 ### "Completed but damaged"
 
@@ -333,7 +360,79 @@ and the award on 43%.
 It is now a dual-handle range over `awardAmount`, bounded by the real data
 (₱950K–₱209.5M), with the distribution drawn behind it.
 
-## What is deliberately absent
+## Map colour
+
+Markers use a **traffic light** — green, amber, orange, red — chosen because on a
+public accountability map that vocabulary is understood instantly and by
+everyone, and that legibility is the product.
+
+The cost is real and is paid rather than ignored.
+
+**Red and green cannot be separated on the protan axis.** A dozen traffic-light
+candidates were run through a validator against the map's real surface
+(`#f2f2f0`) and against *all* pairs — on a map any two categories can end up
+adjacent. Every candidate that still looked like a traffic light scored between
+ΔE 1.6 and 7.5. The set shipped is the best of them:
+
+```
+#046b04  #f7c948  #e8722c  #c0272d
+CVD ΔE 7.5 (protan) · tritan 14.1 · normal-vision 16.9 · contrast WARN
+```
+
+7.5 sits in the band the method permits **only with secondary encoding**. So the
+secondary encoding is not decoration here — it is what makes the palette legal:
+
+**Every mark also carries a shape** — circle, square, triangle, diamond, cross —
+and the legend draws that shape beside its label and count. A viewer who cannot
+separate the hues reads the silhouette instead and loses nothing.
+
+Award amount keeps a single-hue sequential ramp (`#6da7ec #3987e5 #256abf
+#104281`, all checks pass). Magnitude is not a traffic light: a large contract is
+not "bad".
+
+The basemap was desaturated to neutral greys — it was a saturated blue that both
+competed with the data and pushed the ramp's light end below the contrast floor
+against it. Marker drop-shadows were removed: at this density several hundred
+merged into a grey smear, and the 2 px surface ring is enough.
+
+## Flood hazard
+
+| | |
+|---|---|
+| **Dataset** | `bettergovph/project-noah-hazard-maps` → `Flood/100yr/Bulacan.zip` |
+| **Upstream** | UP NOAH (Nationwide Operational Assessment of Hazards) |
+| **CRS** | GCS_WGS_1984 — same datum as the DPWH coordinates, no reprojection |
+| **Geometry** | 261,710 polygon parts; `Var` 1 low / 2 medium / 3 high |
+
+For a flood-control register this is the question the money is meant to answer,
+and until now nothing here asked it. Every coordinate is tested against the
+modelled 100-year extent; those outside get the distance to the nearest hazard
+polygon.
+
+| At the published coordinate | Contracts | |
+|---|---|---|
+| High hazard | 596 | 46.1% |
+| Medium | 210 | 16.2% |
+| Low | 76 | 5.9% |
+| Outside, within 1 km | 306 | 23.7% |
+| **Over 1 km from any flood zone** | **3** | 0.2% |
+| No coordinate | 102 | 7.9% |
+
+**The distance measure is what makes this honest.** Without it the headline would
+read "309 contracts sit outside any modelled flood zone" — 24%, and misleading.
+A revetment or floodwall *belongs* at the edge of a flood zone; 306 of those 309
+are within a kilometre, which is exactly where you would expect them.
+
+Only 3 are genuinely far out (median 26.7 km, max 75.8 km) — **and all three
+already carry a coordinate flag** (`UNLOCATABLE_COORD` or `OUTSIDE_PROVINCE`).
+So this tier corroborates the records tier rather than finding anything new,
+which is a more useful result than a fourth independent signal: two methods that
+disagree about geography would be a problem, and they agree.
+
+NOAH models fluvial flooding and does not claim to cover every drainage or
+coastal mechanism, so "outside the model" is never on its own a finding.
+
+## What is deliberately absent## What is deliberately absent
 
 The consolidated data request asks DPWH for five categories. Two arrived free.
 The rest are genuinely not public, and the interface leaves them empty:
