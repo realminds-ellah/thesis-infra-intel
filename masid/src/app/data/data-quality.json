@@ -1,11 +1,11 @@
 {
- "generated": "2026-08-03T16:13:08Z",
+ "generated": "2026-08-04T04:36:31Z",
  "districtOffice": "Bulacan 1st DEO",
  "contracts": 1293,
  "usable": true,
  "budgetSemantics": {
-  "matchesAbc": 0.5514,
-  "matchesAwardAmount": 0.4273,
+  "matchesAbc": 0.5267,
+  "matchesAwardAmount": 0.4529,
   "conclusion": "mixed \u2014 use abc and awardAmount explicitly"
  },
  "primarySourceSpotCheck": {
@@ -153,6 +153,22 @@
    "note": "(gaps are unusable for identity, not wrong)"
   },
   {
+   "check": "abc parses without stripping separators",
+   "level": "PASS",
+   "violations": 0,
+   "total": 1293,
+   "rate": 0.0,
+   "note": "(values carry thousands separators \u2014 always strip first)"
+  },
+  {
+   "check": "awardAmount parses without stripping separators",
+   "level": "WARN",
+   "violations": 57,
+   "total": 1274,
+   "rate": 0.0447,
+   "note": "(values carry thousands separators \u2014 always strip first)"
+  },
+  {
    "check": "abc present and positive",
    "level": "PASS",
    "violations": 0,
@@ -211,13 +227,13 @@
   {
    "check": "budget matches abc",
    "level": "INFO",
-   "value": "671 (55.1%)",
+   "value": "671 (52.7%)",
    "note": ""
   },
   {
    "check": "budget matches awardAmount",
    "level": "INFO",
-   "value": "520 (42.7%)",
+   "value": "577 (45.3%)",
    "note": ""
   },
   {

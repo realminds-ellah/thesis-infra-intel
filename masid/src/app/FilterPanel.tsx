@@ -1,0 +1,282 @@
+/**
+ * The filter panel for the project register.
+ *
+ * Replaces a sidebar whose only real controls were five status checkboxes and a
+ * single-handle budget slider running a hard-coded PHP 5M–100M — a range that
+ * silently excluded the twelve largest contracts in the register.
+ *
+ * Every group below shows live counts and collapses; the panel opens on the
+ * groups that answer the first question most people have.
+ */
+
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Search, X, Link2, RotateCcw } from "lucide-react";
+
+import {
+  type Filters, type DeliveryState, type BidderBand, type RatioBand,
+  type CoordState, type DocState,
+  applyFilters, countBy, AMOUNT_BOUNDS, YEAR_BOUNDS, AMOUNT_HISTOGRAM,
+  PRESETS, LABELS, activeCount, emptyFilters, toQuery,
+} from "./filters";
+import { META, QUADRANT_CFG, VERDICT_CFG, STATUS_LABELS, type Quadrant, type Verdict, type ProjectStatus } from "./data";
+
+const peso = (n: number) =>
+  n >= 1e9 ? `₱${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `₱${(n / 1e6).toFixed(1)}M` : `₱${(n / 1e3).toFixed(0)}K`;
+
+function Group({ title, count, defaultOpen = false, children }:
+  { title: string; count?: number; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-gray-100">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-1.5 px-3 py-2.5 text-left hover:bg-gray-50">
+        {open ? <ChevronDown size={12} className="text-gray-400" /> : <ChevronRight size={12} className="text-gray-400" />}
+        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider flex-1">{title}</span>
+        {count ? <span className="text-[10px] font-mono px-1.5 rounded bg-[#1e3a7b] text-white">{count}</span> : null}
+      </button>
+      {open && <div className="px-3 pb-3 space-y-1.5">{children}</div>}
+    </div>
+  );
+}
+
+/** A checkbox whose count is computed with its own facet excluded. */
+function Opt({ label, n, on, toggle, hint }:
+  { label: string; n: number; on: boolean; toggle: () => void; hint?: string }) {
+  const dead = n === 0 && !on;
+  return (
+    <button onClick={toggle} disabled={dead} title={hint}
+      className={`w-full flex items-center gap-2 text-left group ${dead ? "opacity-35 cursor-default" : ""}`}>
+      <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
+        on ? "bg-[#1e3a7b] border-[#1e3a7b]" : "border-gray-300 group-hover:border-gray-400"}`}>
+        {on && <svg width="9" height="9" viewBox="0 0 10 10"><path d="M1 5l2.5 2.5L9 2" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+      </span>
+      <span className="text-[12px] text-gray-700 flex-1 leading-tight">{label}</span>
+      <span className="text-[10px] font-mono text-gray-400 tabular-nums">{n.toLocaleString()}</span>
+    </button>
+  );
+}
+
+/** Dual-handle range with the real distribution drawn behind it. */
+function RangeControl({ bounds, value, onChange, format, histogram }: {
+  bounds: [number, number];
+  value: [number, number] | null;
+  onChange: (v: [number, number] | null) => void;
+  format: (n: number) => string;
+  histogram?: { counts: number[]; max: number };
+}) {
+  const [lo, hi] = value ?? bounds;
+  const set = (a: number, b: number) =>
+    onChange(a <= bounds[0] && b >= bounds[1] ? null : [Math.min(a, b), Math.max(a, b)]);
+  return (
+    <div>
+      {histogram && (
+        <div className="flex items-end gap-px h-9 mb-1" aria-hidden>
+          {histogram.counts.map((c, i) => {
+            const x0 = bounds[0] + (i / histogram.counts.length) * (bounds[1] - bounds[0]);
+            const inRange = x0 >= lo && x0 <= hi;
+            return <div key={i} className="flex-1 rounded-sm"
+              style={{ height: `${Math.max(3, (c / histogram.max) * 100)}%`, background: inRange ? "#1e3a7b" : "#dbe2ec" }} />;
+          })}
+        </div>
+      )}
+      <div className="relative h-4">
+        {(["lo", "hi"] as const).map(which => (
+          <input key={which} type="range" min={bounds[0]} max={bounds[1]}
+            step={Math.max(1, Math.round((bounds[1] - bounds[0]) / 400))}
+            value={which === "lo" ? lo : hi}
+            aria-label={which === "lo" ? "Minimum" : "Maximum"}
+            onChange={e => {
+              const v = Number(e.target.value);
+              which === "lo" ? set(v, hi) : set(lo, v);
+            }}
+            className="absolute inset-x-0 w-full appearance-none bg-transparent pointer-events-none
+                       [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none
+                       [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5
+                       [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
+                       [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#1e3a7b]
+                       [&::-webkit-slider-thumb]:shadow" />
+        ))}
+        <div className="absolute top-1.5 inset-x-0 h-1 rounded bg-gray-200" />
+        <div className="absolute top-1.5 h-1 rounded bg-[#1e3a7b]" style={{
+          left: `${((lo - bounds[0]) / (bounds[1] - bounds[0])) * 100}%`,
+          right: `${100 - ((hi - bounds[0]) / (bounds[1] - bounds[0])) * 100}%`,
+        }} />
+      </div>
+      <div className="flex justify-between text-[10px] font-mono text-gray-500 mt-1">
+        <span>{format(lo)}</span><span>{format(hi)}</span>
+      </div>
+    </div>
+  );
+}
+
+export function FilterPanel({ filters, setFilters, collapsed }:
+  { filters: Filters; setFilters: (f: Filters) => void; collapsed?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const result = useMemo(() => applyFilters(filters), [filters]);
+  const c = useMemo(() => ({
+    status: countBy.status(filters), delivery: countBy.delivery(filters),
+    municipality: countBy.municipality(filters), bidders: countBy.bidders(filters),
+    ratio: countBy.ratio(filters), recordFlags: countBy.recordFlags(filters),
+    procFlags: countBy.procFlags(filters), quadrant: countBy.quadrant(filters),
+    satellite: countBy.satellite(filters), coords: countBy.coords(filters),
+    docs: countBy.docs(filters),
+  }), [filters]);
+
+  const toggle = <K extends keyof Filters>(dim: K, v: string) => {
+    const next = { ...filters, [dim]: new Set(filters[dim] as Set<string>) } as Filters;
+    const s = next[dim] as Set<string>;
+    s.has(v) ? s.delete(v) : s.add(v);
+    setFilters(next);
+  };
+  const active = activeCount(filters);
+
+  if (collapsed) return null;
+
+  return (
+    <aside className="w-64 shrink-0 border-r border-gray-200 bg-white flex flex-col" aria-label="Filters">
+      <div className="px-3 py-2.5 border-b border-gray-100 flex items-center gap-2">
+        <span className="text-[12px] font-bold text-gray-800">Filters</span>
+        {active > 0 && <span className="text-[10px] font-mono px-1.5 rounded bg-amber-100 text-amber-700">{active}</span>}
+        <div className="ml-auto flex items-center gap-1">
+          <button title="Copy a link to this exact view"
+            onClick={() => {
+              const url = `${location.origin}${location.pathname}?${toQuery(filters)}`;
+              navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1400);
+            }}
+            className="p-1 text-gray-400 hover:text-[#1e3a7b] rounded"><Link2 size={13} /></button>
+          {active > 0 && (
+            <button onClick={() => setFilters(emptyFilters())} title="Clear all filters"
+              className="p-1 text-gray-400 hover:text-red-500 rounded"><RotateCcw size={13} /></button>
+          )}
+        </div>
+      </div>
+
+      <div className="px-3 py-2 border-b border-gray-100">
+        <div className="text-[11px] text-gray-500">
+          <span className="font-mono font-bold text-[#1e3a7b] text-[13px]">{result.length.toLocaleString()}</span>
+          <span> of {META.coverage.projects.toLocaleString()} contracts</span>
+        </div>
+        {copied && <div className="text-[10px] text-green-600 mt-0.5">Link copied</div>}
+      </div>
+
+      <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+        <div className="px-3 py-2.5 border-b border-gray-100">
+          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Start here</div>
+          <div className="flex flex-wrap gap-1.5">
+            {PRESETS.map(p => (
+              <button key={p.key} title={p.hint} onClick={() => setFilters(p.build())}
+                className="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:border-[#1e3a7b]/40 hover:bg-blue-50 hover:text-[#1e3a7b]">
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="px-3 py-2.5 border-b border-gray-100 space-y-2">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })}
+              placeholder="Contract ID, description, place…" aria-label="Search contracts"
+              className="w-full pl-7 pr-6 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
+            {filters.q && <button onClick={() => setFilters({ ...filters, q: "" })} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11} /></button>}
+          </div>
+          <input value={filters.contractor} onChange={e => setFilters({ ...filters, contractor: e.target.value })}
+            placeholder="Contractor name…" aria-label="Filter by contractor"
+            className="w-full px-2.5 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
+        </div>
+
+        <Group title="Delivery state" defaultOpen count={filters.delivery.size}>
+          <p className="text-[10px] text-gray-400 leading-snug pb-1">
+            What is happening on the ground. DPWH's own status describes paperwork.
+          </p>
+          {(["overdue", "stalled", "rebuilt", "unpaid"] as DeliveryState[]).map(k => (
+            <Opt key={k} label={LABELS.delivery[k]} n={c.delivery.get(k) ?? 0}
+              on={filters.delivery.has(k)} toggle={() => toggle("delivery", k)} />
+          ))}
+        </Group>
+
+        <Group title="Reported status" defaultOpen count={filters.status.size}>
+          {(["completed", "ongoing", "flagged", "proposed", "terminated"] as ProjectStatus[]).map(k => (
+            <Opt key={k} label={STATUS_LABELS[k]} n={c.status.get(k) ?? 0}
+              on={filters.status.has(k)} toggle={() => toggle("status", k)} />
+          ))}
+        </Group>
+
+        <Group title="Award amount" defaultOpen count={filters.amount ? 1 : 0}>
+          <RangeControl bounds={AMOUNT_BOUNDS} value={filters.amount} format={peso}
+            histogram={AMOUNT_HISTOGRAM}
+            onChange={v => setFilters({ ...filters, amount: v })} />
+          <p className="text-[10px] text-gray-400 leading-snug pt-1">
+            The amount actually awarded, not DPWH&apos;s ambiguous <code className="font-mono">budget</code> column.
+          </p>
+        </Group>
+
+        <Group title="Competition" count={filters.bidders.size + filters.ratio.size}>
+          {(["1", "2", "3-5", "6+"] as BidderBand[]).map(k => (
+            <Opt key={k} label={LABELS.bidders[k]} n={c.bidders.get(k) ?? 0}
+              on={filters.bidders.has(k)} toggle={() => toggle("bidders", k)} />
+          ))}
+          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+            {(["at96", "whole", "other"] as RatioBand[]).map(k => (
+              <Opt key={k} label={LABELS.ratio[k]} n={c.ratio.get(k) ?? 0}
+                on={filters.ratio.has(k)} toggle={() => toggle("ratio", k)}
+                hint={k === "at96" ? "38.4% of this office's contracts, against 3.9% nationally" : undefined} />
+            ))}
+          </div>
+        </Group>
+
+        <Group title="Integrity signals" count={filters.quadrant.size + filters.recordFlags.size + filters.procFlags.size}>
+          {(["both", "records-only", "procurement-only", "neither"] as Quadrant[]).map(k => (
+            <Opt key={k} label={QUADRANT_CFG[k].short} n={c.quadrant.get(k) ?? 0}
+              on={filters.quadrant.has(k)} toggle={() => toggle("quadrant", k)} hint={QUADRANT_CFG[k].note} />
+          ))}
+          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+            {[...c.recordFlags.keys()].sort((a, b) => (c.recordFlags.get(b) ?? 0) - (c.recordFlags.get(a) ?? 0)).map(k => (
+              <Opt key={k} label={LABELS.flags[k] ?? k} n={c.recordFlags.get(k) ?? 0}
+                on={filters.recordFlags.has(k)} toggle={() => toggle("recordFlags", k)} />
+            ))}
+          </div>
+          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+            {[...c.procFlags.keys()].sort((a, b) => (c.procFlags.get(b) ?? 0) - (c.procFlags.get(a) ?? 0)).map(k => (
+              <Opt key={k} label={LABELS.procFlags[k] ?? k} n={c.procFlags.get(k) ?? 0}
+                on={filters.procFlags.has(k)} toggle={() => toggle("procFlags", k)} />
+            ))}
+          </div>
+        </Group>
+
+        <Group title="Location quality" count={filters.coords.size + filters.municipality.size}>
+          {(["published", "missing", "mismatch", "outside"] as CoordState[]).map(k => (
+            <Opt key={k} label={LABELS.coords[k]} n={c.coords.get(k) ?? 0}
+              on={filters.coords.has(k)} toggle={() => toggle("coords", k)} />
+          ))}
+          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5 max-h-52 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {[...c.municipality.keys()].sort((a, b) => (c.municipality.get(b) ?? 0) - (c.municipality.get(a) ?? 0)).map(k => (
+              <Opt key={k} label={k} n={c.municipality.get(k) ?? 0}
+                on={filters.municipality.has(k)} toggle={() => toggle("municipality", k)} />
+            ))}
+          </div>
+        </Group>
+
+        <Group title="Evidence available" count={filters.docs.size + filters.satellite.size}>
+          {(["complete", "partial", "none"] as DocState[]).map(k => (
+            <Opt key={k} label={LABELS.docs[k]} n={c.docs.get(k) ?? 0}
+              on={filters.docs.has(k)} toggle={() => toggle("docs", k)} />
+          ))}
+          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+            {(["change-at-point", "change-offset", "no-change-signal", "not-assessable", "not-assessed"] as const).map(k => (
+              <Opt key={k} label={k === "not-assessed" ? "Imagery not assessed" : VERDICT_CFG[k as Verdict].short}
+                n={c.satellite.get(k) ?? 0} on={filters.satellite.has(k)}
+                toggle={() => toggle("satellite", k)}
+                hint="The imagery tier showed no measured discriminative power — treat as context, not evidence" />
+            ))}
+          </div>
+        </Group>
+
+        <Group title="Infrastructure year" count={filters.years ? 1 : 0}>
+          <RangeControl bounds={YEAR_BOUNDS} value={filters.years} format={n => String(Math.round(n))}
+            onChange={v => setFilters({ ...filters, years: v })} />
+        </Group>
+      </div>
+    </aside>
+  );
+}

@@ -84,6 +84,12 @@ class Report:
         print(f"  [INFO] {name:52s} {value} {note}")
 
 
+def parse_amount(series):
+    return pd.to_numeric(
+        series.astype(str).str.replace(",", "", regex=False).str.strip(),
+        errors="coerce")
+
+
 def as_list(x):
     """Arrow list columns arrive as ndarray, None or NaN depending on the row."""
     if x is None or isinstance(x, float):
@@ -164,8 +170,19 @@ def main() -> int:
     r.check("every bidder carries a PCAB id", int((pc == nb).sum()), n,
             critical=False, note="(gaps are unusable for identity, not wrong)")
 
-    abc = pd.to_numeric(d.abc, errors="coerce")
-    aw = pd.to_numeric(d.awardAmount, errors="coerce")
+    # Numeric-looking columns stored as formatted strings are the defect class
+    # that cost this project a silently truncated analysis: to_numeric returns
+    # NaN on "10,947,829.50" without raising. Check for it explicitly.
+    for col in ("abc", "awardAmount"):
+        naive = pd.to_numeric(d[col], errors="coerce")
+        strict = parse_amount(d[col])
+        r.check(f"{col} parses without stripping separators",
+                int(naive.notna().sum()), int(strict.notna().sum()),
+                critical=False,
+                note="(values carry thousands separators — always strip first)")
+
+    abc = parse_amount(d.abc)
+    aw = parse_amount(d.awardAmount)
     r.check("abc present and positive", int((abc > 0).sum()), n)
     r.check("awardAmount <= abc", int((aw.isna() | (aw <= abc * 1.0001)).sum()), n)
     ratio = (aw / abc)

@@ -100,6 +100,11 @@ export const FLAG_LABELS: Record<string, string> = {
   DATE_ANOMALY: "Completion precedes start",
 };
 
+export const STATUS_LABELS: Record<ProjectStatus, string> = {
+  completed: "Completed", ongoing: "Ongoing", flagged: "Flagged for review",
+  proposed: "Proposed", terminated: "Terminated",
+};
+
 export const SEVERITY_CFG: Record<FlagSeverity, { label: string; color: string; bg: string }> = {
   high: { label: "High", color: "#b91c1c", bg: "#fee2e2" },
   medium: { label: "Medium", color: "#b45309", bg: "#fef3c7" },

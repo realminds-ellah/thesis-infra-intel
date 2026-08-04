@@ -47,6 +47,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data"
 OUT = ROOT / "src" / "app" / "data"
 
+DETAIL_URL = (
+    "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/"
+    "resolve/main/dpwh_transparency_data_all_details.parquet"
+)
 DPWH_PARQUET_URL = (
     "https://huggingface.co/datasets/bettergovph/dpwh-transparency-data/"
     "resolve/main/dpwh_transparency_data.parquet"
@@ -123,6 +127,16 @@ def norm(s: str) -> str:
     s = s.upper()
     s = re.sub(r"[^A-Z0-9 ]+", " ", s)
     return re.sub(r"\s+", " ", s).strip()
+
+
+def parse_amount(series):
+    """Money columns in the DPWH export are strings, and some carry thousands
+    separators ("10,947,829.50"). pd.to_numeric alone turns those into NaN
+    silently, which quietly dropped 3,063 national rows from a first analysis
+    without any error. Strip separators before parsing, always."""
+    return pd.to_numeric(
+        series.astype(str).str.replace(",", "", regex=False).str.strip(),
+        errors="coerce")
 
 
 def title(s: str) -> str:
@@ -257,6 +271,49 @@ def main() -> int:
         & (df["loc_province"] == DEO)
     ].copy()
     print(f"  {total_rows:,} rows -> {len(df):,} flood-control rows in {DEO}")
+
+    # ── delivery state, from the verified detail export ──────────────────────
+    # The five DPWH status values describe paperwork, not delivery. "Completed"
+    # covers a structure standing today and one washed away two seasons ago
+    # equally. These derived states are what an inspector actually triages on.
+    detail = pd.read_parquet(
+        fetch(DETAIL_URL, CACHE / "dpwh_all_details.parquet"),
+        columns=["contractId", "expiryDate", "contractEffectivityDate", "abc",
+                 "awardAmount", "bidders", "hasImages", "totalImages",
+                 "advertisement", "contractAgreement", "noticeOfAward",
+                 "noticeToProceed"],
+    )
+    df = df.merge(detail, on="contractId", how="left")
+    print(f"  merged detail export: {df['abc'].notna().sum():,}/{len(df):,} rows have an ABC")
+
+    df["abcN"] = parse_amount(df["abc"])
+    df["awardAmountN"] = parse_amount(df["awardAmount"])
+
+    today = pd.Timestamp.today().normalize()
+    expiry = pd.to_datetime(df["expiryDate"], errors="coerce")
+    df["overdue"] = (expiry < today) & (df["progress"] < 100) & (df["status"] != "Completed")
+    df["stalled"] = df["overdue"] & (df["progress"] < 50)
+
+    # Recurrence: the same coordinate built again in a LATER year. A flood control
+    # structure that has to be redone is one that failed, was washed out, or was
+    # never there — the closest honest proxy in this data for "completed but no
+    # longer working". Same-year repeats are excluded; those are usually phases
+    # of one job rather than a rebuild.
+    coord = df.apply(
+        lambda r: None if pd.isna(r["latitude"]) or pd.isna(r["longitude"])
+        else f"{round(float(r['latitude']), 4)},{round(float(r['longitude']), 4)}",
+        axis=1,
+    )
+    years_at = defaultdict(set)
+    for k, y in zip(coord, df["infraYear"]):
+        if k and pd.notna(y):
+            years_at[k].add(int(y))
+    df["siteRebuilds"] = [
+        0 if not k else max(0, len(years_at[k]) - 1) for k in coord
+    ]
+    print(f"  delivery states: {int(df['overdue'].sum())} overdue, "
+          f"{int(df['stalled'].sum())} stalled, "
+          f"{int((df['siteRebuilds'] > 0).sum())} at rebuilt sites")
 
     # Derive both location claims independently.
     df["declaredMunicipality"] = df["description"].map(declared_municipality)
@@ -440,6 +497,16 @@ def main() -> int:
             "fundingSource": str(r["sourceOfFunds"]) if not pd.isna(r["sourceOfFunds"]) else "—",
             "districtOffice": DEO,
             "hasSatelliteImage": bool(r["hasSatelliteImage"]),
+            "overdue": bool(r["overdue"]),
+            "stalled": bool(r["stalled"]),
+            "siteRebuilds": int(r["siteRebuilds"]),
+            "hasPhotos": bool(r["hasImages"]) if pd.notna(r["hasImages"]) else False,
+            "photoCount": 0 if pd.isna(r["totalImages"]) else int(r["totalImages"]),
+            "bidderCount": 0 if r["bidders"] is None or isinstance(r["bidders"], float) else len(r["bidders"]),
+            "awardAmount": None if pd.isna(r["awardAmountN"]) else float(r["awardAmountN"]),
+            "abc": None if pd.isna(r["abcN"]) else float(r["abcN"]),
+            "docCount": sum(1 for c in ("advertisement","contractAgreement","noticeOfAward","noticeToProceed")
+                            if isinstance(r[c], str) and r[c].startswith("http")),
             "reportCount": 0 if pd.isna(r["reportCount"]) else int(r["reportCount"]),
             "auditFlags": flags,
             "auditScore": score,
@@ -484,6 +551,9 @@ def main() -> int:
             "yearMax": max((p["infraYear"] for p in projects if p["infraYear"]), default=None),
             "totalBudget": round(sum(p["budget"] for p in projects), 2),
             "withCoordinates": len(with_coords),
+            "overdue": int(sum(1 for p in projects if p["overdue"])),
+            "stalled": int(sum(1 for p in projects if p["stalled"])),
+            "atRebuiltSites": int(sum(1 for p in projects if p["siteRebuilds"] > 0)),
             "flagged": len(flagged_projects),
             "municipalitiesServed": sorted(served),
         },
