@@ -76,18 +76,20 @@ function clusterIcon(cluster: { getChildCount(): number; getAllChildMarkers(): L
   const share = n ? flagged / n : 0;
   const fill = share === 0 ? "#046b04" : share < 0.25 ? "#f7c948"
     : share < 0.5 ? "#e8722c" : "#c0272d";
-  const size = n < 10 ? 34 : n < 100 ? 42 : 50;
+  const size = n < 10 ? 32 : n < 100 ? 40 : 48;
   const pct = Math.round(share * 100);
+  // Just the count. A second line of 8px text inside a 32px circle is not
+  // readable at map scale — the colour already carries the share, and the exact
+  // figure is on hover for anyone who wants it.
   return L.divIcon({
     className: "masid-cluster",
     iconSize: L.point(size, size),
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;
+    html: `<div title="${n} contracts · ${pct}% flagged for review"
+        style="width:${size}px;height:${size}px;border-radius:50%;
         background:${fill};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
-        display:flex;flex-direction:column;align-items:center;justify-content:center;
-        color:#fff;font-family:Inter,sans-serif;line-height:1">
-        <span style="font-size:${n > 999 ? 11 : 13}px;font-weight:700">${n}</span>
-        <span style="font-size:8px;opacity:.9">${pct}% flagged</span>
-      </div>`,
+        display:flex;align-items:center;justify-content:center;
+        color:#fff;font-family:Inter,sans-serif;font-weight:700;
+        font-size:${n > 999 ? 12 : n > 99 ? 14 : 15}px">${n}</div>`,
   });
 }
 

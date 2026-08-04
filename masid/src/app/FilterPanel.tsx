@@ -255,23 +255,6 @@ export function FilterPanel({
         </button>
       </div>
 
-      <div className="border-t border-gray-100 p-3">
-        <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Bulacan Summary</div>
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            [result.length.toLocaleString(), "Shown", "#eef2f9", "#1e3a7b"],
-            [String(result.filter(p => p.auditFlags.length > 0).length), "Flagged for review", "#fff4ec", "#c05621"],
-            [String(result.filter(p => p.status === "completed").length), "Finished", "#e6f2e6", "#046b04"],
-            [String(result.filter(p => p.status === "ongoing").length), "Being built", "#e6eefa", "#1c5cab"],
-          ] as [string, string, string, string][]).map(([v, l, bg, col]) => (
-            <div key={l} className="rounded p-2" style={{ background: bg }}>
-              <div className="font-mono text-xl font-bold" style={{ color: col }}>{v}</div>
-              <div className="text-[10px] text-gray-500">{l}</div>
-            </div>
-          ))}
-        </div>
-        <div className="text-[10px] text-gray-400 mt-2">of {META.coverage.projects.toLocaleString()} contracts</div>
-      </div>
     </aside>
   );
 }

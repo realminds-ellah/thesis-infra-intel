@@ -331,7 +331,9 @@ the portal says; this audits it. The division:
   something else entirely, so a green bubble read as "clean" when it only meant
   "small". Each bubble now shows the share of contracts inside it that are
   flagged for review, on the same traffic light: green 0%, yellow under 25%,
-  orange under 50%, red above. The count stays in the middle.
+  orange under 50%, red above. The bubble shows only the count — a second line of
+  8 px text inside a 32 px circle is not readable at map scale, so the exact
+  share is on hover instead.
 - The view fits the 2nd–98th percentile of coordinates, not all of them. Three
   contracts sit tens of kilometres outside Bulacan — which is the point of the
   location checks — and fitting to those zooms the map out to Batangas and makes
