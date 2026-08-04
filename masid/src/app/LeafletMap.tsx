@@ -121,9 +121,9 @@ export function LeafletMap({
       eventHandlers={{ click: () => onSelect(p.id) }}>
       <Popup>
         <div style={{ minWidth: 190 }}>
-          <div style={{ fontFamily: "monospace", fontSize: 10, color: "#64748b" }}>{p.id}</div>
-          <div style={{ fontWeight: 600, fontSize: 12, margin: "2px 0 4px" }}>{p.description.slice(0, 90)}</div>
-          <div style={{ fontSize: 11, color: "#475569" }}>{p.municipality} · {p.dpwhStatus}</div>
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: "var(--color-gray-500)" }}>{p.id}</div>
+          <div style={{ fontWeight: 600, fontSize: 12, margin: "2px 0 4px", color: "var(--color-gray-900)" }}>{p.description.slice(0, 90)}</div>
+          <div style={{ fontSize: 11, color: "var(--color-gray-600)" }}>{p.municipality} · {p.dpwhStatus}</div>
           {p.auditFlags.length > 0 && (
             <div style={{ fontSize: 11, color: "#c05621", marginTop: 4, fontWeight: 600 }}>
               Flagged for review — {p.auditFlags.length} check{p.auditFlags.length === 1 ? "" : "s"} tripped
@@ -141,8 +141,9 @@ export function LeafletMap({
   return (
     // No preferCanvas: clustering already keeps the DOM small, and SVG markers
     // stay inspectable, hoverable and testable in a way canvas ones do not.
-    <MapContainer center={BULACAN_CENTRE} zoom={11} className="w-full h-full"
-      style={{ background: "#f2f2f0" }}>
+    // No inline background: the void behind the tiles is themed in dark.css so
+    // it follows light and dark instead of staying a hardcoded near-white.
+    <MapContainer center={BULACAN_CENTRE} zoom={11} className="w-full h-full">
       <LayersControl position="topright">
         <LayersControl.BaseLayer checked name="Street map">
           <TileLayer

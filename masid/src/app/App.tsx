@@ -15,7 +15,7 @@ import {
   Satellite, MessageSquare, ZoomIn, ZoomOut, Check, MapPin, Shield,
   Percent, BarChart2, Plus, LogOut, Settings, Users, Globe, Eye,
   EyeOff, Lock, Activity, Wifi, WifiOff, Star, Clock, TrendingUp,
-  TrendingDown, CheckSquare, AlertCircle, Command, Inbox,
+  TrendingDown, CheckSquare, AlertCircle, Command, Inbox, Sun, Moon, Monitor,
 } from "lucide-react";
 
 import {
@@ -35,6 +35,7 @@ import { ReportsFeed } from "./ReportsFeed";
 import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
+import { type Theme, loadTheme, saveTheme, applyTheme, watchSystem, tint, accent } from "./theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -232,7 +233,7 @@ function StatusBadge({status,size="sm"}:{status:ProjectStatus;size?:"sm"|"md"}) 
   const c=STATUS_CFG[status];
   return (
     <span className={`inline-flex items-center gap-1.5 font-medium rounded ${size==="md"?"px-2.5 py-1 text-xs":"px-2 py-0.5 text-[11px]"}`}
-      style={{background:c.bg,color:c.text}}>
+      style={{background:tint(c.text),color:accent(c.text)}}>
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{background:c.dot}}/>
       {c.label}
     </span>
@@ -299,7 +300,7 @@ function EmptyState({title,body,action,onAction}:{title:string;body:string;actio
       {action&&onAction&&(
         <button onClick={onAction}
           className="mt-4 px-4 py-2 text-[13px] font-medium text-white rounded hover:opacity-90"
-          style={{background:"#1e3a7b"}}>
+          style={{background:"var(--masid-navy)"}}>
           {action}
         </button>
       )}
@@ -310,7 +311,7 @@ function EmptyState({title,body,action,onAction}:{title:string;body:string;actio
 function FilterChip({label,onRemove}:{label:string;onRemove:()=>void}) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-[#1e3a7b]/20 text-[#1e3a7b]"
-      style={{background:"#eef2f9"}}>
+      style={{background:tint("#1e3a7b",10)}}>
       {label}
       <button onClick={onRemove} className="hover:text-red-500 transition-colors ml-0.5">
         <X size={10}/>
@@ -526,7 +527,7 @@ function LoginScreen({onLogin}:{onLogin:(role:Role)=>void}) {
             </div>
             <button type="submit" disabled={loading} aria-busy={loading}
               className="w-full py-3 text-white text-sm font-semibold rounded flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2"
-              style={{background:"#1e3a7b"}}>
+              style={{background:"var(--masid-navy)"}}>
               {loading?<><RefreshCw size={15} className="animate-spin"/>Signing in…</>:<><Lock size={15}/>Sign In</>}
             </button>
             <div className="flex items-center gap-3"><div className="flex-1 h-px bg-gray-200"/><span className="text-[11px] text-gray-400">or</span><div className="flex-1 h-px bg-gray-200"/></div>
@@ -656,7 +657,7 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
         </div>
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
           <button onClick={()=>step>1?setStep(s=>s-1):onClose()} className="px-4 py-2 text-sm border border-gray-200 rounded text-gray-600 hover:bg-white">{step===1?"Cancel":"← Back"}</button>
-          <button onClick={step<4?next:save} className="px-5 py-2 text-sm font-semibold text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}>{step<4?"Continue →":"Create Project"}</button>
+          <button onClick={step<4?next:save} className="px-5 py-2 text-sm font-semibold text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}>{step<4?"Continue →":"Create Project"}</button>
         </div>
       </div>
     </div>
@@ -665,9 +666,42 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
 
 // ─── Top Nav ──────────────────────────────────────────────────────────────────
 
-function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette}:{
+/**
+ * Three states in one control, because two would be a lie.
+ *
+ * A plain light/dark switch has to start somewhere, and whichever it starts on
+ * is a decision made for a reader whose machine already stated a preference.
+ * The third state — follow the system — is the default, and it keeps following:
+ * a machine that turns dark at sunset turns this dashboard dark at sunset.
+ *
+ * Segmented rather than a cycling icon button, so the current state and the
+ * available ones are both visible without clicking to find out.
+ */
+function ThemeToggle({theme,setTheme}:{theme:Theme;setTheme:(t:Theme)=>void}) {
+  const opts:[Theme,React.ReactNode,string][] = [
+    ["light",  <Sun size={12}/>,     "Always light"],
+    ["dark",   <Moon size={12}/>,    "Always dark"],
+    ["system", <Monitor size={12}/>, "Follow this device"],
+  ];
+  return (
+    <div role="radiogroup" aria-label="Colour theme"
+      className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-white/15 shrink-0">
+      {opts.map(([t,icon,label])=>(
+        <button key={t} role="radio" aria-checked={theme===t} title={label} aria-label={label}
+          onClick={()=>setTheme(t)}
+          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+            theme===t ? "bg-white/20 text-white" : "text-white/45 hover:text-white hover:bg-white/10"}`}>
+          {icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette,theme,setTheme}:{
   screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;canToggleSidebar:boolean;onToggleNotifications:()=>void;
   unreadCount:number;role:Role;onLogout:()=>void;onCreateProject:()=>void;canCreate:boolean;onOpenPalette:()=>void;
+  theme:Theme;setTheme:(t:Theme)=>void;
 }) {
   const rc=ROLE_CFG[role];
   const links:[string,Screen,React.ReactNode,Role[]|null][]=[
@@ -682,7 +716,7 @@ function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNoti
   ];
   const visible=links.filter(([,,, roles])=>!roles||roles.includes(role));
   return (
-    <header className="h-[52px] shrink-0 flex items-center gap-2 px-3 border-b border-white/10" style={{background:"#1e3a7b"}}>
+    <header className="h-[52px] shrink-0 flex items-center gap-2 px-3 border-b border-white/10" style={{background:"var(--masid-navy)"}}>
       {/* Only offered where a sidebar exists to collapse. It used to sit on every
           screen and do nothing on most of them. */}
       {canToggleSidebar
@@ -715,6 +749,7 @@ function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNoti
           <Plus size={13}/>New Project
         </button>
       )}
+      <ThemeToggle theme={theme} setTheme={setTheme}/>
       <button onClick={onToggleNotifications} aria-label={`Notifications${unreadCount>0?`, ${unreadCount} unread`:""}`}
         className="relative w-8 h-8 flex items-center justify-center text-white/55 hover:text-white transition-colors shrink-0">
         <Bell size={17}/>
@@ -787,7 +822,9 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
     {l:"Reported Completion",     v:`${avgCompletion.toFixed(1)}%`,    s:"Mean DPWH-reported progress", trend:`${PROJECTS.filter(p=>p.dpwhStatus==="Completed").length} marked complete`, up:true, c:"#7c3aed"},
     {l:"Imagery Assessed",        v:SATELLITE.coverage.assessed.toLocaleString(), s:`Sentinel-2 10 m · ${SATELLITE.coverage.assessable.toLocaleString()} assessable`, trend:VALIDATION.discriminates?"validated against controls":"no discriminative power", up:false, c:VALIDATION.discriminates?"#0f766e":"#b91c1c"},
   ];
-  const NAVY="#1e3a7b",GREEN="#16a34a",AMBER="#f59e0b",GRAY="#94a3b8";
+  // Series colours as custom properties: an SVG fill accepts var(), so the
+  // charts follow the theme with no hook, no re-render and no second palette.
+  const NAVY="var(--masid-navy)",GREEN="#16a34a",AMBER="#f59e0b",GRAY="#94a3b8";
 
   /** A named group, so the page reads as four questions rather than nine cards. */
   const Section=({label,note,children}:{label:string;note?:string;children:React.ReactNode})=>(
@@ -808,7 +845,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
           <div><h1 className="text-lg font-bold text-gray-900">Executive Dashboard</h1><p className="text-[13px] text-gray-500">{META.areaOfInterest} · DPWH Region III · {META.coverage.projects.toLocaleString()} flood control records, {META.coverage.yearMin}–{META.coverage.yearMax} · dataset built {META.generated.slice(0,10)}</p></div>
           <div className="flex items-center gap-2">
             <button onClick={()=>toast.success("Exporting PDF report…")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export PDF</button>
-            <button onClick={()=>onNavigate("map")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><MapIcon size={13}/>Open Map</button>
+            <button onClick={()=>onNavigate("map")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><MapIcon size={13}/>Open Map</button>
           </div>
         </div>
       </div>
@@ -874,7 +911,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 <XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
                 <YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
                 <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[`₱${v.toLocaleString()}M`,"awarded"]}/>
-                <Bar dataKey="valueM" name="Awarded" fill="#2a78d6" radius={[2,2,0,0]}/>
+                <Bar dataKey="valueM" name="Awarded" fill="var(--masid-blue)" radius={[2,2,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1030,7 +1067,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                       const sat=SAT_BY_ID.get(p.id);
                       if(!sat) return <span className="text-[11px] text-gray-300">not assessed</span>;
                       const v=VERDICT_CFG[sat.verdict];
-                      return <span className="text-[11px] px-2 py-0.5 rounded font-medium" style={{background:v.bg,color:v.color}} title={v.note}>{v.short}</span>;
+                      return <span className="text-[11px] px-2 py-0.5 rounded font-medium" style={{background:tint(v.color),color:accent(v.color)}} title={v.note}>{v.short}</span>;
                     })()}</td>
                     <td className="px-4 py-3"><button onClick={()=>onViewDetail(p.id)} className="text-[#1e3a7b] text-[11px] font-medium flex items-center gap-1 hover:underline">Review<ArrowRight size={10}/></button></td>
                   </tr>
@@ -1110,7 +1147,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
               <StatusBadge status={project.status}/>
               {project.auditFlags.length>0&&(
-                <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:"#fff4ec",color:"#c05621"}}>
+                <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:tint("#c05621"),color:accent("#c05621")}}>
                   <AlertTriangle size={10}/>Flagged for review
                 </span>
               )}
@@ -1157,13 +1194,13 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               <div className="text-[10px] text-gray-500 mt-0.5">awarded</div>
             </div>
             <div className="rounded bg-gray-50 p-2.5">
-              <div className="font-mono text-[15px] font-bold" style={{color:pr?.bidRatio&&Math.abs(pr.bidRatio*100-96)<0.01?"#c05621":"#111827"}}>
+              <div className="font-mono text-[15px] font-bold" style={{color:pr?.bidRatio&&Math.abs(pr.bidRatio*100-96)<0.01?accent("#c05621"):"var(--color-gray-900)"}}>
                 {pr?.bidRatio?`${(pr.bidRatio*100).toFixed(2)}%`:"—"}
               </div>
               <div className="text-[10px] text-gray-500 mt-0.5">of budget</div>
             </div>
             <div className="rounded bg-gray-50 p-2.5">
-              <div className="font-mono text-[15px] font-bold" style={{color:(pr?.bidders??0)===1?"#c0272d":"#111827"}}>{pr?.bidders??"—"}</div>
+              <div className="font-mono text-[15px] font-bold" style={{color:(pr?.bidders??0)===1?accent("#c0272d"):"var(--color-gray-900)"}}>{pr?.bidders??"—"}</div>
               <div className="text-[10px] text-gray-500 mt-0.5">{pr?.bidders===1?"bidder":"bidders"}</div>
             </div>
           </div>
@@ -1203,7 +1240,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
                 {pr.bidderList.map((b,i)=>(
                   <div key={`${b.pcab??b.name}-${i}`} className="flex items-baseline gap-2 py-1.5 border-b border-gray-50 last:border-0">
                     <span className={`text-[12px] flex-1 ${b.won?"font-semibold text-gray-900":"text-gray-600"}`}>{b.name||"(unnamed)"}</span>
-                    {b.won&&<span className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0" style={{background:"#e6f2e6",color:"#046b04"}}>won</span>}
+                    {b.won&&<span className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0" style={{background:tint("#046b04"),color:accent("#046b04")}}>won</span>}
                     {b.pcab&&<span className="text-[10px] font-mono text-gray-400 shrink-0">PCAB {b.pcab}</span>}
                   </div>
                 ))}
@@ -1256,7 +1293,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
                   sub={hz.level===0&&hz.metresToHazard!=null?`${hz.metresToHazard.toLocaleString()} m from the nearest flood-prone area`:undefined}/>
               )}
               {sat&&(
-                <div className="mt-2 rounded border px-3 py-2.5" style={{background:VERDICT_CFG[sat.verdict].bg,borderColor:VERDICT_CFG[sat.verdict].color+"33"}}>
+                <div className="mt-2 rounded border px-3 py-2.5" style={{background:tint(VERDICT_CFG[sat.verdict].color),borderColor:tint(VERDICT_CFG[sat.verdict].color,38)}}>
                   <div className="text-[12px] font-semibold mb-1" style={{color:VERDICT_CFG[sat.verdict].color}}>{VERDICT_CFG[sat.verdict].label}</div>
                   <div className="text-[11px] text-gray-600 leading-relaxed">{VERDICT_CFG[sat.verdict].note}</div>
                 </div>
@@ -1278,7 +1315,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               </button>
             </div>
           )}
-          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"#1e3a7b"}}>Open full record<ArrowRight size={14}/></button>
+          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"var(--masid-navy)"}}>Open full record<ArrowRight size={14}/></button>
         </div>
       </div>
     );
@@ -1392,7 +1429,7 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button className="flex items-center gap-1.5 px-3 py-2 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export</button>
-            <button onClick={()=>toast.success("Edit mode enabled")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><Edit2 size={13}/>Edit</button>
+            <button onClick={()=>toast.success("Edit mode enabled")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><Edit2 size={13}/>Edit</button>
           </div>
         </div>
         {project.auditFlags.length>0&&<div className="ml-11 mt-3"><AuditFlags project={project}/></div>}
@@ -1492,7 +1529,7 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
                 const r30=sat.rings.r30, r150=sat.rings.r150;
                 return (
                   <div className="max-w-2xl space-y-4">
-                    <div className="rounded border p-3.5" style={{background:cfg.bg,borderColor:cfg.color+"44"}}>
+                    <div className="rounded border p-3.5" style={{background:tint(cfg.color),borderColor:tint(cfg.color,42)}}>
                       <div className="text-[12px] font-bold mb-1" style={{color:cfg.color}}>{cfg.label}</div>
                       <p className="text-[12px] text-gray-700 leading-relaxed">{sat.detail}</p>
                     </div>
@@ -1751,14 +1788,14 @@ function AdminScreen() {
           <div className="bg-white rounded border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
               <span className="text-[13px] font-bold text-gray-800">System Users</span>
-              <button onClick={()=>toast.success("Invite sent")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><Plus size={13}/>Invite User</button>
+              <button onClick={()=>toast.success("Invite sent")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><Plus size={13}/>Invite User</button>
             </div>
             <table className="w-full text-[13px]">
               <thead className="border-b border-gray-100 bg-gray-50"><tr>{["Name","Role","Email","Last Login","Status","Actions"].map(h=><th key={h} className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
                 {SYSTEM_USERS.map((u,i)=>(
                   <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold text-white" style={{background:"#1e3a7b"}}>{u.name[0]}</div><span className="font-medium text-gray-800">{u.name}</span></div></td>
+                    <td className="px-5 py-3"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold text-white" style={{background:"var(--masid-navy)"}}>{u.name[0]}</div><span className="font-medium text-gray-800">{u.name}</span></div></td>
                     <td className="px-5 py-3"><span className="text-[11px] px-2 py-0.5 rounded font-medium text-white" style={{background:ROLE_CFG[u.role].bg}}>{ROLE_LABELS[u.role]}</span></td>
                     <td className="px-5 py-3 font-mono text-[12px] text-gray-600">{u.email}</td>
                     <td className="px-5 py-3 text-gray-500 text-[12px]">{u.lastLogin}</td>
@@ -1816,7 +1853,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
   const totalBudget=PROJECTS.reduce((s,p)=>s+p.budget,0);
   return (
     <div className="flex-1 overflow-auto bg-gray-50" style={{scrollbarWidth:"none"}}>
-      <div className="border-b border-amber-200 px-6 py-3 flex items-center gap-3 text-[13px]" style={{background:"#fffbeb"}}>
+      <div className="border-b border-amber-200 px-6 py-3 flex items-center gap-3 text-[13px]" style={{background:tint("#f59e0b")}}>
         <Globe size={15} className="text-amber-600"/>
         <span className="text-amber-800"><strong>Public Transparency Portal</strong> — No login required. DPWH Region III · Open Government Partnership.</span>
         <button onClick={onLogin} className="ml-auto text-[12px] font-semibold text-[#1e3a7b] flex items-center gap-1 hover:underline shrink-0">Sign in for full access<ArrowRight size={11}/></button>
@@ -1874,7 +1911,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
                 <input placeholder="Email address" type="email" aria-label="Email address" className="px-3 py-2 text-[13px] border border-gray-200 rounded focus:outline-none focus:border-[#1e3a7b]"/>
               </div>
               <textarea rows={3} placeholder="Describe the information you are requesting and the reason for your request…" aria-label="FOI request description" className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded focus:outline-none focus:border-[#1e3a7b] resize-none mb-3"/>
-              <button onClick={()=>toast.success("FOI request submitted. Response within 15 working days.")} className="px-5 py-2.5 text-[13px] font-semibold text-white rounded hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2" style={{background:"#1e3a7b"}}>Submit FOI Request</button>
+              <button onClick={()=>toast.success("FOI request submitted. Response within 15 working days.")} className="px-5 py-2.5 text-[13px] font-semibold text-white rounded hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2" style={{background:"var(--masid-navy)"}}>Submit FOI Request</button>
             </div>
           </div>
         </div>
@@ -1896,6 +1933,15 @@ export default function App() {
   // chose — the satellite workbench opened on it instead of on the top of its
   // own sorted queue. Screens that need a fallback still apply one below.
   const [selectedProjectId,setSelId]  = useState<string|null>(null);
+
+  /* Theme. Applied before anything is measured so the first paint is already in
+     the right palette, and kept in a ref-free closure the system listener reads
+     at fire time rather than capturing. */
+  const [theme,setThemeState] = useState<Theme>(()=>loadTheme());
+  const themeRef = useRef(theme); themeRef.current = theme;
+  useEffect(()=>{ applyTheme(theme); saveTheme(theme); },[theme]);
+  useEffect(()=>watchSystem(()=>themeRef.current),[]);
+  const setTheme = (t:Theme)=>setThemeState(t);
   const [notificationsOpen,setNotifs] = useState(false);
   const [paletteOpen,setPalette]      = useState(false);
   const [createModalOpen,setCreate]   = useState(false);
@@ -1953,7 +1999,7 @@ export default function App() {
 
       <div className="relative shrink-0">
         <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)} canToggleSidebar={showSidebar}
-          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole}
+          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole} theme={theme} setTheme={setTheme}
           onLogout={handleLogout} onCreateProject={()=>setCreate(true)} canCreate={canCreate}
           onOpenPalette={()=>setPalette(true)}/>
         {notificationsOpen&&(

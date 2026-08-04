@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import { PROJECTS, PROC_BY_ID, type Project } from "./data";
+import { tint, accent } from "./theme";
 
 const KEY = "masid.reports.v1";
 
@@ -389,7 +390,7 @@ function CaptureSheet({ onClose, onDone }:
         <div className="px-5 py-3 border-t border-gray-100">
           <button onClick={submit} disabled={!shot || !chosen || busy}
             className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40"
-            style={{ background: "#1e3a7b" }}>
+            style={{ background: "var(--masid-navy)" }}>
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
             Post report
           </button>
@@ -433,7 +434,7 @@ function Thread({ report, role, onComment, onVote }: {
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-[11px] font-semibold text-gray-800">{c.author}</span>
             <span className="text-[10px] text-gray-400">{ago(c.at)}</span>
-            {c.demo && <span className="text-[9px] px-1.5 rounded" style={{ background: "#fef9e7", color: "#b45309" }}>demo</span>}
+            {c.demo && <span className="text-[9px] px-1.5 rounded" style={{ background: tint("#b45309"), color: accent("#b45309") }}>demo</span>}
           </div>
           <p className="text-[12px] text-gray-700 leading-relaxed mt-0.5">{c.text}</p>
         </div>
@@ -455,7 +456,7 @@ function Thread({ report, role, onComment, onVote }: {
               placeholder={`Reply to ${c.author}…`}
               className="flex-1 px-2.5 py-1.5 text-[12px] border border-gray-200 rounded bg-white focus:outline-none focus:border-[#1e3a7b]" />
             <button onClick={() => { if (text.trim()) { onComment(text.trim(), c.id); setText(""); setReplyTo(null); } }}
-              className="px-2.5 rounded text-white" style={{ background: "#1e3a7b" }}><Send size={12} /></button>
+              className="px-2.5 rounded text-white" style={{ background: "var(--masid-navy)" }}><Send size={12} /></button>
           </div>
         )}
       </div>
@@ -472,13 +473,13 @@ function Thread({ report, role, onComment, onVote }: {
       ))}
       {replyTo === null && (
         <div className="flex gap-2 mt-3">
-          <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: "#1e3a7b" }}>{role.charAt(0)}</div>
+          <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ background: "var(--masid-navy)" }}>{role.charAt(0)}</div>
           <input value={text} onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && text.trim()) { onComment(text.trim()); setText(""); } }}
             placeholder="Add what you know about this site…"
             className="flex-1 px-3 py-1.5 text-[12px] border border-gray-200 rounded-full bg-white focus:outline-none focus:border-[#1e3a7b]" />
           <button onClick={() => { if (text.trim()) { onComment(text.trim()); setText(""); } }} disabled={!text.trim()}
-            className="px-3 rounded-full text-white disabled:opacity-30" style={{ background: "#1e3a7b" }}><Send size={13} /></button>
+            className="px-3 rounded-full text-white disabled:opacity-30" style={{ background: "var(--masid-navy)" }}><Send size={13} /></button>
         </div>
       )}
     </div>
@@ -551,14 +552,14 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
           </div>
           <button onClick={() => setCapturing(true)}
             className="ml-auto flex items-center gap-1.5 px-3.5 py-2 rounded text-[13px] font-semibold text-white hover:opacity-90"
-            style={{ background: "#1e3a7b" }}>
+            style={{ background: "var(--masid-navy)" }}>
             <Camera size={14} />Report from the site
           </button>
         </div>
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-4">
-        <div className="rounded border p-3.5" style={{ background: "#fef9e7", borderColor: "#f7c94855" }}>
+        <div className="rounded border p-3.5" style={{ background: tint("#b45309"), borderColor: tint("#b45309", 40) }}>
           <div className="flex items-start gap-2.5">
             <AlertTriangle size={14} className="shrink-0 mt-0.5" style={{ color: "#b45309" }} />
             <div className="text-[11px] text-gray-700 leading-relaxed">
@@ -615,7 +616,7 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                       report sits in the sequence is available on demand instead. */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] px-2.5 py-1 rounded font-semibold flex items-center gap-1.5"
-                      style={{ background: st(r).bg, color: st(r).color }}>
+                      style={{ background: tint(st(r).color), color: accent(st(r).color) }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: st(r).color }} />
                       {st(r).label}
                     </span>
@@ -663,7 +664,7 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                 <div className="p-4">
                   {r.demo && (
                     <div className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded mb-2"
-                      style={{ background: "#fef9e7", color: "#b45309" }}>
+                      style={{ background: tint("#b45309"), color: accent("#b45309") }}>
                       <AlertTriangle size={9}/>DEMO — seeded example, not a real report
                     </div>
                   )}

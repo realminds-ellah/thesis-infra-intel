@@ -38,6 +38,7 @@ import {
   EYE_CFG, EYE_ORDER, loadReviews, saveReviews, reviewsToCsv, imageryLinks,
   type EyeVerdict, type Review,
 } from "./satReview";
+import { tint, accent } from "./theme";
 
 const VERDICT_ORDER: Verdict[] = ["change-at-point", "change-offset", "no-change-signal", "not-assessable"];
 type Sort = "value" | "verdict" | "id" | "clear";
@@ -190,7 +191,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                   className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 whitespace-nowrap ${
                     on ? "text-white" : n === 0 ? "border-gray-100 text-gray-300" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
                   style={on ? { background: VERDICT_CFG[v].color, borderColor: VERDICT_CFG[v].color } : undefined}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? "#fff" : VERDICT_CFG[v].color }} />
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? "#fff" : accent(VERDICT_CFG[v].color) }} />
                   {VERDICT_CFG[v].short}<span className="font-mono opacity-70">{n}</span>
                 </button>
               );
@@ -219,11 +220,11 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
               className={`w-full text-left px-4 py-2.5 border-b border-gray-50 hover:bg-gray-50 ${
                 r.id === sel?.r.id ? "bg-blue-50" : ""}`}>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: VERDICT_CFG[r.verdict].color }} />
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent(VERDICT_CFG[r.verdict].color) }} />
                 <span className="text-[11px] font-mono text-gray-500">{r.id}</span>
                 {reviews[r.id] && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
-                    style={{ background: EYE_CFG[reviews[r.id].verdict].bg, color: EYE_CFG[reviews[r.id].verdict].color }}
+                    style={{ background: tint(EYE_CFG[reviews[r.id].verdict].color), color: accent(EYE_CFG[reviews[r.id].verdict].color) }}
                     title={`Looked at: ${EYE_CFG[reviews[r.id].verdict].label}`}>
                     <Check size={8}/>{EYE_CFG[reviews[r.id].verdict].short}
                   </span>
@@ -248,12 +249,12 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
         <div className="max-w-5xl mx-auto p-6 space-y-4">
           {/* Never below the fold. A verdict here is not a finding. */}
           <div className="rounded border p-3.5" style={VALIDATION.discriminates
-            ? { background: "#e6f2e6", borderColor: "#046b0444" }
-            : { background: "#fbe9ea", borderColor: "#c0272d44" }}>
+            ? { background: tint("#046b04"), borderColor: tint("#046b04", 42) }
+            : { background: tint("#c0272d"), borderColor: tint("#c0272d", 42) }}>
             <div className="flex items-start gap-2.5">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" style={{ color: "#c0272d" }} />
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" style={{ color: accent("#c0272d") }} />
               <div>
-                <div className="text-[12px] font-bold" style={{ color: "#c0272d" }}>
+                <div className="text-[12px] font-bold" style={{ color: accent("#c0272d") }}>
                   This tier does not work — read the verdicts as context, never as evidence
                 </div>
                 <p className="text-[12px] text-gray-700 leading-relaxed mt-1">
@@ -281,7 +282,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                     </div>
                   </div>
                   <span className="text-[11px] px-2.5 py-1 rounded font-semibold shrink-0"
-                    style={{ background: cfg.bg, color: cfg.color }}>{cfg.short}</span>
+                    style={{ background: tint(cfg.color), color: accent(cfg.color) }}>{cfg.short}</span>
                 </div>
                 <p className="text-[12px] text-gray-700 leading-relaxed mt-3">{sel.r.detail}</p>
                 <p className="text-[11px] text-gray-500 leading-relaxed mt-2">{cfg.note}</p>
@@ -371,13 +372,13 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                         <button key={v} onClick={() => record(v)}
                           onMouseEnter={() => setHelpFor(v)} onMouseLeave={() => setHelpFor(null)}
                           className={`text-left p-2.5 rounded border transition-colors ${on ? "" : "border-gray-200 hover:border-gray-300 bg-white"}`}
-                          style={on ? { background: c.bg, borderColor: c.color } : undefined}>
+                          style={on ? { background: tint(c.color), borderColor: accent(c.color) } : undefined}>
                           <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent(c.color) }} />
                             {on && <Check size={11} style={{ color: c.color }} />}
                           </div>
                           <div className="text-[11px] font-semibold mt-1.5 leading-tight"
-                            style={{ color: on ? c.color : "#374151" }}>{c.short}</div>
+                            style={{ color: on ? accent(c.color) : "var(--color-gray-700)" }}>{c.short}</div>
                         </button>
                       );
                     })}
@@ -409,7 +410,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                     <button onClick={nextUnreviewed} disabled={queue.length === 0}
                       title={queue.length ? `${queue.length} left in the current list` : "Nothing left unreviewed in the current list"}
                       className="ml-auto text-[11px] px-3 py-1.5 rounded text-white flex items-center gap-1 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{ background: "#1e3a7b" }}>
+                      style={{ background: "var(--masid-navy)" }}>
                       {queue.length ? <>Next site to review<span className="font-mono opacity-70">{queue.length}</span><ChevronRight size={12} /></>
                         : "All reviewed"}
                     </button>
@@ -511,7 +512,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                   </dl>
                   <button onClick={() => onOpenRecord(sel.p.id)}
                     className="w-full mt-4 py-2 rounded text-[12px] font-semibold text-white flex items-center justify-center gap-1.5 hover:opacity-90"
-                    style={{ background: "#1e3a7b" }}>
+                    style={{ background: "var(--masid-navy)" }}>
                     Open full record<ExternalLink size={12} />
                   </button>
                 </div>

@@ -106,7 +106,7 @@ export function InspectionBrief({ project, onClose }:
           <span className="text-[11px] text-gray-400">print it, or save as PDF — sites have no signal</span>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] rounded text-white hover:opacity-90" style={{ background: "#1e3a7b" }}>
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] rounded text-white hover:opacity-90" style={{ background: "var(--masid-navy)" }}>
               <Printer size={13} />Print
             </button>
             <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600"><X size={16} /></button>
