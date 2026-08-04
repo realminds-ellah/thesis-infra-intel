@@ -207,10 +207,42 @@ const DEMO: CitizenReport[] = [
   },
 ];
 
+/**
+ * Fill in fields added after a report was saved.
+ *
+ * Anything persisted to a browser outlives the shape it was written in. Reports
+ * stored before `comments` and `status` existed came back missing them, and the
+ * feed died on STATUS_CFG[undefined] — a blank screen for anyone who had used it
+ * before, and invisible to any test that clears storage first. Which every test
+ * here did.
+ *
+ * So: never trust the shape of what comes out of storage, and default every
+ * field that was ever added.
+ */
+const migrate = (r: Partial<CitizenReport>): CitizenReport => ({
+  id: r.id ?? `r${Math.random().toString(36).slice(2)}`,
+  projectId: r.projectId ?? "",
+  note: r.note ?? "",
+  image: r.image ?? "",
+  capturedAt: r.capturedAt ?? Date.now(),
+  lat: r.lat ?? null,
+  lng: r.lng ?? null,
+  metresFromContract: r.metresFromContract ?? null,
+  masid: r.masid ?? 0,
+  comments: Array.isArray(r.comments) ? r.comments : [],
+  status: r.status && r.status in STATUS_CFG ? r.status : "submitted",
+  statusBy: r.statusBy ?? null,
+  statusAt: r.statusAt ?? null,
+  demo: r.demo,
+});
+
 const load = (): CitizenReport[] => {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? "null");
-    return Array.isArray(saved) && saved.length ? saved : DEMO;
+    if (!Array.isArray(saved) || !saved.length) return DEMO;
+    // Drop anything that has lost the project it referred to, rather than
+    // rendering a card that points nowhere.
+    return saved.map(migrate).filter(r => r.projectId);
   } catch { return DEMO; }
 };
 const save = (r: CitizenReport[]) => localStorage.setItem(KEY, JSON.stringify(r));
@@ -584,8 +616,8 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                 <div className="px-4 pt-3 pb-2.5 border-b border-gray-100">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 rounded font-semibold"
-                      style={{ background: STATUS_CFG[r.status].bg, color: STATUS_CFG[r.status].color }}>
-                      {STATUS_CFG[r.status].label}
+                      style={{ background: (STATUS_CFG[r.status] ?? STATUS_CFG.submitted).bg, color: (STATUS_CFG[r.status] ?? STATUS_CFG.submitted).color }}>
+                      {(STATUS_CFG[r.status] ?? STATUS_CFG.submitted).label}
                     </span>
                     {r.statusBy && (
                       <span className="text-[10px] text-gray-400">set by {r.statusBy} · {ago(r.statusAt ?? Date.now())}</span>
