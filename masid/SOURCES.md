@@ -345,6 +345,22 @@ and where DPWH says the project is — a number neither party chose. A report ta
 it. The vote and comment orderings are offered because people expect them, and
 labelled so a busy thread is not mistaken for a verified one.
 
+**Progress.** Every report shows where it has got to — Submitted, Under review,
+Queued for inspection, Validated on site or Not confirmed, Closed — with a
+five-step strip, who moved it and when.
+
+Without this a feed is a wall of photographs and nothing distinguishes a report
+that was checked and confirmed from one nobody has opened.
+
+**Only official roles can move a report along.** A citizen cannot mark their own
+report validated; that would make the badge worthless the day the tool became
+popular. The public sees the state and who set it, and the control is replaced by
+a line saying who can change it.
+
+*Validated* and *Not confirmed* are both outcomes, not judgements on the reporter.
+Plenty of honest reports are not confirmed — a coordinate can be wrong without the
+structure being missing — and the wording avoids implying bad faith.
+
 **Discussion.** Reports carry comment threads, flat with a single level of reply.
 Deeper nesting is where threads stop being read, and on a register naming real
 companies an argument buried four levels down is worse than none.

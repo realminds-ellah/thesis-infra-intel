@@ -51,7 +51,48 @@ const KEY = "masid.reports.v1";
  * Masid and comment counts measure attention. They are offered because people
  * expect them, and labelled so nobody mistakes a busy thread for a verified one.
  */
-export type SortKey = "new" | "masid" | "discussed" | "distance" | "value";
+export type SortKey = "new" | "masid" | "discussed" | "distance" | "value" | "status";
+
+/**
+ * What has happened to a report since it was posted.
+ *
+ * A feed without this is a wall of photographs — nobody can tell a report that
+ * was checked and confirmed from one nobody has opened. The states follow what
+ * would actually happen to a complaint: it arrives, someone reads it, it goes on
+ * an inspection list, somebody visits, and the visit either bears it out or does
+ * not.
+ *
+ * "Validated" and "Not confirmed" are both outcomes, not verdicts on the person
+ * who reported. Plenty of honest reports are not confirmed — a coordinate can be
+ * wrong without the structure being missing — so the wording avoids implying bad
+ * faith.
+ *
+ * ONLY OFFICIAL ROLES CAN MOVE A REPORT ALONG. A citizen cannot mark their own
+ * report validated; that would make the badge worthless the day the tool became
+ * popular. The public sees the state and who set it, and cannot change it.
+ */
+export type ReportStatus =
+  | "submitted" | "reviewing" | "queued" | "validated" | "not-confirmed" | "closed";
+
+export const STATUS_CFG: Record<ReportStatus, { label: string; color: string; bg: string; step: number; note: string }> = {
+  submitted:      { label: "Submitted",            color: "#6b6b64", bg: "#f0f0ee", step: 1, note: "Posted. Nobody has picked it up yet." },
+  reviewing:      { label: "Under review",         color: "#1c5cab", bg: "#e6eefa", step: 2, note: "An office has seen it and is looking at the record." },
+  queued:         { label: "Queued for inspection",color: "#b45309", bg: "#fef9e7", step: 3, note: "On the list for a site visit." },
+  validated:      { label: "Validated on site",    color: "#046b04", bg: "#e6f2e6", step: 4, note: "An inspector went and found what the report described." },
+  "not-confirmed":{ label: "Not confirmed",        color: "#c05621", bg: "#fff4ec", step: 4, note: "An inspector went and did not find what the report described. That is an outcome, not a judgement on the reporter." },
+  closed:         { label: "Closed",               color: "#6b6b64", bg: "#f0f0ee", step: 5, note: "No further action planned." },
+};
+
+const STEPS: { key: ReportStatus; short: string; step: number }[] = [
+  { key: "submitted", short: "Submitted", step: 1 },
+  { key: "reviewing", short: "Reviewed", step: 2 },
+  { key: "queued", short: "Queued", step: 3 },
+  { key: "validated", short: "Inspected", step: 4 },
+  { key: "closed", short: "Closed", step: 5 },
+];
+
+/** Roles that may move a report along. A reporter cannot validate themselves. */
+const OFFICIAL = new Set(["DPWH Admin", "DPWH Engineer", "Field Inspector", "LGU Coordinator"]);
 
 const SORTS: { key: SortKey; label: string; hint: string }[] = [
   { key: "new", label: "Newest", hint: "Most recently captured first" },
@@ -60,6 +101,7 @@ const SORTS: { key: SortKey; label: string; hint: string }[] = [
   { key: "masid", label: "Most masid", hint: "Most marked as worth attention. Measures attention, not accuracy" },
   { key: "discussed", label: "Most discussed", hint: "Most comments. Also attention, not accuracy" },
   { key: "value", label: "Biggest contract", hint: "Largest awarded amount of the contract reported on" },
+  { key: "status", label: "Furthest along", hint: "Reports that have been inspected or closed, ahead of ones nobody has opened" },
 ];
 
 export interface Comment {
@@ -83,6 +125,9 @@ export interface CitizenReport {
   metresFromContract: number | null;
   masid: number;
   comments: Comment[];
+  status: ReportStatus;
+  statusBy: string | null;      // the role that last moved it
+  statusAt: number | null;
   /** Seeded example, never a real submission. Badged wherever it appears. */
   demo?: boolean;
 }
@@ -124,6 +169,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#4a6b52"),
     capturedAt: Date.now() - 5 * HOUR,
     lat: 14.81240, lng: 120.71600, metresFromContract: 42, masid: 12,
+    status: "validated", statusBy: "Field Inspector", statusAt: Date.now() - 2 * HOUR,
     comments: [
       { id: "c1", author: "LGU Coordinator", at: Date.now() - 4 * HOUR, masid: 3, demo: true,
         text: "Billboards get taken down after handover in a lot of these, so the absence is not unusual on its own." },
@@ -137,6 +183,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#8a7a4a"),
     capturedAt: Date.now() - 26 * HOUR,
     lat: 14.85210, lng: 120.83140, metresFromContract: 3120, masid: 47,
+    status: "queued", statusBy: "LGU Coordinator", statusAt: Date.now() - 8 * HOUR,
     comments: [
       { id: "c3", author: "Field Inspector", at: Date.now() - 20 * HOUR, masid: 9, demo: true,
         text: "This contract is already flagged in the register for the same reason — the description names Calumpit and the published point falls in Malolos. Worth checking the actual structure before concluding anything." },
@@ -152,6 +199,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#6b5a4a"),
     capturedAt: Date.now() - 3 * 24 * HOUR,
     lat: 14.77230, lng: 120.75310, metresFromContract: 18, masid: 31,
+    status: "submitted", statusBy: null, statusAt: null,
     comments: [
       { id: "c6", author: "Public", at: Date.now() - 2 * 24 * HOUR, masid: 8, demo: true,
         text: "It floods along here every wet season. Whatever was built the first time did not hold." },
@@ -233,6 +281,7 @@ function CaptureSheet({ onClose, onDone }:
       id: `r${Date.now()}`, projectId: chosen.id, note: note.trim(), image: shot,
       capturedAt: Date.now(), lat: fix?.[0] ?? null, lng: fix?.[1] ?? null,
       metresFromContract: d, masid: 0, comments: [],
+      status: "submitted", statusBy: null, statusAt: null,
     });
   };
 
@@ -426,6 +475,12 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
         { id: `c${Date.now()}`, author: role, text, at: Date.now(), masid: 0, replyTo }],
     } : r));
 
+  /** Only official roles may move a report along; a reporter validating their
+   *  own report would make the badge worthless the day this got popular. */
+  const setStatus = (id: string, status: ReportStatus) =>
+    setReports(reports.map(r => r.id === id
+      ? { ...r, status, statusBy: role, statusAt: Date.now() } : r));
+
   const voteComment = (reportId: string, cid: string) => {
     const k = `${reportId}:${cid}`;
     if (voted.has(k)) return;
@@ -447,6 +502,7 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
       // The only sort here backed by a measurement rather than by opinion.
       distance: (a, b) => (b.metresFromContract ?? -1) - (a.metresFromContract ?? -1),
       value: (a, b) => value(b) - value(a),
+      status: (a, b) => STATUS_CFG[b.status].step - STATUS_CFG[a.status].step,
     };
     return [...reports].sort(cmp[sort]);
   }, [reports, sort]);
@@ -521,19 +577,58 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
           const p: Project | undefined = PROJECTS.find(x => x.id === r.projectId);
           const far = r.metresFromContract != null && r.metresFromContract > 300;
           return (
-            <article key={r.id} className="bg-white rounded border border-gray-200 overflow-hidden flex">
-              {/* Vote rail, Reddit-style: the count is the point, not a score. */}
-              <div className="w-14 shrink-0 bg-gray-50 flex flex-col items-center pt-3 gap-1 border-r border-gray-100">
-                <button onClick={() => vote(r.id)} disabled={voted.has(r.id)}
-                  title="Mark this as worth attention" aria-label="Masid"
-                  className={`p-1.5 rounded ${voted.has(r.id) ? "text-[#1e3a7b]" : "text-gray-400 hover:text-[#1e3a7b] hover:bg-white"}`}>
-                  <Eye size={17} />
-                </button>
-                <span className="text-[13px] font-mono font-bold text-gray-700">{r.masid}</span>
-                <span className="text-[9px] text-gray-400">masid</span>
-              </div>
+            <article key={r.id} className="bg-white rounded border border-gray-200 overflow-hidden">
+              <div className="min-w-0">
+                {/* Where the report has got to. Without this the feed is a wall
+                    of photographs and nothing says which ones anyone acted on. */}
+                <div className="px-4 pt-3 pb-2.5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] px-2 py-0.5 rounded font-semibold"
+                      style={{ background: STATUS_CFG[r.status].bg, color: STATUS_CFG[r.status].color }}>
+                      {STATUS_CFG[r.status].label}
+                    </span>
+                    {r.statusBy && (
+                      <span className="text-[10px] text-gray-400">set by {r.statusBy} · {ago(r.statusAt ?? Date.now())}</span>
+                    )}
+                    {OFFICIAL.has(role) ? (
+                      <select value={r.status} aria-label="Move this report along"
+                        onChange={e => setStatus(r.id, e.target.value as ReportStatus)}
+                        className="ml-auto text-[11px] border border-gray-200 rounded px-2 py-1 bg-white text-gray-600 focus:outline-none focus:border-[#1e3a7b]">
+                        {(Object.keys(STATUS_CFG) as ReportStatus[]).map(k =>
+                          <option key={k} value={k}>{STATUS_CFG[k].label}</option>)}
+                      </select>
+                    ) : (
+                      <span className="ml-auto text-[10px] text-gray-300">only DPWH, LGU or an inspector can move this</span>
+                    )}
+                  </div>
 
-              <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mt-2">
+                    {STEPS.map((st, i) => {
+                      const at = STATUS_CFG[r.status].step;
+                      const done = st.step <= at;
+                      const isOutcome = st.key === "validated" && r.status === "not-confirmed";
+                      return (
+                        <div key={st.key} className="flex-1 flex items-center gap-1" title={st.short}>
+                          <div className="h-1 flex-1 rounded-full" style={{
+                            background: done
+                              ? (isOutcome ? STATUS_CFG["not-confirmed"].color : STATUS_CFG[r.status].color)
+                              : "#e5e7eb",
+                          }} />
+                          {i === STEPS.length - 1 && null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    {STEPS.map(st => (
+                      <span key={st.key} className="text-[9px] text-gray-400" style={{ flex: 1 }}>
+                        {st.key === "validated" && r.status === "not-confirmed" ? "Not confirmed" : st.short}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1.5 leading-relaxed">{STATUS_CFG[r.status].note}</p>
+                </div>
+
                 <img src={r.image} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
                 <div className="p-4">
                   {r.demo && (
@@ -565,6 +660,13 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                   </div>
 
                   <div className="flex items-center gap-1 pt-2.5 border-t border-gray-100">
+                    <button onClick={() => vote(r.id)} disabled={voted.has(r.id)}
+                      title="Mark this as worth attention"
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] ${
+                        voted.has(r.id) ? "text-[#1e3a7b] bg-blue-50" : "text-gray-500 hover:bg-gray-50 hover:text-[#1e3a7b]"}`}>
+                      <Eye size={13} />
+                      <span className="font-mono font-semibold">{r.masid}</span> masid
+                    </button>
                     <button onClick={() => {
                         const n = new Set(open); n.has(r.id) ? n.delete(r.id) : n.add(r.id); setOpen(n);
                       }}
