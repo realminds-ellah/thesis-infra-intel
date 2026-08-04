@@ -26,13 +26,14 @@ import {
 } from "./data";
 import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel } from "./FilterPanel";
+import { ROLE_VIEWS } from "./roleFilters";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Screen = "dashboard" | "map" | "project-detail" | "satellite" | "documents" | "citizen-report" | "contractors" | "admin" | "transparency";
-type Role = "dpwh-admin" | "dpwh-engineer" | "field-inspector" | "psa-analyst" | "lgu-coordinator" | "public";
+import type { Role } from "./roles";
 type SortDir = "asc" | "desc" | null;
 
 interface Notification { id: number; type: string; title: string; body: string; time: string; read: boolean; }
@@ -961,14 +962,18 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 // ─── Map Screen ───────────────────────────────────────────────────────────────
 
-function MapScreen({projects,onViewDetail,filters,onClearFilters}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void}) {
+function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role}) {
   const [selectedId,setSelectedId]=useState("");
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   // Colour follows the filter unless the user overrides it: setting a delivery
   // filter and then having to pick "colour by delivery" separately is a step
   // that should not exist.
   const [colorOverride,setColorOverride]=useState<string|null>(null);
-  const encKey=colorOverride??suggestEncoding(filters as never);
+  // The filter wins if it implies an encoding; otherwise the role's default —
+  // an inspector opens on delivery, an analyst on flood exposure.
+  const roleDefault=(ROLE_VIEWS[role]??ROLE_VIEWS["dpwh-admin"]).defaultEncoding;
+  const suggested=suggestEncoding(filters as never);
+  const encKey=colorOverride??(suggested==="priority"?roleDefault:suggested);
   const enc=ENCODING_BY_KEY.get(encKey)!;
   const legend=useMemo(()=>legendFor(enc,projects),[enc,projects]);
   const [q,setQ]=useState("");
@@ -1773,11 +1778,11 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
-          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())}/>}
+          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
           {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
           {screen==="documents"    &&<DocumentsScreen/>}

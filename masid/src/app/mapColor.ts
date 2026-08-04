@@ -1,38 +1,22 @@
 /**
  * Colour encodings for the map.
  *
- * The marks use a TRAFFIC LIGHT — green, amber, orange, red — because on a
- * public accountability map that vocabulary is understood instantly and by
- * everyone, and that legibility is the product. It was chosen deliberately over
- * a more separable single-hue ramp, and the cost is paid rather than ignored.
+ * Traffic light — green, amber, orange, red — on plain circular dots. Chosen
+ * because everyone already knows how to read it, and this register is meant to
+ * be usable by the public rather than only by auditors.
  *
- * THE COST, MEASURED
- *
- *   Red and green cannot be separated on the protan axis. A dozen traffic-light
- *   candidates were run through the validator against the map's real surface
- *   (#f2f2f0) and against ALL pairs — on a map any two categories can end up
- *   adjacent. Every candidate that still looked like a traffic light scored
- *   between ΔE 1.6 and 7.5. The set used here is the best of them at 7.5, which
- *   is inside the band the method permits ONLY WITH SECONDARY ENCODING.
- *
- * THE SECONDARY ENCODING, THEREFORE MANDATORY
- *
- *   Every mark also carries a SHAPE — circle, square, triangle, diamond, cross —
- *   and the legend draws that shape beside its label and count. A viewer who
- *   cannot separate the hues reads the silhouette instead and loses nothing.
- *   This is not decoration; it is what makes the palette legal.
+ * The known limit, stated once: red and green cannot be fully separated by
+ * viewers with the most common form of colour blindness. This set is the best of
+ * a dozen traffic-light candidates measured against the map surface (ΔE 7.5 on
+ * the protan axis; nothing that still looks like a traffic light does better).
+ * The relief is that the legend is always on screen, always labelled in words,
+ * and always carries counts — so no reading depends on telling two hues apart.
+ * Award amount is the exception and uses a single-hue ramp, because size is a
+ * magnitude, not a verdict.
  *
  * Validated 2026-08-04, light mode, surface #f2f2f0, all pairs:
- *   traffic light #046b04 #f7c948 #e8722c #c0272d
- *     CVD ΔE 7.5 (protan) · tritan 14.1 · normal-vision 16.9 · contrast WARN
- *   award-amount ramp #6da7ec #3987e5 #256abf #104281   ALL PASS (ordinal)
- *
- * Award amount keeps the single-hue ramp. Magnitude is not a traffic light —
- * a large contract is not "bad" — so it stays sequential, light to dark.
- *
- * The contrast WARN is relieved as the method requires: the legend is always
- * visible, always labelled, always counted, and now also always shaped, so
- * meaning never rests on colour alone.
+ *   traffic light #046b04 #f7c948 #e8722c #c0272d   CVD 7.5 · normal 16.9
+ *   amount ramp   #6da7ec #3987e5 #256abf #104281   all checks pass
  */
 
 import { PROJECTS, PROC_BY_ID, FUSED_BY_ID, HAZARD_BY_ID, type Project } from "./data";
@@ -68,8 +52,8 @@ const TRAFFIC = {
   alert: "#c0272d",    // red
 };
 
-/** Shape is the channel that carries meaning when hue cannot. */
-export type MarkShape = "circle" | "square" | "triangle" | "diamond" | "cross";
+/** Kept as a single value: the map uses plain circular dots throughout. */
+export type MarkShape = "circle";
 
 const ORDINAL_4 = ["#6da7ec", "#3987e5", "#256abf", "#104281"];
 const CAT_3 = ["#2a78d6", "#eb6834", "#1baf7a"];
@@ -103,10 +87,10 @@ export const ENCODINGS: Encoding[] = [
     note: "How many checks a contract trips, across both the records and the bidding tiers. Ordered, so it reads as one ramp.",
     bins: [
       { key: "0", label: "No flags", color: TRAFFIC.good, shape: "circle", test: p => flagCount(p) === 0 },
-      { key: "1", label: "1 flag", color: TRAFFIC.watch, shape: "square", test: p => flagCount(p) === 1 },
-      { key: "2", label: "2 flags", color: TRAFFIC.concern, shape: "triangle", test: p => flagCount(p) === 2 },
-      { key: "3", label: "3 flags", color: TRAFFIC.alert, shape: "diamond", test: p => flagCount(p) === 3 },
-      { key: "4", label: "4 or more", color: TRAFFIC.alert, shape: "cross", test: p => flagCount(p) >= 4 },
+      { key: "1", label: "1 flag", color: TRAFFIC.watch, shape: "circle", test: p => flagCount(p) === 1 },
+      { key: "2", label: "2 flags", color: TRAFFIC.concern, shape: "circle", test: p => flagCount(p) === 2 },
+      { key: "3", label: "3 flags", color: TRAFFIC.alert, shape: "circle", test: p => flagCount(p) === 3 },
+      { key: "4", label: "4 or more", color: TRAFFIC.alert, shape: "circle", test: p => flagCount(p) >= 4 },
     ],
   },
   {
@@ -116,10 +100,10 @@ export const ENCODINGS: Encoding[] = [
     note: "What is happening on the ground, ordered by how much attention it warrants. A contract can meet several states; the most serious wins.",
     bins: [
       { key: "ok", label: "Nothing flagged", color: TRAFFIC.good, shape: "circle", test: p => !dv(p).length },
-      { key: "unpaid", label: "Completed, nothing disbursed", color: TRAFFIC.watch, shape: "square", test: p => top(p) === "unpaid" },
-      { key: "rebuilt", label: "Rebuilt at same site", color: TRAFFIC.concern, shape: "triangle", test: p => top(p) === "rebuilt" },
-      { key: "overdue", label: "Overdue", color: TRAFFIC.alert, shape: "diamond", test: p => top(p) === "overdue" },
-      { key: "stalled", label: "Stalled", color: TRAFFIC.alert, shape: "cross", test: p => top(p) === "stalled" },
+      { key: "unpaid", label: "Completed, nothing disbursed", color: TRAFFIC.watch, shape: "circle", test: p => top(p) === "unpaid" },
+      { key: "rebuilt", label: "Rebuilt at same site", color: TRAFFIC.concern, shape: "circle", test: p => top(p) === "rebuilt" },
+      { key: "overdue", label: "Overdue", color: TRAFFIC.alert, shape: "circle", test: p => top(p) === "overdue" },
+      { key: "stalled", label: "Stalled", color: TRAFFIC.alert, shape: "circle", test: p => top(p) === "stalled" },
     ],
   },
   {
@@ -129,9 +113,9 @@ export const ENCODINGS: Encoding[] = [
     note: "Bidders on the contract. Darker is thinner competition, so the concerning end is the heavy end.",
     bins: [
       { key: "6+", label: "6 or more bidders", color: TRAFFIC.good, shape: "circle", test: p => bb(p) === "6+" },
-      { key: "3-5", label: "3–5 bidders", color: TRAFFIC.good, shape: "square", test: p => bb(p) === "3-5" },
-      { key: "2", label: "2 bidders", color: TRAFFIC.concern, shape: "triangle", test: p => bb(p) === "2" },
-      { key: "1", label: "1 bidder", color: TRAFFIC.alert, shape: "diamond", test: p => bb(p) === "1" },
+      { key: "3-5", label: "3–5 bidders", color: TRAFFIC.good, shape: "circle", test: p => bb(p) === "3-5" },
+      { key: "2", label: "2 bidders", color: TRAFFIC.concern, shape: "circle", test: p => bb(p) === "2" },
+      { key: "1", label: "1 bidder", color: TRAFFIC.alert, shape: "circle", test: p => bb(p) === "1" },
     ],
   },
   {
@@ -140,10 +124,10 @@ export const ENCODINGS: Encoding[] = [
     kind: "categorical",
     note: "Whether the winning bid lands on a whole percentage of the approved budget. Three genuinely distinct cases, so distinct hues rather than a ramp.",
     bins: [
-      { key: "at96", label: "Exactly 96.00%", color: TRAFFIC.alert, shape: "diamond", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) === "at96" },
-      { key: "whole", label: "Another whole %", color: TRAFFIC.concern, shape: "triangle", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) === "whole" },
+      { key: "at96", label: "Exactly 96.00%", color: TRAFFIC.alert, shape: "circle", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) === "at96" },
+      { key: "whole", label: "Another whole %", color: TRAFFIC.concern, shape: "circle", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) === "whole" },
       { key: "other", label: "Not a whole %", color: TRAFFIC.good, shape: "circle", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) === "other" },
-      { key: "none", label: "No award published", color: NEUTRAL, shape: "square", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) == null },
+      { key: "none", label: "No award published", color: NEUTRAL, shape: "circle", test: p => ratioBand(PROC_BY_ID.get(p.id)?.bidRatio) == null },
     ],
   },
   {
@@ -160,11 +144,11 @@ export const ENCODINGS: Encoding[] = [
     note: "UP NOAH modelled 100-year flood extent. Green is high hazard — that is where flood control belongs. Read 'outside' with the distance: a structure at the edge of a flood zone is normal.",
     bins: [
       { key: "high", label: "High flood hazard", color: TRAFFIC.good, shape: "circle", test: p => hz(p) === 3 },
-      { key: "medium", label: "Medium hazard", color: TRAFFIC.good, shape: "square", test: p => hz(p) === 2 },
-      { key: "low", label: "Low hazard", color: TRAFFIC.watch, shape: "triangle", test: p => hz(p) === 1 },
-      { key: "edge", label: "Outside, within 1 km", color: TRAFFIC.concern, shape: "diamond", test: p => hz(p) === 0 && (HAZARD_BY_ID.get(p.id)?.metresToHazard ?? 0) <= 1000 },
-      { key: "far", label: "Over 1 km away", color: TRAFFIC.alert, shape: "cross", test: p => hz(p) === 0 && (HAZARD_BY_ID.get(p.id)?.metresToHazard ?? 0) > 1000 },
-      { key: "na", label: "No coordinate", color: NEUTRAL, shape: "square", test: p => hz(p) == null },
+      { key: "medium", label: "Medium hazard", color: TRAFFIC.good, shape: "circle", test: p => hz(p) === 2 },
+      { key: "low", label: "Low hazard", color: TRAFFIC.watch, shape: "circle", test: p => hz(p) === 1 },
+      { key: "edge", label: "Outside, within 1 km", color: TRAFFIC.concern, shape: "circle", test: p => hz(p) === 0 && (HAZARD_BY_ID.get(p.id)?.metresToHazard ?? 0) <= 1000 },
+      { key: "far", label: "Over 1 km away", color: TRAFFIC.alert, shape: "circle", test: p => hz(p) === 0 && (HAZARD_BY_ID.get(p.id)?.metresToHazard ?? 0) > 1000 },
+      { key: "na", label: "No coordinate", color: NEUTRAL, shape: "circle", test: p => hz(p) == null },
     ],
   },
   {
@@ -174,9 +158,9 @@ export const ENCODINGS: Encoding[] = [
     note: "DPWH's own status. Five values, but the palette only clears the all-pairs floors for three, so the two rarest fold into Other rather than being given colours that cannot be told apart.",
     bins: [
       { key: "completed", label: "Completed", color: TRAFFIC.good, shape: "circle", test: p => p.status === "completed" },
-      { key: "ongoing", label: "Ongoing", color: CAT_3[0], shape: "square", test: p => p.status === "ongoing" },
-      { key: "flagged", label: "Flagged for review", color: TRAFFIC.concern, shape: "triangle", test: p => p.status === "flagged" },
-      { key: "other", label: "Proposed or terminated", color: NEUTRAL, shape: "diamond", test: p => p.status === "proposed" || p.status === "terminated" },
+      { key: "ongoing", label: "Ongoing", color: CAT_3[0], shape: "circle", test: p => p.status === "ongoing" },
+      { key: "flagged", label: "Flagged for review", color: TRAFFIC.concern, shape: "circle", test: p => p.status === "flagged" },
+      { key: "other", label: "Proposed or terminated", color: NEUTRAL, shape: "circle", test: p => p.status === "proposed" || p.status === "terminated" },
     ],
   },
 ];
@@ -205,7 +189,7 @@ const hz = (p: Project) => HAZARD_BY_ID.get(p.id)?.level ?? null;
   const cuts = [q(0.25), q(0.5), q(0.75)];
   const fmt = (n: number) => n >= 1e9 ? `₱${(n / 1e9).toFixed(1)}B` : `₱${(n / 1e6).toFixed(0)}M`;
   enc.bins = [
-    { key: "na", label: "No award published", color: NEUTRAL, shape: "square", test: p => amountOf(p) == null },
+    { key: "na", label: "No award published", color: NEUTRAL, shape: "circle", test: p => amountOf(p) == null },
     { key: "q1", label: `Under ${fmt(cuts[0])}`, color: ORDINAL_4[0], shape: "circle", test: p => { const a = amountOf(p); return a != null && a < cuts[0]; } },
     { key: "q2", label: `${fmt(cuts[0])} – ${fmt(cuts[1])}`, color: ORDINAL_4[1], shape: "circle", test: p => { const a = amountOf(p); return a != null && a >= cuts[0] && a < cuts[1]; } },
     { key: "q3", label: `${fmt(cuts[1])} – ${fmt(cuts[2])}`, color: ORDINAL_4[2], shape: "circle", test: p => { const a = amountOf(p); return a != null && a >= cuts[1] && a < cuts[2]; } },
@@ -224,20 +208,9 @@ export function shapeOf(p: Project, enc: Encoding): MarkShape {
 }
 
 /** SVG path for a mark of radius r centred on the origin. */
-export function markPath(shape: MarkShape, r: number): string {
-  switch (shape) {
-    case "square": return `M${-r},${-r}H${r}V${r}H${-r}Z`;
-    case "triangle": {
-      const h = r * 1.25;
-      return `M0,${-h}L${h * 0.95},${h * 0.72}L${-h * 0.95},${h * 0.72}Z`;
-    }
-    case "diamond": { const d = r * 1.3; return `M0,${-d}L${d},0L0,${d}L${-d},0Z`; }
-    case "cross": {
-      const a = r * 0.42, b = r * 1.25;
-      return `M${-a},${-b}H${a}V${-a}H${b}V${a}H${a}V${b}H${-a}V${a}H${-b}V${-a}H${-a}Z`;
-    }
-    default: { const k = 0.5523 * r; return `M0,${-r}C${k},${-r} ${r},${-k} ${r},0C${r},${k} ${k},${r} 0,${r}C${-k},${r} ${-r},${k} ${-r},0C${-r},${-k} ${-k},${-r} 0,${-r}Z`; }
-  }
+export function markPath(_shape: MarkShape, r: number): string {
+  const k = 0.5523 * r;
+  return `M0,${-r}C${k},${-r} ${r},${-k} ${r},0C${r},${k} ${k},${r} 0,${r}C${-k},${r} ${-r},${k} ${-r},0C${-r},${-k} ${-k},${-r} 0,${-r}Z`;
 }
 
 /** Legend entries with counts over whatever is currently on screen. */

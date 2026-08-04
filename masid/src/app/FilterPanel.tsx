@@ -16,9 +16,11 @@ import {
   type Filters, type DeliveryState, type BidderBand, type RatioBand,
   type CoordState, type DocState, type HazardState,
   applyFilters, countBy, AMOUNT_BOUNDS, YEAR_BOUNDS, AMOUNT_HISTOGRAM,
-  PRESETS, LABELS, activeCount, emptyFilters, toQuery,
+  PRESETS, LABELS, PROBLEM_LABELS, PROC_CODES, problemCounts, activeCount, emptyFilters, toQuery,
 } from "./filters";
-import { META, QUADRANT_CFG, VERDICT_CFG, STATUS_LABELS, type Quadrant, type Verdict, type ProjectStatus } from "./data";
+import { META, VERDICT_CFG, type Verdict, type ProjectStatus } from "./data";
+import type { Role } from "./roles";
+import { ROLE_VIEWS, GROUP_TITLES, type GroupKey } from "./roleFilters";
 
 const peso = (n: number) =>
   n >= 1e9 ? `₱${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `₱${(n / 1e6).toFixed(1)}M` : `₱${(n / 1e3).toFixed(0)}K`;
@@ -109,8 +111,10 @@ function RangeControl({ bounds, value, onChange, format, histogram }: {
   );
 }
 
-export function FilterPanel({ filters, setFilters, collapsed }:
-  { filters: Filters; setFilters: (f: Filters) => void; collapsed?: boolean }) {
+export function FilterPanel({ filters, setFilters, collapsed, role = "dpwh-admin" }:
+  { filters: Filters; setFilters: (f: Filters) => void; collapsed?: boolean; role?: Role }) {
+  const view = ROLE_VIEWS[role] ?? ROLE_VIEWS["dpwh-admin"];
+  const [showAll, setShowAll] = useState(false);
   const [copied, setCopied] = useState(false);
   const result = useMemo(() => applyFilters(filters), [filters]);
   const c = useMemo(() => ({
@@ -120,6 +124,7 @@ export function FilterPanel({ filters, setFilters, collapsed }:
     procFlags: countBy.procFlags(filters), quadrant: countBy.quadrant(filters),
     satellite: countBy.satellite(filters), coords: countBy.coords(filters),
     docs: countBy.docs(filters), hazard: countBy.hazard(filters),
+    problems: problemCounts(filters),
   }), [filters]);
 
   const toggle = <K extends keyof Filters>(dim: K, v: string) => {
@@ -156,14 +161,15 @@ export function FilterPanel({ filters, setFilters, collapsed }:
           <span className="font-mono font-bold text-[#1e3a7b] text-[13px]">{result.length.toLocaleString()}</span>
           <span> of {META.coverage.projects.toLocaleString()} contracts</span>
         </div>
+        <p className="text-[10px] text-gray-400 leading-snug mt-1">{view.blurb}</p>
         {copied && <div className="text-[10px] text-green-600 mt-0.5">Link copied</div>}
       </div>
 
       <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
         <div className="px-3 py-2.5 border-b border-gray-100">
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Start here</div>
+          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Common questions</div>
           <div className="flex flex-wrap gap-1.5">
-            {PRESETS.map(p => (
+            {view.presets.map(k => PRESETS.find(p => p.key === k)).filter(Boolean).map(p => p!).map(p => (
               <button key={p.key} title={p.hint} onClick={() => setFilters(p.build())}
                 className="text-[11px] px-2 py-1 rounded border border-gray-200 text-gray-600 hover:border-[#1e3a7b]/40 hover:bg-blue-50 hover:text-[#1e3a7b]">
                 {p.label}
@@ -176,117 +182,132 @@ export function FilterPanel({ filters, setFilters, collapsed }:
           <div className="relative">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })}
-              placeholder="Contract ID, description, place…" aria-label="Search contracts"
+              placeholder="Search by place or project…" aria-label="Search contracts"
               className="w-full pl-7 pr-6 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
             {filters.q && <button onClick={() => setFilters({ ...filters, q: "" })} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"><X size={11} /></button>}
           </div>
           <input value={filters.contractor} onChange={e => setFilters({ ...filters, contractor: e.target.value })}
-            placeholder="Contractor name…" aria-label="Filter by contractor"
+            placeholder="Which company built it?" aria-label="Filter by contractor"
             className="w-full px-2.5 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
         </div>
 
-        <Group title="Delivery state" defaultOpen count={filters.delivery.size}>
-          <p className="text-[10px] text-gray-400 leading-snug pb-1">
-            What is happening on the ground. DPWH's own status describes paperwork.
-          </p>
-          {(["overdue", "stalled", "rebuilt", "unpaid"] as DeliveryState[]).map(k => (
-            <Opt key={k} label={LABELS.delivery[k]} n={c.delivery.get(k) ?? 0}
-              on={filters.delivery.has(k)} toggle={() => toggle("delivery", k)} />
-          ))}
-        </Group>
-
-        <Group title="Reported status" defaultOpen count={filters.status.size}>
-          {(["completed", "ongoing", "flagged", "proposed", "terminated"] as ProjectStatus[]).map(k => (
-            <Opt key={k} label={STATUS_LABELS[k]} n={c.status.get(k) ?? 0}
-              on={filters.status.has(k)} toggle={() => toggle("status", k)} />
-          ))}
-        </Group>
-
-        <Group title="Award amount" defaultOpen count={filters.amount ? 1 : 0}>
-          <RangeControl bounds={AMOUNT_BOUNDS} value={filters.amount} format={peso}
-            histogram={AMOUNT_HISTOGRAM}
-            onChange={v => setFilters({ ...filters, amount: v })} />
-          <p className="text-[10px] text-gray-400 leading-snug pt-1">
-            The amount actually awarded, not DPWH&apos;s ambiguous <code className="font-mono">budget</code> column.
-          </p>
-        </Group>
-
-        <Group title="Competition" count={filters.bidders.size + filters.ratio.size}>
-          {(["1", "2", "3-5", "6+"] as BidderBand[]).map(k => (
-            <Opt key={k} label={LABELS.bidders[k]} n={c.bidders.get(k) ?? 0}
-              on={filters.bidders.has(k)} toggle={() => toggle("bidders", k)} />
-          ))}
-          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
-            {(["at96", "whole", "other"] as RatioBand[]).map(k => (
-              <Opt key={k} label={LABELS.ratio[k]} n={c.ratio.get(k) ?? 0}
-                on={filters.ratio.has(k)} toggle={() => toggle("ratio", k)}
-                hint={k === "at96" ? "38.4% of this office's contracts, against 3.9% nationally" : undefined} />
+        {(() => {
+          const B: Record<GroupKey, React.ReactNode> = {
+            where: (<>
+              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1" style={{ scrollbarWidth: "none" }}>
+                {[...c.municipality.keys()].sort((a, b) => (c.municipality.get(b) ?? 0) - (c.municipality.get(a) ?? 0)).map(k => (
+                  <Opt key={k} label={k} n={c.municipality.get(k) ?? 0}
+                    on={filters.municipality.has(k)} toggle={() => toggle("municipality", k)} />
+                ))}
+              </div>
+            </>),
+            finished: (<>
+              {(["completed", "ongoing", "proposed", "terminated"] as ProjectStatus[]).map(k => (
+                <Opt key={k} label={LABELS.status[k]} n={c.status.get(k) ?? 0}
+                  on={filters.status.has(k)} toggle={() => toggle("status", k)} />
+              ))}
+              <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+                {(["overdue", "stalled", "rebuilt", "unpaid"] as DeliveryState[]).map(k => (
+                  <Opt key={k} label={LABELS.delivery[k]} n={c.delivery.get(k) ?? 0}
+                    on={filters.delivery.has(k)} toggle={() => toggle("delivery", k)} />
+                ))}
+              </div>
+            </>),
+            problems: (<>
+              {[...c.problems.keys()]
+                .sort((a, b) => (c.problems.get(b) ?? 0) - (c.problems.get(a) ?? 0))
+                .map(k => {
+                  const dim = PROC_CODES.has(k) ? "procFlags" : "recordFlags";
+                  return <Opt key={k} label={PROBLEM_LABELS[k] ?? k} n={c.problems.get(k) ?? 0}
+                    on={(filters[dim] as Set<string>).has(k)} toggle={() => toggle(dim, k)} />;
+                })}
+              <p className="text-[10px] text-gray-400 leading-snug pt-1">
+                A flag means the public record disagrees with itself. It is a reason to look,
+                not proof that anything was done wrong.
+              </p>
+            </>),
+            cost: (<>
+              <RangeControl bounds={AMOUNT_BOUNDS} value={filters.amount} format={peso}
+                histogram={AMOUNT_HISTOGRAM} onChange={v => setFilters({ ...filters, amount: v })} />
+              <p className="text-[10px] text-gray-400 leading-snug pt-1">The amount actually paid to the winning company.</p>
+            </>),
+            awarded: (<>
+              {(["1", "2", "3-5", "6+"] as BidderBand[]).map(k => (
+                <Opt key={k} label={LABELS.bidders[k]} n={c.bidders.get(k) ?? 0}
+                  on={filters.bidders.has(k)} toggle={() => toggle("bidders", k)} />
+              ))}
+              <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
+                {(["at96", "whole", "other"] as RatioBand[]).map(k => (
+                  <Opt key={k} label={LABELS.ratio[k]} n={c.ratio.get(k) ?? 0}
+                    on={filters.ratio.has(k)} toggle={() => toggle("ratio", k)}
+                    hint={k === "at96" ? "Nearly 4 in 10 contracts here, against 4 in 100 nationally" : undefined} />
+                ))}
+              </div>
+            </>),
+            flood: (<>
+              <p className="text-[10px] text-gray-400 leading-snug pb-1">
+                Compared against the government&apos;s own flood model. Being just outside one is
+                normal — that is where a flood wall belongs.
+              </p>
+              {(["high", "medium", "low", "edge", "far", "unknown"] as HazardState[]).map(k => (
+                <Opt key={k} label={LABELS.hazard[k]} n={c.hazard.get(k) ?? 0}
+                  on={filters.hazard.has(k)} toggle={() => toggle("hazard", k)} />
+              ))}
+            </>),
+            documents: (<>
+              {(["complete", "partial", "none"] as DocState[]).map(k => (
+                <Opt key={k} label={LABELS.docs[k]} n={c.docs.get(k) ?? 0}
+                  on={filters.docs.has(k)} toggle={() => toggle("docs", k)} />
+              ))}
+            </>),
+            mappable: (<>
+              {(["published", "missing", "mismatch", "outside"] as CoordState[]).map(k => (
+                <Opt key={k} label={LABELS.coords[k]} n={c.coords.get(k) ?? 0}
+                  on={filters.coords.has(k)} toggle={() => toggle("coords", k)} />
+              ))}
+            </>),
+            imagery: (<>
+              <p className="text-[10px] text-gray-400 leading-snug pb-1">
+                The imagery tier showed no measured ability to tell flagged records from
+                controls. Treat these as coverage, not as evidence.
+              </p>
+              {(["change-at-point", "change-offset", "no-change-signal", "not-assessable", "not-assessed"] as const).map(k => (
+                <Opt key={k} label={k === "not-assessed" ? "Not assessed" : VERDICT_CFG[k as Verdict].short}
+                  n={c.satellite.get(k) ?? 0} on={filters.satellite.has(k)} toggle={() => toggle("satellite", k)} />
+              ))}
+            </>),
+            year: (<RangeControl bounds={YEAR_BOUNDS} value={filters.years}
+              format={n => String(Math.round(n))} onChange={v => setFilters({ ...filters, years: v })} />),
+          };
+          const counts: Record<GroupKey, number> = {
+            where: filters.municipality.size,
+            finished: filters.status.size + filters.delivery.size,
+            problems: filters.recordFlags.size + filters.procFlags.size,
+            cost: filters.amount ? 1 : 0,
+            awarded: filters.bidders.size + filters.ratio.size,
+            flood: filters.hazard.size,
+            documents: filters.docs.size,
+            mappable: filters.coords.size,
+            imagery: filters.satellite.size,
+            year: filters.years ? 1 : 0,
+          };
+          const primary = view.groups.slice(0, view.openCount);
+          const rest = view.groups.slice(view.openCount);
+          return (<>
+            {primary.map(g => (
+              <Group key={g} title={GROUP_TITLES[g]} count={counts[g]} defaultOpen>{B[g]}</Group>
             ))}
-          </div>
-        </Group>
-
-        <Group title="Integrity signals" count={filters.quadrant.size + filters.recordFlags.size + filters.procFlags.size}>
-          {(["both", "records-only", "procurement-only", "neither"] as Quadrant[]).map(k => (
-            <Opt key={k} label={QUADRANT_CFG[k].short} n={c.quadrant.get(k) ?? 0}
-              on={filters.quadrant.has(k)} toggle={() => toggle("quadrant", k)} hint={QUADRANT_CFG[k].note} />
-          ))}
-          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
-            {[...c.recordFlags.keys()].sort((a, b) => (c.recordFlags.get(b) ?? 0) - (c.recordFlags.get(a) ?? 0)).map(k => (
-              <Opt key={k} label={LABELS.flags[k] ?? k} n={c.recordFlags.get(k) ?? 0}
-                on={filters.recordFlags.has(k)} toggle={() => toggle("recordFlags", k)} />
+            {(showAll ? rest : rest.filter(g => counts[g] > 0)).map(g => (
+              <Group key={g} title={GROUP_TITLES[g]} count={counts[g]}>{B[g]}</Group>
             ))}
-          </div>
-          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
-            {[...c.procFlags.keys()].sort((a, b) => (c.procFlags.get(b) ?? 0) - (c.procFlags.get(a) ?? 0)).map(k => (
-              <Opt key={k} label={LABELS.procFlags[k] ?? k} n={c.procFlags.get(k) ?? 0}
-                on={filters.procFlags.has(k)} toggle={() => toggle("procFlags", k)} />
-            ))}
-          </div>
-        </Group>
-
-        <Group title="Location quality" count={filters.coords.size + filters.municipality.size}>
-          {(["published", "missing", "mismatch", "outside"] as CoordState[]).map(k => (
-            <Opt key={k} label={LABELS.coords[k]} n={c.coords.get(k) ?? 0}
-              on={filters.coords.has(k)} toggle={() => toggle("coords", k)} />
-          ))}
-          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5 max-h-52 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-            {[...c.municipality.keys()].sort((a, b) => (c.municipality.get(b) ?? 0) - (c.municipality.get(a) ?? 0)).map(k => (
-              <Opt key={k} label={k} n={c.municipality.get(k) ?? 0}
-                on={filters.municipality.has(k)} toggle={() => toggle("municipality", k)} />
-            ))}
-          </div>
-        </Group>
-
-        <Group title="Flood risk at the site" count={filters.hazard.size}>
-          <p className="text-[10px] text-gray-400 leading-snug pb-1">
-            UP NOAH modelled 100-year flood extent. Read &ldquo;outside&rdquo; with the distance —
-            a revetment belongs at the edge of a flood zone.
-          </p>
-          {(["high","medium","low","edge","far","unknown"] as HazardState[]).map(k => (
-            <Opt key={k} label={LABELS.hazard[k]} n={c.hazard.get(k) ?? 0}
-              on={filters.hazard.has(k)} toggle={() => toggle("hazard", k)} />
-          ))}
-        </Group>
-
-        <Group title="Evidence available" count={filters.docs.size + filters.satellite.size}>
-          {(["complete", "partial", "none"] as DocState[]).map(k => (
-            <Opt key={k} label={LABELS.docs[k]} n={c.docs.get(k) ?? 0}
-              on={filters.docs.has(k)} toggle={() => toggle("docs", k)} />
-          ))}
-          <div className="pt-2 mt-1 border-t border-gray-100 space-y-1.5">
-            {(["change-at-point", "change-offset", "no-change-signal", "not-assessable", "not-assessed"] as const).map(k => (
-              <Opt key={k} label={k === "not-assessed" ? "Imagery not assessed" : VERDICT_CFG[k as Verdict].short}
-                n={c.satellite.get(k) ?? 0} on={filters.satellite.has(k)}
-                toggle={() => toggle("satellite", k)}
-                hint="The imagery tier showed no measured discriminative power — treat as context, not evidence" />
-            ))}
-          </div>
-        </Group>
-
-        <Group title="Infrastructure year" count={filters.years ? 1 : 0}>
-          <RangeControl bounds={YEAR_BOUNDS} value={filters.years} format={n => String(Math.round(n))}
-            onChange={v => setFilters({ ...filters, years: v })} />
-        </Group>
+            {!showAll && rest.some(g => counts[g] === 0) && (
+              <button onClick={() => setShowAll(true)}
+                className="w-full px-3 py-2.5 text-left text-[11px] text-[#1e3a7b] hover:bg-gray-50">
+                More filters …
+              </button>
+            )}
+          </>);
+        })()}
       </div>
     </aside>
   );

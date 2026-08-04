@@ -297,19 +297,46 @@ the boundaries shown are the same ones the flags were computed against.
 
 ## Filtering
 
-The register is filtered by faceted multi-select, not by dropdowns. Four
-principles, each of which the previous sidebar broke:
+Faceted multi-select, with live counts computed against all *other* active
+filters — so selecting one option never zeroes every other option and leaves the
+panel silent.
 
-- **Every facet is multi-select.** A single-select municipality dropdown forces a
-  choice between Calumpit and Hagonoy when the question usually spans several.
-- **Every option carries a live count**, computed against all *other* active
-  filters with its own facet excluded. Without the exclusion, selecting one status
-  drops every other status to zero and the panel stops informing.
-- **Delivery states, not just paperwork status.** DPWH's five status values
-  describe documents. `overdue` (256), `stalled` (125), `rebuilt at the same site`
-  (142) and `completed with nothing disbursed` (962) describe the ground.
-- **State lives in the URL.** A filtered view is a shareable link, which is the
-  point of a public register.
+### Plain language, not internal codes
+
+Every option is written the way someone outside DPWH would say it. `MUNI_MISMATCH`
+reads "Location doesn't match the written description"; `BID_AT_ROUND_PERCENT`
+reads "Winning bid was a suspiciously round number"; `SINGLE_BIDDER` reads "Only
+one company bid". Records-tier and procurement-tier flags are merged into one
+list, because which pipeline produced a flag matters to the method and not at all
+to a resident asking what is wrong with the project outside their house.
+
+### The panel changes with the role
+
+The six roles do different jobs, and one panel serving all of them serves none
+well. Each role gets its own group order, its own quick questions, and its own
+default map colouring:
+
+| Role | Opens on | Map colours by |
+|---|---|---|
+| Public | Where is it? · Is it finished? · What might be wrong? | Anything wrong |
+| LGU coordinator | Where is it? · Is it finished? · Flood-prone? | Delivery concern |
+| Field inspector | **Can it be found on a map?** · Is it finished? · Where is it? | Delivery concern |
+| DPWH engineer | Is it finished? · Where is it? · How much? | Delivery concern |
+| DPWH admin | Where · Finished · What's wrong (full register) | Anything wrong |
+| PSA analyst | **Satellite imagery** · Can it be found on a map? · Where | Flood risk |
+
+Two rules hold throughout:
+
+- **Roles change what is shown first, never what is available.** Every group
+  remains reachable under "More filters". Hiding public spending data from
+  someone because of their job title is the opposite of the point.
+- **Nobody sees a different number.** Counts, flags and totals are identical for
+  every role; only the arrangement and the wording change.
+
+### State lives in the URL
+
+A filtered view is a shareable link. A transparency finding that cannot be sent
+to someone else is not much of a finding.
 
 ### "Completed but damaged"
 
