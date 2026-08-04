@@ -152,6 +152,31 @@ function useSort<T>(initial:keyof T|null=null) {
   return { sortKey, sortDir, toggle, apply };
 }
 
+/**
+ * A contractor name short enough to sit on one axis tick.
+ *
+ * The register carries registered names in full — "TOPNOTCH CATALYST BUILDERS
+ * INC. (34061) / ONE FRAME CONSTRUCTION INC." — and blunt truncation turned that
+ * into "TOPNOTCH CATALYST BUIL", which is character-for-character what the
+ * second-largest firm truncates to. Two different entities, one label. So a
+ * joint venture keeps a piece of BOTH names, and only a single-firm name is cut,
+ * with an ellipsis to say it was.
+ */
+function shortFirm(name:string):string {
+  const clean=(s:string)=>s
+    .replace(/\s*\((?:FORMERLY|FORMERLY:)[^)]*\)?.*$/i,"")  // "(FORMERLY X)"
+    .replace(/\s*\(\d+\)/g,"")                              // PhilGEPS id
+    .replace(/[,.]\s*(INC|CORP|CORPORATION)\.?$/i,"")
+    .replace(/\s+/g," ").trim();
+  const parts=name.split("/").map(s=>s.trim()).filter(Boolean);
+  if(parts.length>1) {
+    const head=(s:string)=>clean(s).split(" ").slice(0,2).join(" ");
+    return `${head(parts[0])} / ${head(parts[1])}`;
+  }
+  const s=clean(name);
+  return s.length>24 ? `${s.slice(0,23).replace(/[ ,]+$/,"")}…` : s;
+}
+
 function usePagination(total:number, pageSize=10) {
   const [page,setPage]=useState(1);
   const totalPages=Math.max(1,Math.ceil(total/pageSize));
@@ -719,6 +744,35 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
   const withCoords=META.coverage.withCoordinates;
   const avgCompletion=PROJECTS.reduce((s,p)=>s+p.completion,0)/PROJECTS.length;
   const pct=(n:number)=>`${Math.round(n/PROJECTS.length*100)}%`;
+  // 310 flagged records used to render as 310 table rows, which is most of why
+  // this page was 23 screens tall. Ten at a time, newest concern first.
+  const pg=usePagination(atRisk.length,10);
+
+  /**
+   * Where the money went.
+   *
+   * The question every reader of a public works register actually arrives with,
+   * and the one the rest of this dashboard does not answer. Bars are total award
+   * value per firm; the headline is the concentration behind them.
+   */
+  const money=useMemo(()=>{
+    const ranked=[...CONTRACTORS].sort((a,b)=>b.totalValue-a.totalValue);
+    const total=ranked.reduce((s,c)=>s+c.totalValue,0);
+    let cum=0,half=0;
+    for(const c of ranked){cum+=c.totalValue;half++;if(cum/total>=0.5)break;}
+    const revoked=ranked.filter(c=>c.registrationRevoked);
+    return {
+      total, half, firms:ranked.length,
+      revokedCount:revoked.length,
+      revokedValue:revoked.reduce((s,c)=>s+c.totalValue,0),
+      top:ranked.slice(0,10).map(c=>({
+        name:shortFirm(c.name),
+        full:c.name, valueB:+(c.totalValue/1e9).toFixed(2),
+        share:c.totalValue/total, contracts:c.totalProjects,
+        revoked:!!c.registrationRevoked,
+      })),
+    };
+  },[]);
   // Every figure below is counted from the loaded records. Where the public
   // record has no number — disbursement above all — none is shown.
   const kpis=[
@@ -730,6 +784,19 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
     {l:"Imagery Assessed",        v:SATELLITE.coverage.assessed.toLocaleString(), s:`Sentinel-2 10 m · ${SATELLITE.coverage.assessable.toLocaleString()} assessable`, trend:VALIDATION.discriminates?"validated against controls":"no discriminative power", up:false, c:VALIDATION.discriminates?"#0f766e":"#b91c1c"},
   ];
   const NAVY="#1e3a7b",GREEN="#16a34a",AMBER="#f59e0b",GRAY="#94a3b8";
+
+  /** A named group, so the page reads as four questions rather than nine cards. */
+  const Section=({label,note,children}:{label:string;note?:string;children:React.ReactNode})=>(
+    <section className="space-y-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 shrink-0">{label}</h2>
+        {note&&<span className="text-[11px] text-gray-400 truncate">{note}</span>}
+        <div className="flex-1 border-b border-gray-200"/>
+      </div>
+      {children}
+    </section>
+  );
+
   return (
     <div className="flex-1 overflow-auto bg-gray-50" style={{scrollbarWidth:"none"}}>
       <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -741,7 +808,8 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
           </div>
         </div>
       </div>
-      <div className="p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <Section label="Overview" note="counted from the loaded records; no figure here is estimated">
         <div className="grid grid-cols-6 gap-3">
           {kpis.map(k=>(
             <div key={k.l} className="bg-white rounded border border-gray-200 p-4">
@@ -754,6 +822,9 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </div>
           ))}
         </div>
+        </Section>
+
+        <Section label="Where the contracts are" note={`${META.coverage.municipalitiesServed.length} municipalities served by this district office`}>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 bg-white rounded border border-gray-200 p-4">
             <div className="text-[12px] font-bold text-gray-700 mb-4">Projects by Municipality</div>
@@ -763,11 +834,13 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 <XAxis type="number" tick={{fontSize:10,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
                 <YAxis dataKey="name" type="category" tick={{fontSize:9,fill:"#64748b"}} tickLine={false} axisLine={false} width={78} interval={0}/>
                 <Tooltip contentStyle={{fontSize:11,borderRadius:6,border:"1px solid #e2e8f0"}}/>
+                {/* Three lifecycle stages, which is all DPWH reports. Flagged and
+                    Terminated were also drawn here and were zero in every bar —
+                    two legend entries standing for nothing. Flagged in particular
+                    is a condition, not a stage; it has its own panel below. */}
                 <Bar dataKey="completed"  name="Completed"  stackId="a" fill={GREEN}/>
                 <Bar dataKey="ongoing"    name="Ongoing"    stackId="a" fill={NAVY}/>
-                <Bar dataKey="flagged"    name="Flagged"    stackId="a" fill={AMBER}/>
-                <Bar dataKey="proposed"   name="Proposed"   stackId="a" fill={GRAY}/>
-                <Bar dataKey="terminated" name="Terminated" stackId="a" fill="#dc2626" radius={[0,2,2,0]}/>
+                <Bar dataKey="proposed"   name="Proposed"   stackId="a" fill={GRAY} radius={[0,2,2,0]}/>
                 <Legend iconType="square" iconSize={8} wrapperStyle={{fontSize:11}}/>
               </BarChart>
             </ResponsiveContainer>
@@ -784,6 +857,9 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </div>
           </div>
         </div>
+        </Section>
+
+        <Section label="Where the money went" note={`${peso(money.total)} awarded across ${money.firms} firms`}>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded border border-gray-200 p-4">
             <div className="text-[12px] font-bold text-gray-700">Contract value awarded, by year (₱M)</div>
@@ -798,6 +874,46 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* The question a reader arrives with, and the one nothing else on this
+              page answered: which companies got the money. Bars are total award
+              value per firm — one hue, because every bar is the same kind of
+              thing and the length is the whole message. */}
+          <div className="bg-white rounded border border-gray-200 p-4">
+            <div className="flex items-baseline gap-2">
+              <div className="text-[12px] font-bold text-gray-700">Who was paid — ten largest contractors</div>
+              <button onClick={()=>onNavigate("contractors")}
+                className="text-[11px] text-[#1e3a7b] hover:underline ml-auto shrink-0">All {money.firms} firms →</button>
+            </div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              <strong className="text-gray-600">{money.half} of {money.firms} firms hold half</strong> of the {peso(money.total)} awarded.
+              {money.revokedCount>0&&<> {money.revokedCount} firms carry a registration DPWH marks revoked ({peso(money.revokedValue)}).</>}
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={money.top} layout="vertical" margin={{top:0,right:34,bottom:0,left:152}}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9"/>
+                <XAxis type="number" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}
+                  tickFormatter={(v:number)=>`₱${v}B`}/>
+                {/* One line per firm. Recharts' default tick wraps a long name onto
+                    extra lines, and ten wrapped names overlap into an unreadable
+                    block — the names have to stay on one row each. */}
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={152} interval={0}
+                  tick={({x,y,payload}:{x:number;y:number;payload:{value:string}})=>(
+                    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9} fill="#64748b">{payload.value}</text>
+                  )}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}}
+                  formatter={(v:number,_n,p:{payload:{share:number;contracts:number}})=>
+                    [`₱${v}B — ${(p.payload.share*100).toFixed(1)}% of all award value, ${p.payload.contracts} contracts`,"awarded"]}
+                  labelFormatter={(_l,pl)=>pl?.[0]?.payload?.full??""}/>
+                <Bar dataKey="valueB" name="Awarded" fill={NAVY} radius={[0,2,2,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        </Section>
+
+        <Section label="What the record disputes" note="checks on published documents — not observations of the ground">
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded border border-gray-200 p-4">
             <div className="text-[12px] font-bold text-gray-700">Share won at exactly 96.00% of the approved budget</div>
             <div className="text-[11px] text-gray-400 mb-3">
@@ -816,8 +932,10 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </ResponsiveContainer>
           </div>
           <div className="bg-white rounded border border-gray-200 p-4">
-            <div className="text-[12px] font-bold text-gray-700">Records by Consistency Check</div>
-            <div className="text-[11px] text-gray-400 mb-3">Checks on published records only — not observations of the ground.</div>
+            <div className="text-[12px] font-bold text-gray-700">Records by consistency check</div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              <strong className="text-gray-600">{flagged.length} records</strong> trip at least one check. A record can trip more than one.
+            </div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={FLAG_BREAKDOWN} layout="vertical" margin={{top:0,right:24,bottom:0,left:120}}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9"/>
@@ -829,6 +947,9 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </ResponsiveContainer>
           </div>
         </div>
+        </Section>
+
+        <Section label="What to audit first" note="an ordering of the published record, not a prediction about the ground">
         {/* The 2x2 the fusion exists to produce. Two independent signals — the
             contract record disagreeing with itself, and the award sitting with a
             heavily concentrated contractor — measured to correlate at r = -0.12,
@@ -890,10 +1011,11 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             <span className="text-[11px] font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded ml-1">{atRisk.length}</span>
           </div>
           {atRisk.length===0?<EmptyState title="No at-risk projects" body="All active projects are progressing on schedule."/>:(
+            <>
             <table className="w-full text-[12px]">
               <thead><tr className="border-b border-gray-100 bg-gray-50">{["Project","Municipality","Contractor","Completion","Status","Imagery","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
-                {atRisk.map(p=>(
+                {pg.paginate(atRisk).map(p=>(
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3"><div className="font-medium text-gray-800">{p.name.slice(0,42)}{p.name.length>42?"…":""}</div><div className="text-[10px] font-mono text-gray-400">{p.id}</div></td>
                     <td className="px-4 py-3 text-gray-600">{p.municipality}</td>
@@ -911,8 +1033,12 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 ))}
               </tbody>
             </table>
+            <Pagination page={pg.page} totalPages={pg.totalPages} setPage={pg.setPage}
+              total={atRisk.length} pageSize={pg.pageSize}/>
+            </>
           )}
         </div>
+        </Section>
       </div>
     </div>
   );
