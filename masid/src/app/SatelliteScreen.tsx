@@ -39,6 +39,7 @@ import {
   type EyeVerdict, type Review,
 } from "./satReview";
 import { tint, accent } from "./theme";
+import { WaybackStrip } from "./WaybackStrip";
 
 const VERDICT_ORDER: Verdict[] = ["change-at-point", "change-offset", "no-change-signal", "not-assessable"];
 type Sort = "value" | "verdict" | "id" | "clear";
@@ -352,6 +353,12 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                   </div>
                 )}
               </div>
+
+              {sel.p.lat != null && sel.p.lng != null && (
+                <WaybackStrip lat={sel.p.lat} lng={sel.p.lng}
+                  startDate={sel.p.startDate} endDate={sel.p.endDate}
+                  verdictColor={cfg.color} />
+              )}
 
               {/* ── what a person makes of it ────────────────────────────
                   The detector cannot separate flagged contracts from ordinary

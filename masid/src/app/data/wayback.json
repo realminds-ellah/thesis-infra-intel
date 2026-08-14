@@ -1,0 +1,76 @@
+{
+ "generated": "2026-08-14T07:50:44Z",
+ "source": "Esri World Imagery Wayback",
+ "attribution": "Imagery \u00a9 Esri, Maxar, Earthstar Geographics",
+ "note": "Frames are served live from Esri and are not redistributed by this project. Roughly two to three frames fall inside a typical contract window, which supports 'did a structure appear' and does not support 'how far along was it'.",
+ "zoom": 16,
+ "publishedVersions": 28,
+ "coverage": {
+  "contractsWithDates": 962,
+  "flightDuringConstruction": 136,
+  "cleanBeforeAndAfter": 826,
+  "neither": 0
+ },
+ "frames": [
+  {
+   "release": 30195,
+   "published": "2014-11-12",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/30195/{level}/{row}/{col}",
+   "flown": "2010-02-08",
+   "resolutionMetres": "0.5",
+   "accuracyMetres": "10.2",
+   "provider": " ",
+   "republishedAs": 3
+  },
+  {
+   "release": 18820,
+   "published": "2018-10-17",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/18820/{level}/{row}/{col}",
+   "flown": "2014-05-27",
+   "resolutionMetres": "0.5",
+   "accuracyMetres": "10.2",
+   "provider": "Vivid - Southeast Asia",
+   "republishedAs": 4
+  },
+  {
+   "release": 16062,
+   "published": "2020-03-23",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/16062/{level}/{row}/{col}",
+   "flown": "2018-05-23",
+   "resolutionMetres": "0.5",
+   "accuracyMetres": "8.47",
+   "provider": "Vivid",
+   "republishedAs": 4
+  },
+  {
+   "release": 44710,
+   "published": "2022-06-08",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/44710/{level}/{row}/{col}",
+   "flown": "2019-05-10",
+   "resolutionMetres": "0.5",
+   "accuracyMetres": "5",
+   "provider": "Vivid",
+   "republishedAs": 3
+  },
+  {
+   "release": 27982,
+   "published": "2025-04-24",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/27982/{level}/{row}/{col}",
+   "flown": "2019-10-05",
+   "resolutionMetres": "0.5",
+   "accuracyMetres": "5",
+   "provider": "Vivid",
+   "republishedAs": 12
+  },
+  {
+   "release": 10842,
+   "published": "2026-05-28",
+   "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/10842/{level}/{row}/{col}",
+   "flown": "2025-04-07",
+   "resolutionMetres": "0.34",
+   "accuracyMetres": "8.47",
+   "provider": "Vivid Advanced",
+   "republishedAs": 2
+  }
+ ]
+}
