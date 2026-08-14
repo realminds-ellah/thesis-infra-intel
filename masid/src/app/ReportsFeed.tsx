@@ -32,7 +32,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Camera, X, Eye, Clock, MapPin, AlertTriangle, Video, Loader2, Search,
-  MessageSquare, CornerDownRight, Link2, Send, Info,
+  MessageSquare, CornerDownRight, Link2, Send, Info, RotateCcw, Trash2,
 } from "lucide-react";
 
 import { PROJECTS, PROC_BY_ID, type Project } from "./data";
@@ -84,6 +84,71 @@ export const STATUS_CFG: Record<ReportStatus, { label: string; color: string; bg
   closed:         { label: "Closed",               color: "#6b6b64", bg: "#f0f0ee", step: 5, note: "No further action planned." },
 };
 
+/**
+ * What the report is ABOUT — chosen by the person filing it.
+ *
+ * A free-text note alone makes every report a small essay that somebody has to
+ * read before knowing whether it matters. One required choice turns the feed
+ * into something that can be filtered, counted and routed: an office can pull
+ * every "nothing built here" in Hagonoy without reading three hundred notes.
+ *
+ * Three rules govern the wording, and they are the reason this list looks the
+ * way it does rather than like a complaints menu:
+ *
+ *  1. EVERY OPTION DESCRIBES WHAT IS AT THE SITE, never what anyone did. There
+ *     is no "corrupt", no "ghost project", no "anomalous". A citizen reporting
+ *     that a riverbank is empty is stating a fact about a riverbank; the leap
+ *     from that to an accusation is not theirs to make in a form field, and a
+ *     tool that invites it produces evidence nobody can use.
+ *  2. THERE IS A POSITIVE OPTION, and it is not last. A feed that only accepts
+ *     complaints teaches people that confirming something exists is not worth
+ *     the walk, and then silence becomes unreadable — you cannot tell the sites
+ *     nobody checked from the sites that were fine. "It is there and looks
+ *     finished" is real data and is treated as such.
+ *  3. "SOMETHING ELSE" EXISTS so nobody is forced into a category that does not
+ *     fit. A miscategorised report is worse than an uncategorised one.
+ */
+export type ReportKind =
+  | "nothing-here" | "unfinished" | "damaged" | "different" | "not-working"
+  | "looks-done" | "other";
+
+export const KIND_CFG: Record<ReportKind, {
+  label: string; short: string; color: string; help: string;
+}> = {
+  "nothing-here": {
+    label: "Nothing is built at this spot", short: "Nothing here", color: "#c0272d",
+    help: "You went to the location and there is no structure of any kind. Say what IS there instead — field, water, road, houses.",
+  },
+  unfinished: {
+    label: "Work looks unfinished or stopped", short: "Unfinished", color: "#e8722c",
+    help: "Something was started and left — exposed rebar, half a wall, materials sitting on site with no work going on.",
+  },
+  damaged: {
+    label: "It is built but damaged or failing", short: "Damaged", color: "#b45309",
+    help: "The structure is there but cracked, collapsed, undermined or washed out. Worth photographing the damaged part directly.",
+  },
+  different: {
+    label: "What is here does not match the description", short: "Doesn't match", color: "#8a6d00",
+    help: "There is a structure, but not the one the contract describes — a different type, a much shorter stretch, or in a different place along the river.",
+  },
+  "not-working": {
+    label: "It is there but not doing its job", short: "Not working", color: "#1c5cab",
+    help: "Silted up, blocked, gates that do not move, a pumping station with no pump. Especially useful right after a flood.",
+  },
+  "looks-done": {
+    label: "It is there and looks finished", short: "Looks finished", color: "#046b04",
+    help: "Confirming that a project exists is as useful as reporting that one does not. Without these, silence cannot be told apart from nobody having checked.",
+  },
+  other: {
+    label: "Something else", short: "Something else", color: "#6b6b64",
+    help: "Anything the options above do not cover. Describe it in your own words below.",
+  },
+};
+
+export const KIND_ORDER: ReportKind[] = [
+  "nothing-here", "unfinished", "damaged", "different", "not-working", "looks-done", "other",
+];
+
 /** Roles that may move a report along. A reporter cannot validate themselves. */
 const OFFICIAL = new Set(["DPWH Admin", "DPWH Engineer", "Field Inspector", "LGU Coordinator"]);
 
@@ -110,6 +175,7 @@ export interface Comment {
 export interface CitizenReport {
   id: string;
   projectId: string;
+  kind: ReportKind;
   note: string;
   image: string;             // data URL, captured in-page
   capturedAt: number;
@@ -121,6 +187,14 @@ export interface CitizenReport {
   status: ReportStatus;
   statusBy: string | null;      // the role that last moved it
   statusAt: number | null;
+  /**
+   * Posted from THIS browser. There are no accounts in this prototype, so
+   * ownership is the only thing that can honestly be claimed: a report you can
+   * delete is one that has never left your own machine. It is deliberately not
+   * a permission — an office cannot delete a citizen's report from here, and a
+   * real deployment would need a takedown route with a record of who used it.
+   */
+  mine?: boolean;
   /** Seeded example, never a real submission. Badged wherever it appears. */
   demo?: boolean;
 }
@@ -162,6 +236,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#4a6b52"),
     capturedAt: Date.now() - 5 * HOUR,
     lat: 14.81240, lng: 120.71600, metresFromContract: 42, masid: 12,
+    kind: "looks-done",
     status: "validated", statusBy: "Field Inspector", statusAt: Date.now() - 2 * HOUR,
     comments: [
       { id: "c1", author: "LGU Coordinator", at: Date.now() - 4 * HOUR, masid: 3, demo: true,
@@ -176,6 +251,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#8a7a4a"),
     capturedAt: Date.now() - 26 * HOUR,
     lat: 14.85210, lng: 120.83140, metresFromContract: 3120, masid: 47,
+    kind: "nothing-here",
     status: "queued", statusBy: "LGU Coordinator", statusAt: Date.now() - 8 * HOUR,
     comments: [
       { id: "c3", author: "Field Inspector", at: Date.now() - 20 * HOUR, masid: 9, demo: true,
@@ -192,6 +268,7 @@ const DEMO: CitizenReport[] = [
     image: placeholder("placeholder for a site photo", "#6b5a4a"),
     capturedAt: Date.now() - 3 * 24 * HOUR,
     lat: 14.77230, lng: 120.75310, metresFromContract: 18, masid: 31,
+    kind: "damaged",
     status: "submitted", statusBy: null, statusAt: null,
     comments: [
       { id: "c6", author: "Public", at: Date.now() - 2 * 24 * HOUR, masid: 8, demo: true,
@@ -215,6 +292,10 @@ const DEMO: CitizenReport[] = [
 const migrate = (r: Partial<CitizenReport>): CitizenReport => ({
   id: r.id ?? `r${Math.random().toString(36).slice(2)}`,
   projectId: r.projectId ?? "",
+  // Reports saved before kinds existed fall to "other" rather than being
+  // guessed at from their text. Inventing a category for somebody else's
+  // report is the one thing worse than not having one.
+  kind: r.kind && r.kind in KIND_CFG ? r.kind : "other",
   note: r.note ?? "",
   image: r.image ?? "",
   capturedAt: r.capturedAt ?? Date.now(),
@@ -226,6 +307,7 @@ const migrate = (r: Partial<CitizenReport>): CitizenReport => ({
   status: r.status && r.status in STATUS_CFG ? r.status : "submitted",
   statusBy: r.statusBy ?? null,
   statusAt: r.statusAt ?? null,
+  mine: r.mine,
   demo: r.demo,
 });
 
@@ -263,22 +345,48 @@ function CaptureSheet({ onClose, onDone }:
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [shot, setShot] = useState<string | null>(null);
+  // The moment the frame was grabbed, not the moment it was posted. Rendering
+  // `new Date()` under the still meant the caption ticked forward while the
+  // photo sat there, quietly claiming a time it was not taken.
+  const [shotAt, setShotAt] = useState<number | null>(null);
   const [fix, setFix] = useState<[number, number] | null>(null);
   const [projectId, setProjectId] = useState("");
+  const [kind, setKind] = useState<ReportKind | null>(null);
   const [note, setNote] = useState("");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  streamRef.current = stream;
+
+  /**
+   * Open the camera, and be able to do it again.
+   *
+   * Taking the shot stops the stream — leaving a camera running behind a still
+   * image is both a battery drain and a light nobody expects to stay on. That
+   * made the first frame final, which is the wrong trade: site photos are taken
+   * one-handed, into the sun, on a riverbank, and the first one is very often
+   * blurred or pointed at the wrong thing. Retake restarts the stream, so the
+   * only thing a bad photo costs is a second press.
+   */
+  const openCamera = () => {
+    setErr(null);
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+      .then(s => {
+        setStream(s);
+        if (videoRef.current) videoRef.current.srcObject = s;
+      })
+      .catch(() => setErr("The camera could not be opened. Reports must be taken live, so there is no way to attach an existing photo."));
+  };
 
   useEffect(() => {
-    let live: MediaStream | null = null;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-      .then(s => { live = s; setStream(s); if (videoRef.current) videoRef.current.srcObject = s; })
-      .catch(() => setErr("The camera could not be opened. Reports must be taken live, so there is no way to attach an existing photo."));
+    openCamera();
     navigator.geolocation?.getCurrentPosition(
       p => setFix([p.coords.latitude, p.coords.longitude]), () => setFix(null),
       { enableHighAccuracy: true, timeout: 8000 });
-    return () => { live?.getTracks().forEach(t => t.stop()); };
-  }, []);
+    // Read off the ref at teardown so a stream opened by a RETAKE is stopped
+    // too. Closing over the first stream leaked every subsequent one.
+    return () => { streamRef.current?.getTracks().forEach(t => t.stop()); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const capture = () => {
     const v = videoRef.current;
@@ -287,7 +395,15 @@ function CaptureSheet({ onClose, onDone }:
     c.width = v.videoWidth || 720; c.height = v.videoHeight || 540;
     c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
     setShot(c.toDataURL("image/jpeg", 0.8));
+    setShotAt(Date.now());
     stream?.getTracks().forEach(t => t.stop());
+    setStream(null);
+  };
+
+  const retake = () => {
+    setShot(null);
+    setShotAt(null);
+    openCamera();
   };
 
   const matches = useMemo(() => {
@@ -298,15 +414,15 @@ function CaptureSheet({ onClose, onDone }:
   const chosen = PROJECTS.find(p => p.id === projectId) ?? null;
 
   const submit = () => {
-    if (!shot || !chosen) return;
+    if (!shot || !chosen || !kind) return;
     setBusy(true);
     const d = fix && chosen.lat != null && chosen.lng != null
       ? metres(fix, [chosen.lat, chosen.lng]) : null;
     onDone({
-      id: `r${Date.now()}`, projectId: chosen.id, note: note.trim(), image: shot,
-      capturedAt: Date.now(), lat: fix?.[0] ?? null, lng: fix?.[1] ?? null,
+      id: `r${Date.now()}`, projectId: chosen.id, kind, note: note.trim(), image: shot,
+      capturedAt: shotAt ?? Date.now(), lat: fix?.[0] ?? null, lng: fix?.[1] ?? null,
       metresFromContract: d, masid: 0, comments: [],
-      status: "submitted", statusBy: null, statusAt: null,
+      status: "submitted", statusBy: null, statusAt: null, mine: true,
     });
   };
 
@@ -338,10 +454,30 @@ function CaptureSheet({ onClose, onDone }:
               <button onClick={capture} aria-label="Take the photo"
                 className="absolute bottom-3 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-white border-4 border-white/60 shadow-lg" />
             )}
+            {/* Nothing is committed until Post. Until then the photo can be
+                thrown away as many times as it takes to get a usable one. */}
+            {shot && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                <button onClick={retake}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold bg-white/90 text-gray-800 shadow-lg hover:bg-white">
+                  <RotateCcw size={13} />Retake
+                </button>
+                <span className="px-3 py-2 rounded-full text-[11px] bg-black/55 text-white/90">
+                  Not posted yet
+                </span>
+              </div>
+            )}
+            {err && (
+              <button onClick={openCamera}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold bg-white/90 text-gray-800 shadow-lg">
+                <RotateCcw size={13} />Try the camera again
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 text-[11px] text-gray-500">
-            <span className="flex items-center gap-1"><Clock size={11} />{shot ? new Date().toLocaleTimeString() : "not taken yet"}</span>
+            <span className="flex items-center gap-1"><Clock size={11} />
+              {shotAt ? `taken ${new Date(shotAt).toLocaleTimeString()}` : "not taken yet"}</span>
             <span className="flex items-center gap-1"><MapPin size={11} />
               {fix ? `${fix[0].toFixed(5)}, ${fix[1].toFixed(5)}` : "no location fix"}</span>
           </div>
@@ -379,6 +515,34 @@ function CaptureSheet({ onClose, onDone }:
             )}
           </div>
 
+          {/* The choice, before the free text. Asked in this order because a
+              category picked after writing a paragraph tends to be whichever
+              one the paragraph already sounds like. */}
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              What are you reporting?
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {KIND_ORDER.map(k => {
+                const c = KIND_CFG[k], on = kind === k;
+                return (
+                  <button key={k} onClick={() => setKind(k)} type="button"
+                    className={`text-left px-2.5 py-2 rounded border text-[12px] leading-tight transition-colors ${
+                      on ? "font-semibold" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}
+                    style={on ? { background: tint(c.color), borderColor: accent(c.color), color: accent(c.color) } : undefined}>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
+                      style={{ background: accent(c.color) }} />
+                    {c.short}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-gray-500 leading-relaxed mt-1.5 min-h-[30px]">
+              {kind ? KIND_CFG[kind].help
+                : "Pick the one closest to what you found. Every option describes the site — none of them says anything about who is responsible, which is not for a form to decide."}
+            </p>
+          </div>
+
           <div>
             <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">What did you see?</label>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
@@ -388,12 +552,19 @@ function CaptureSheet({ onClose, onDone }:
         </div>
 
         <div className="px-5 py-3 border-t border-gray-100">
-          <button onClick={submit} disabled={!shot || !chosen || busy}
+          <button onClick={submit} disabled={!shot || !chosen || !kind || busy}
             className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40"
             style={{ background: "var(--masid-navy)" }}>
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
             Post report
           </button>
+          {/* Say which one is missing rather than leaving a dead button. */}
+          {!busy && (!shot || !chosen || !kind) && (
+            <p className="text-[11px] text-gray-500 text-center mt-1.5">
+              Still needed: {[!shot && "a photo", !chosen && "which project", !kind && "what you are reporting"]
+                .filter(Boolean).join(", ")}
+            </p>
+          )}
           <p className="text-[10px] text-gray-400 text-center mt-2">
             Prototype — this stays in your browser and is not sent anywhere.
           </p>
@@ -489,6 +660,8 @@ function Thread({ report, role, onComment, onVote }: {
 export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject: (id: string) => void; role?: string }) {
   const [reports, setReports] = useState<CitizenReport[]>(load);
   const [sort, setSort] = useState<SortKey>("new");
+  const [kinds, setKinds] = useState<Set<ReportKind>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [voted, setVoted] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -533,8 +706,28 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
       value: (a, b) => value(b) - value(a),
       status: (a, b) => STATUS_CFG[b.status].step - STATUS_CFG[a.status].step,
     };
-    return [...reports].sort(cmp[sort]);
-  }, [reports, sort]);
+    const kept = kinds.size === 0 ? reports : reports.filter(r => kinds.has(r.kind));
+    return [...kept].sort(cmp[sort]);
+  }, [reports, sort, kinds]);
+
+  /**
+   * Delete a report posted from this browser.
+   *
+   * Gone means gone: the record is dropped from state and the next write puts
+   * the shortened list to storage. There is no tombstone and no "deleted by"
+   * marker, because there is nobody to show one to — this prototype has no
+   * server and no other reader. A real deployment would need the opposite:
+   * a soft delete with an audit trail, since a report naming a contractor that
+   * can be silently removed is a moderation hole rather than a feature.
+   */
+  const remove = (id: string) => {
+    setReports(reports.filter(r => r.id !== id));
+    setConfirmDelete(null);
+    // Any panel keyed to the removed report has to be released too, or the
+    // next report to take that id inherits an opened thread.
+    const drop = (set: Set<string>) => { const n = new Set(set); n.delete(id); return n; };
+    setOpen(drop(open)); setInfo(drop(info));
+  };
 
   const vote = (id: string) => {
     if (voted.has(id)) return;
@@ -582,7 +775,37 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
             className="text-[12px] border border-gray-200 rounded px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
             {SORTS.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
-          <span className="ml-auto text-[11px] text-gray-400">{reports.length} report{reports.length === 1 ? "" : "s"}</span>
+          <span className="ml-auto text-[11px] text-gray-400">
+            {sorted.length === reports.length
+              ? `${reports.length} report${reports.length === 1 ? "" : "s"}`
+              : `${sorted.length} of ${reports.length} reports`}
+          </span>
+        </div>
+
+        {/* Filter by what people said they were reporting. Counted live, and a
+            kind nobody has filed is shown at zero rather than hidden — the
+            absence of "nothing here" reports is itself worth seeing. */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {KIND_ORDER.map(k => {
+            const n = reports.filter(r => r.kind === k).length;
+            const on = kinds.has(k), c = KIND_CFG[k];
+            return (
+              <button key={k} onClick={() => {
+                  const next = new Set(kinds); next.has(k) ? next.delete(k) : next.add(k); setKinds(next);
+                }}
+                title={c.label}
+                className={`text-[11px] px-2 py-1 rounded-full border flex items-center gap-1.5 ${
+                  on ? "font-semibold" : n === 0 ? "border-gray-100 text-gray-300" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                style={on ? { background: tint(c.color), borderColor: accent(c.color), color: accent(c.color) } : undefined}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent(c.color) }} />
+                {c.short}<span className="font-mono opacity-70">{n}</span>
+              </button>
+            );
+          })}
+          {kinds.size > 0 && (
+            <button onClick={() => setKinds(new Set())}
+              className="text-[11px] px-2 py-1 text-gray-500 hover:text-[#1e3a7b] underline">clear</button>
+          )}
         </div>
         <p className="text-[11px] text-gray-500 -mt-2">
           {sort === "distance"
@@ -619,6 +842,13 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                       style={{ background: tint(st(r).color), color: accent(st(r).color) }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: st(r).color }} />
                       {st(r).label}
+                    </span>
+                    {/* What the reporter said this is about, beside what has
+                        happened to it. Two different facts, two chips. */}
+                    <span className="text-[11px] px-2 py-1 rounded font-medium flex items-center gap-1.5"
+                      style={{ background: tint(KIND_CFG[r.kind].color), color: accent(KIND_CFG[r.kind].color) }}
+                      title={KIND_CFG[r.kind].label}>
+                      {KIND_CFG[r.kind].short}
                     </span>
                     <button onClick={() => {
                         const n = new Set(info); n.has(r.id) ? n.delete(r.id) : n.add(r.id); setInfo(n);
@@ -712,6 +942,32 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-500 hover:bg-gray-50 hover:text-[#1e3a7b]">
                       <Link2 size={13} />{copied === r.id ? "Copied" : "Share"}
                     </button>
+                    {/* Only on reports posted from this browser. There are no
+                        accounts here, so this is the only ownership that can be
+                        claimed honestly — and it is not a moderation power: no
+                        role can delete anybody else's report from this screen. */}
+                    {r.mine && !r.demo && (
+                      confirmDelete === r.id ? (
+                        <span className="ml-auto flex items-center gap-1.5">
+                          <span className="text-[11px] text-gray-500">Delete this report?</span>
+                          <button onClick={() => remove(r.id)}
+                            className="text-[11px] px-2.5 py-1.5 rounded font-semibold"
+                            style={{ background: tint("#c0272d"), color: accent("#c0272d") }}>
+                            Yes, delete
+                          </button>
+                          <button onClick={() => setConfirmDelete(null)}
+                            className="text-[11px] px-2.5 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
+                            Keep
+                          </button>
+                        </span>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(r.id)}
+                          title="Delete this report — it is yours, posted from this browser"
+                          className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-400 hover:bg-gray-50 hover:text-[#c0272d]">
+                          <Trash2 size={13} />Delete
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
 
