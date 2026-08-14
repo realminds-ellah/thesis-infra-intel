@@ -37,6 +37,7 @@ import {
 
 import { PROJECTS, PROC_BY_ID, type Project } from "./data";
 import { tint, accent } from "./theme";
+import { municipalityAt } from "./geo";
 
 const KEY = "masid.reports.v1";
 
@@ -181,6 +182,13 @@ export interface CitizenReport {
   capturedAt: number;
   lat: number | null;        // the device's own fix at capture time
   lng: number | null;
+  /**
+   * The municipality the fix falls in, resolved on the device against the same
+   * boundaries the coordinate checks use. Null means the GPS put the reporter
+   * outside every Bulacan municipality — which is information, not a failure,
+   * so it is stored and shown rather than blanked.
+   */
+  place?: string | null;
   metresFromContract: number | null;
   masid: number;
   comments: Comment[];
@@ -301,6 +309,10 @@ const migrate = (r: Partial<CitizenReport>): CitizenReport => ({
   capturedAt: r.capturedAt ?? Date.now(),
   lat: r.lat ?? null,
   lng: r.lng ?? null,
+  // Reports saved before places existed get theirs derived now — the fix was
+  // always stored, only the name was missing, so this adds nothing new.
+  place: r.place !== undefined ? r.place
+    : (r.lat != null && r.lng != null ? municipalityAt(r.lat, r.lng) : null),
   metresFromContract: r.metresFromContract ?? null,
   masid: r.masid ?? 0,
   comments: Array.isArray(r.comments) ? r.comments : [],
@@ -311,10 +323,20 @@ const migrate = (r: Partial<CitizenReport>): CitizenReport => ({
   demo: r.demo,
 });
 
+/**
+ * An EMPTY feed and an UNVISITED one are different things.
+ *
+ * This used to treat both as "show the examples", which meant deleting the last
+ * report silently brought all three demos back — the delete appeared to fail.
+ * A stored empty array now means exactly what it says: this person cleared the
+ * feed, leave it cleared. Only a missing key seeds the examples.
+ */
 const load = (): CitizenReport[] => {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? "null");
-    if (!Array.isArray(saved) || !saved.length) return DEMO;
+    const raw = localStorage.getItem(KEY);
+    if (raw === null) return DEMO;                 // never visited
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return DEMO;        // unreadable, not empty
     // Drop anything that has lost the project it referred to, rather than
     // rendering a card that points nowhere.
     return saved.map(migrate).filter(r => r.projectId);
@@ -412,6 +434,7 @@ function CaptureSheet({ onClose, onDone }:
     return PROJECTS.filter(p => `${p.id} ${p.municipality} ${p.description}`.toLowerCase().includes(t)).slice(0, 6);
   }, [q]);
   const chosen = PROJECTS.find(p => p.id === projectId) ?? null;
+  const place = useMemo(() => fix ? municipalityAt(fix[0], fix[1]) : null, [fix]);
 
   const submit = () => {
     if (!shot || !chosen || !kind) return;
@@ -421,7 +444,7 @@ function CaptureSheet({ onClose, onDone }:
     onDone({
       id: `r${Date.now()}`, projectId: chosen.id, kind, note: note.trim(), image: shot,
       capturedAt: shotAt ?? Date.now(), lat: fix?.[0] ?? null, lng: fix?.[1] ?? null,
-      metresFromContract: d, masid: 0, comments: [],
+      place, metresFromContract: d, masid: 0, comments: [],
       status: "submitted", statusBy: null, statusAt: null, mine: true,
     });
   };
@@ -479,8 +502,22 @@ function CaptureSheet({ onClose, onDone }:
             <span className="flex items-center gap-1"><Clock size={11} />
               {shotAt ? `taken ${new Date(shotAt).toLocaleTimeString()}` : "not taken yet"}</span>
             <span className="flex items-center gap-1"><MapPin size={11} />
-              {fix ? `${fix[0].toFixed(5)}, ${fix[1].toFixed(5)}` : "no location fix"}</span>
+              {fix ? `${fix[0].toFixed(5)}, ${fix[1].toFixed(5)}` : "location off — nothing will be tagged"}</span>
           </div>
+
+          {/* What the fix resolves to, before anything is posted. Shown live so
+              a reporter can see the tool has placed them somewhere sensible —
+              and can see when it has not. */}
+          {fix && (
+            <div className="text-[11px] px-2.5 py-2 rounded border"
+              style={place
+                ? { background: tint("#046b04"), borderColor: tint("#046b04", 38), color: accent("#046b04") }
+                : { background: tint("#c05621"), borderColor: tint("#c05621", 38), color: accent("#c05621") }}>
+              {place
+                ? <>Your device places you in <strong>{place}, Bulacan</strong>. This is added to the report automatically.</>
+                : <>Your device places you outside every Bulacan municipality. The coordinates are still attached — the report will say so.</>}
+            </div>
+          )}
 
           <div>
             <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Which project?</label>
@@ -818,10 +855,23 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
         {sorted.length === 0 && (
           <div className="bg-white rounded border border-gray-200 py-14 text-center">
             <Video size={26} className="text-gray-300 mx-auto mb-2" />
-            <div className="text-[13px] font-semibold text-gray-600">No reports yet</div>
+            <div className="text-[13px] font-semibold text-gray-600">
+              {kinds.size > 0 ? "Nothing matches those filters" : "No reports here"}
+            </div>
             <p className="text-[12px] text-gray-400 mt-1 max-w-xs mx-auto">
-              Stand at a flood-control site, open the camera, and say what is there.
+              {kinds.size > 0
+                ? "Clear a filter above to see the rest of the feed."
+                : "Stand at a flood-control site, open the camera, and say what is there."}
             </p>
+            {/* Removing the examples is reversible. Nothing else in this feed
+                is, so the one destructive action that costs no real work
+                should not be the one that cannot be undone. */}
+            {kinds.size === 0 && reports.length === 0 && (
+              <button onClick={() => setReports(DEMO)}
+                className="mt-3 text-[12px] px-3 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
+                Bring back the example reports
+              </button>
+            )}
           </div>
         )}
 
@@ -920,6 +970,33 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                     {r.lat == null && <span className="flex items-center gap-1"><MapPin size={10} />no location fix — unverified</span>}
                   </div>
 
+                  {/* Where the photo was taken, in words. Coordinates are kept
+                      but a place name is what a reader can actually check. */}
+                  {r.lat != null && (
+                    <div className="flex items-center gap-2 flex-wrap text-[11px] mb-2.5 px-2.5 py-1.5 rounded border border-gray-100 bg-gray-50">
+                      <MapPin size={11} className="text-gray-400 shrink-0" />
+                      {r.place
+                        ? <span className="text-gray-700">Taken in <strong>{r.place}, Bulacan</strong></span>
+                        : <span className="text-gray-700">Taken outside every Bulacan municipality</span>}
+                      {/* The one comparison worth making automatically: the
+                          municipality the reporter stood in against the one the
+                          contract names. A mismatch does not mean anyone did
+                          anything — a coordinate can be wrong, a reporter can
+                          stand on the far bank — but it is the reason to look. */}
+                      {r.place && p && r.place !== p.municipality && (
+                        <span className="px-1.5 py-0.5 rounded font-medium"
+                          style={{ background: tint("#c05621"), color: accent("#c05621") }}>
+                          contract says {p.municipality}
+                        </span>
+                      )}
+                      <span className="font-mono text-gray-400 ml-auto">{r.lat.toFixed(5)}, {r.lng!.toFixed(5)}</span>
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`}
+                        target="_blank" rel="noreferrer" className="text-[#1e3a7b] hover:underline shrink-0">
+                        open map
+                      </a>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-1 pt-2.5 border-t border-gray-100">
                     <button onClick={() => vote(r.id)} disabled={voted.has(r.id)}
                       title="Mark this as worth attention"
@@ -942,18 +1019,25 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-500 hover:bg-gray-50 hover:text-[#1e3a7b]">
                       <Link2 size={13} />{copied === r.id ? "Copied" : "Share"}
                     </button>
-                    {/* Only on reports posted from this browser. There are no
-                        accounts here, so this is the only ownership that can be
-                        claimed honestly — and it is not a moderation power: no
-                        role can delete anybody else's report from this screen. */}
-                    {r.mine && !r.demo && (
+                    {/* Every card can be removed, because every card is in THIS
+                        browser and nowhere else — there is no server, so there
+                        is no one else's copy to take down. That is what makes
+                        this safe here and exactly what would make it unsafe in a
+                        real deployment: a report naming a contractor that any
+                        reader can silently remove is a moderation hole, so a
+                        deployed version needs a soft delete, a reason and a
+                        record of who used it. Removing a seeded example is
+                        reversible; deleting your own report is not. */}
+                    {(
                       confirmDelete === r.id ? (
                         <span className="ml-auto flex items-center gap-1.5">
-                          <span className="text-[11px] text-gray-500">Delete this report?</span>
+                          <span className="text-[11px] text-gray-500">
+                            {r.demo ? "Remove this example?" : "Delete this report?"}
+                          </span>
                           <button onClick={() => remove(r.id)}
                             className="text-[11px] px-2.5 py-1.5 rounded font-semibold"
                             style={{ background: tint("#c0272d"), color: accent("#c0272d") }}>
-                            Yes, delete
+                            {r.demo ? "Yes, remove" : "Yes, delete"}
                           </button>
                           <button onClick={() => setConfirmDelete(null)}
                             className="text-[11px] px-2.5 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
@@ -962,9 +1046,11 @@ export function ReportsFeed({ onOpenProject, role = "Public" }: { onOpenProject:
                         </span>
                       ) : (
                         <button onClick={() => setConfirmDelete(r.id)}
-                          title="Delete this report — it is yours, posted from this browser"
+                          title={r.demo
+                            ? "Remove this seeded example from your feed"
+                            : "Delete this report"}
                           className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[12px] text-gray-400 hover:bg-gray-50 hover:text-[#c0272d]">
-                          <Trash2 size={13} />Delete
+                          <Trash2 size={13} />{r.demo ? "Remove" : "Delete"}
                         </button>
                       )
                     )}
