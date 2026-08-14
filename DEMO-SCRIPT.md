@@ -203,3 +203,118 @@ No — the three reports are seeded examples, badged DEMO, with obvious placehol
 
 **"What would you do next?"**
 Extend past one district office, get the COA audit findings in so "built more than once" becomes a recorded finding rather than an inference, and add Sentinel-1 radar, which sees through the wet-season cloud that makes 59 of 200 assessed sites unreadable.
+
+---
+---
+
+# APPENDIX A — The stack
+
+*Not spoken. Reference for the "how did you build it" question.*
+
+## Front end
+
+| | | Why |
+|---|---|---|
+| **React 18 + TypeScript** | `18.3.1` | Types earn their keep here: a contract record has ~30 fields and half of them are legitimately nullable. The compiler catches "coordinate might be null" before a demo does. |
+| **Vite** | `6.3.5` | Dev server starts in ~200 ms; production build in ~2.7 s. |
+| **Tailwind CSS** | `4.1.12` | v4 compiles every colour utility to a CSS custom property — which is the only reason dark mode is one 190-line stylesheet instead of `dark:` on ~2,000 class occurrences. |
+| **Leaflet + react-leaflet** | `1.9.4` / `4.2.1` | Open source, no API key, no per-load billing. Swaps basemaps freely, which is what lets the same map show street, satellite and a dated 2018 archive layer. |
+| **react-leaflet-cluster** | `2.1.0` | 1,191 markers is an unreadable smear without it. |
+| **Recharts** | `2.15.2` | SVG charts, so they inherit the theme's custom properties directly. |
+| **lucide-react / sonner** | | Icons, toasts. |
+
+Deployed as a **static single-page app on Vercel**. There is no back end.
+
+## Data pipeline — Python
+
+Seven scripts under `pipeline/`, each writing JSON the app imports at build time:
+
+| Script | Does |
+|---|---|
+| `verify_data.py` | **Gate.** Must pass before any other pipeline runs. Cross-export agreement, structural checks, a primary-source spot check against a published Notice of Award. |
+| `build_dataset.py` | The register: 248,220 national records → 1,293 Bulacan 1st DEO flood-control contracts, plus the consistency checks. |
+| `procurement.py` | Bidders, approved budget, award amount, bid ratios. Computes the national baseline **before** narrowing to one office. |
+| `satellite.py` | Sentinel-2 NDVI/NDBI change detection with a bootstrap null, plus the self-validation that reports the tier does not work. |
+| `evaluate.py` | Statistic ablation — disc-mean/tail/core/patch × 1.0–2.5σ. Recall never exceeds 26%. |
+| `hazard.py` | UP NOAH flood-hazard join. |
+| `wayback.py` | Resolves the Esri imagery archive to distinct flights, with acquisition date, resolution, accuracy and provider. |
+
+**Libraries:** pandas, pyarrow, shapely (STRtree + prepared geometries), rasterio (windowed COG reads), pyshp, Pillow, numpy.
+
+## What there deliberately isn't
+
+**No database, no server, no accounts.** Citizen reports and imagery reviews live in the browser's `localStorage` and go nowhere. Every screen that collects something says so. A real deployment needs submission, moderation, an audit trail and a takedown route — none of which exist, and the prototype does not pretend otherwise.
+
+---
+
+# APPENDIX B — The data we used
+
+Everything below is public and free. No signup, no API key, no scraping of anything private.
+
+### 1. DPWH infrastructure transparency records
+- **Via** [`bettergovph/dpwh-transparency-data`](https://huggingface.co/datasets/bettergovph/dpwh-transparency-data) — a volunteer scrape of `infrastructure.dpwh.gov.ph`
+- **Licence** CC0-1.0 · **248,220** national records → sliced to **1,293** flood-control contracts, Bulacan 1st DEO, 2016–2025
+- **Gives** contract id, description, contractor, budget, progress, status, dates, funding source, coordinates
+- **Caveat, stated out loud** it is a third-party mirror, not a DPWH release. Verified against a published Notice of Award to the centavo, but *faithful-but-unofficial* — good enough to build and reason on, not to cite as the government's own position.
+
+### 2. PhilGEPS award notices (detail export)
+- **Gives** bidders per contract, approved budget ceiling (ABC), award amount, award dates, document links
+- **Produces** the bid-ratio analysis — including the finding that this office awards at exactly 96.00% of ABC on 38.4% of contracts against a 3.9% national rate
+
+### 3. Sentinel-2 L2A
+- **Via** Element 84 Earth Search STAC → AWS Open Data COGs, anonymous access
+- **10 m/px, ~5-day revisit, 2015→present, free**
+- **Produces** the NDVI/NDBI change tier — and its null result
+
+### 4. geoBoundaries PHL ADM3
+- **Licence** CC BY 3.0 IGO · 24 municipal polygons
+- **Produces** coordinate integrity checks, and the on-device reverse geocoding in citizen reports
+
+### 5. UP NOAH 100-year flood hazard
+- **Via** BetterGov's mirror of Project NOAH · 261,710 polygon parts
+- **Produces** the hazard join: 596 high / 210 medium / 76 low / 306 just outside / 3 over a kilometre away
+
+### 6. Esri World Imagery + Wayback archive
+- **Sub-metre, served live with attribution, never redistributed**
+- **Produces** the "what is there now" panel and the six dated flights
+
+### 7. OpenStreetMap
+- Street basemap and place names.
+
+> **The honest summary of the data position:** everything here describes what was *contracted*. Nothing in the public record describes what was *delivered* — no disbursement figures, no progress photographs, no inspection reports. That gap is exactly what the two data requests are for.
+
+---
+
+# APPENDIX C — What changes when PhilSA and DPWH data arrives
+
+## From DPWH
+
+| Ask | What it unlocks | Pipeline work |
+|---|---|---|
+| **Progress / accomplishment photographs**, dated and geotagged | The single biggest unlock. **826 contracts currently have only a before and an after** — no imagery from during the build. DPWH already takes these photos. | New tier: match photo EXIF geotag against the published coordinate — the same check the citizen reports already run. |
+| **Disbursement records** | We only have *awarded* amount; what was actually paid is not published. Turns "awarded ₱X" into "paid ₱Y at Z% reported progress" — the discrepancy that matters most. | Extend `build_dataset.py`; add a payment-vs-progress check. |
+| **Program of Works / detailed estimates** | Designed quantities: length, dimensions, materials. Makes imagery checks **quantitative** — "780 m of revetment specified, N m visible" instead of "something is there". | New check comparing designed length against measured extent. |
+| **Inspection reports and S-curves** | Real ground truth on the progress timeline. | Validation set for every other tier. |
+| **Variation orders and time extensions** | Explains the **256 overdue** contracts — some legitimately, which the current flags cannot distinguish. | Reduces false positives on the overdue check. |
+| **Barangay and exact station/chainage** | Sharpens coordinate checks from municipality level to barangay level. | Tightens `MUNI_MISMATCH` and the boundary checks. |
+
+## From PhilSA
+
+| Ask | What it unlocks | Pipeline work |
+|---|---|---|
+| **Tasked acquisitions over selected contracts** | The fundamental fix. Imagery **on demand, inside a contract's construction window** — which is precisely what the 5½-year archive gap denies us today. | `satellite.py` moves from fixed before/after windows to acquisition dates aligned per contract. |
+| **Diwata-2 / higher-resolution PH archive** | More dates, and Philippine-owned provenance rather than a commercial mosaic. | Additional frames in the time strip. |
+| **SAR (Sentinel-1 or PH radar)** | Sees through cloud. **59 of 200 assessed sites are currently unreadable** because of wet-season cloud over Bulacan. | New tier: backscatter change, which responds to built surface rather than to greenness. |
+| **LiDAR / high-resolution DEM** | Elevation profile — whether a structure has the height and cross-section designed, not just a footprint. | New check against Program of Works dimensions. |
+
+## What that makes possible that is impossible now
+
+1. **A detector that can actually be evaluated.** The current tier is declared null because flagged records and controls detect at the same rate. With during-construction imagery *and* a labelled ground-truth set — which the imagery review station is already collecting and exporting as CSV — recall and precision become measurable rather than assumed.
+2. **Delivery, not just procurement.** Every finding in this build is about the *record*. Disbursement plus progress photos moves it to what was actually delivered.
+3. **Quantitative rather than binary.** "A structure is visible" becomes "a 780 m revetment was specified and 300 m is visible."
+
+## What does *not* change
+
+- **The wording.** Flags stay "the record disagrees with itself". More data raises confidence; it does not license an accusation.
+- **The need for COA findings.** Only an audit finding turns "built more than once" from an inference into a recorded fact. That is a separate request and a separate document trail.
+- **Human verification.** Every tier here produces a reason to look, not a conclusion. That is the design, not a limitation of the current data.
