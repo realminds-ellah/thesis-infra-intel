@@ -396,10 +396,12 @@ export interface Fused {
 /**
  * The 2x2 triage FUSION.md asks for, over every contract.
  *
- * Fusing is only worth doing if the two signals are independent, and they
- * measurably are: across all 1,293 contracts the records score and the
- * procurement score correlate at r = +0.05. Neither is a proxy for the other,
- * so "high on both" is genuinely narrower than either list alone.
+ * Fusing is only worth doing if the two signals are not proxies for each
+ * other, and measurably they are not: across all 1,293 contracts the records
+ * score and the procurement score correlate at r = -0.26 (see
+ * SIGNAL_CORRELATION below, which computes it rather than asserting it). If
+ * anything they lean apart, so "high on both" is genuinely narrower than either
+ * list alone rather than the same contracts counted twice.
  *
  * This is an ORDERING, not a prediction. There is no public itemised list of
  * confirmed ghost projects to validate against — the ICI turned its findings
@@ -447,6 +449,31 @@ export const QUADRANT_CFG: Record<Quadrant, { label: string; short: string; colo
     note: "Nothing flagged. Given how much the public record omits, this means 'nothing visible here', not 'clean'.",
   },
 };
+
+/**
+ * How independent the two signals actually are — COMPUTED, not asserted.
+ *
+ * This number was previously written into two comments by hand, as +0.05 in
+ * this file and as -0.12 in App.tsx. Both were wrong and they contradicted each
+ * other, which is the worst possible state for a figure that justifies the
+ * whole fusion. It is derived here so it cannot drift from the data again.
+ *
+ * Pearson r over all 1,293 contracts, between the severity-weighted records
+ * score and the severity-weighted procurement score.
+ */
+export const SIGNAL_CORRELATION = (() => {
+  const xs = FUSED.map(f => f.recordsScore);
+  const ys = FUSED.map(f => f.procurementScore);
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const mx = mean(xs), my = mean(ys);
+  let num = 0, dx = 0, dy = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const a = xs[i] - mx, b = ys[i] - my;
+    num += a * b; dx += a * a; dy += b * b;
+  }
+  const r = dx && dy ? num / Math.sqrt(dx * dy) : 0;
+  return { r, n: xs.length };
+})();
 
 export const TRIAGE = (() => {
   const counts: Record<Quadrant, number> = { both: 0, "records-only": 0, "procurement-only": 0, neither: 0 };

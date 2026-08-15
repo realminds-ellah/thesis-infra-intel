@@ -991,10 +991,13 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
         </Section>
 
         <Section label="What to audit first" note="an ordering of the published record, not a prediction about the ground">
-        {/* The 2x2 the fusion exists to produce. Two independent signals — the
-            contract record disagreeing with itself, and the award sitting with a
-            heavily concentrated contractor — measured to correlate at r = -0.12,
-            so "both" is genuinely narrower than either list on its own. */}
+        {/* The 2x2 the fusion exists to produce. Two signals that are not
+            proxies for each other — the contract record disagreeing with itself,
+            and the bidding pattern — computed to correlate at r = -0.26 across
+            all 1,293 contracts, so "both" is genuinely narrower than either list
+            on its own. The figure is exported as SIGNAL_CORRELATION rather than
+            written here by hand; two hand-written copies had already drifted to
+            two different wrong values. */}
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
             <Layers size={14} className="text-[#1e3a7b]"/>
