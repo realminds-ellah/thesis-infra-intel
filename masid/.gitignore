@@ -8,3 +8,6 @@ __pycache__/
 # Without the leading slash this pattern silently excluded the whole dataset.
 /data/
 .vercel
+
+# local secrets and optional tokens
+.env.local

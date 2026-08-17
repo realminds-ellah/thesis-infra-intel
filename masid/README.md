@@ -113,3 +113,37 @@ worth more than a detector that looks like it works.
 
 **Neither tier establishes that a project was not built.** A flag means the
 paperwork disagrees with itself. See [SOURCES.md](SOURCES.md).
+
+
+## Optional: the dated ground-level viewer
+
+The contract panel can show **street-level captures with a year-by-year
+stepper** — the same spot photographed from the road on known dates, which is
+the one view that shows whether a structure is cracked or undermined rather
+than merely present.
+
+It is off by default and needs a free **Mapillary** client token. **No billing
+account is involved.**
+
+```bash
+cp .env.example .env.local
+# paste your MLY|... token into VITE_MAPILLARY_TOKEN
+npm run dev
+```
+
+Get the token at <https://www.mapillary.com> → Dashboard → Developers →
+Register an application → **Client token**. It is read-only, intended for public
+bundles, and cannot spend anything.
+
+**Why not Google Street View?** Two reasons, both fatal on their own. Every
+Google Maps Platform key — including the Embed API, whose basic usage is *not*
+charged — must sit on a project with **billing enabled**. And Google's "see more
+dates" time slider is a feature of the Maps *interface*, exposed by **no API**,
+so even a billed key could not rebuild the year-by-year comparison inside this
+app. Google Street View is therefore offered as an out-link, where its own
+slider does work.
+
+**Coverage will be patchy and that is reported, not hidden.** These sites are
+riverbanks; street-level imagery follows roads. Where nothing exists the panel
+says so plainly — "no ground photographs of this site" is a finding, and one
+that anyone with a phone can fix, since Mapillary accepts contributions.
