@@ -37,7 +37,7 @@
  */
 
 import { useState } from "react";
-import { ExternalLink, Navigation, Map as MapIcon, PersonStanding } from "lucide-react";
+import { ExternalLink, Navigation, Map as MapIcon, PersonStanding, History } from "lucide-react";
 
 type Mode = "map" | "street";
 
@@ -48,12 +48,23 @@ export function GoogleView({ lat, lng, label }: { lat: number; lng: number; labe
     ? `https://maps.google.com/maps?q=${lat},${lng}&z=18&hl=en&output=embed`
     : `https://maps.google.com/maps?q=${lat},${lng}&layer=c&cbll=${lat},${lng}&cbp=12,0,0,0,0&hl=en&output=svembed`;
 
-  const out = [
-    { label: "Open in Google Maps", icon: <ExternalLink size={11} />,
-      href: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}` },
-    { label: "Directions", icon: <Navigation size={11} />,
-      href: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` },
-  ];
+  const out = mode === "street"
+    ? [
+        // The one control people are looking for. It exists — in Google's own
+        // Street View interface, as the clock pill beside the location name —
+        // and it is reachable in one click from here even though it can never
+        // be rendered inside this iframe.
+        { label: "See other dates", icon: <History size={11} />, primary: true,
+          href: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}` },
+        { label: "Directions", icon: <Navigation size={11} />,
+          href: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` },
+      ]
+    : [
+        { label: "Open in Google Maps", icon: <ExternalLink size={11} />,
+          href: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}` },
+        { label: "Directions", icon: <Navigation size={11} />,
+          href: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` },
+      ];
 
   return (
     <div className="bg-white rounded border border-gray-200 overflow-hidden">
@@ -88,14 +99,17 @@ export function GoogleView({ lat, lng, label }: { lat: number; lng: number; labe
       <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-3 flex-wrap">
         {out.map(o => (
           <a key={o.label} href={o.href} target="_blank" rel="noreferrer"
-            className="text-[11px] text-[#1e3a7b] hover:underline flex items-center gap-1">
+            className={("primary" in o && o.primary)
+              ? "text-[11px] font-semibold px-2.5 py-1.5 rounded text-white flex items-center gap-1.5 hover:opacity-90"
+              : "text-[11px] text-[#1e3a7b] hover:underline flex items-center gap-1"}
+            style={("primary" in o && o.primary) ? { background: "var(--masid-navy)" } : undefined}>
             {o.icon}{o.label}
           </a>
         ))}
-        <span className="ml-auto text-[10px] text-gray-400 leading-snug" style={{ maxWidth: 420 }}>
-          Google publishes no month-by-month view that can be embedded — its historical slider lives
-          inside Google Earth and Street View and is exposed by no API. The dated comparisons here are
-          the sky strip above and the ground strip below.
+        <span className="ml-auto text-[10px] text-gray-400 leading-snug" style={{ maxWidth: 400 }}>
+          {mode === "street"
+            ? "Google keeps older passes of this road, but the date control only exists in its own viewer — no API exposes it, so it cannot be drawn in this frame. \u201cSee other dates\u201d opens it there."
+            : "Google publishes no month-by-month view that can be embedded. The dated comparisons here are the sky strip above and the ground strip below."}
         </span>
       </div>
     </div>

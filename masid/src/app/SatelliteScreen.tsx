@@ -26,7 +26,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Circle, CircleMarker, LayersControl, ScaleControl } from "react-leaflet";
 import {
   AlertTriangle, Search, Satellite as SatIcon, ExternalLink, Check, Eye,
-  Download, ChevronRight,
+  Download, ChevronRight, X,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -58,6 +58,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("value");
   const [unreviewedOnly, setUnreviewedOnly] = useState(false);
+  const [town, setTown] = useState("");
   // Empty rather than assessed[0]: with no explicit pick, the selection falls
   // through to the top of the SORTED list below. Seeding it from the unsorted
   // array landed you on a contract sitting somewhere off-screen in the sidebar.
@@ -84,9 +85,17 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
    * default: if only forty get reviewed, they should be the forty carrying the
    * most public money, not the forty whose contract ids sort first.
    */
+  /** Towns that actually have assessed sites, with counts. */
+  const towns = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const { p } of assessed) m.set(p.municipality, (m.get(p.municipality) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [assessed]);
+
   const list = useMemo(() => {
     const out = assessed.filter(({ r, p }) =>
       (verdicts.size === 0 || verdicts.has(r.verdict)) &&
+      (!town || p.municipality === town) &&
       (!unreviewedOnly || !reviews[r.id]) &&
       (!q || `${p.id} ${p.municipality} ${p.description}`.toLowerCase().includes(q.toLowerCase()))
     );
@@ -96,7 +105,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
       : sort === "clear" ? b.r.cloudFreeFraction - a.r.cloudFreeFraction
       : sort === "verdict" ? byVerdict(a.r.verdict) - byVerdict(b.r.verdict) || value(b.p) - value(a.p)
       : a.p.id.localeCompare(b.p.id));
-  }, [assessed, verdicts, q, sort, unreviewedOnly, reviews]);
+  }, [assessed, verdicts, q, sort, unreviewedOnly, reviews, town]);
 
   const sel = assessed.find(x => x.r.id === selId) ?? list[0] ?? assessed[0];
   const cfg = sel ? VERDICT_CFG[sel.r.verdict] : null;
@@ -153,97 +162,152 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
 
   return (
     <div className="flex-1 flex overflow-hidden bg-gray-50">
-      {/* ── the assessed set, browsable ─────────────────────────────────── */}
+      {/* ── picking a site to inspect ───────────────────────────────────
+          Rebuilt around the person using it. This panel used to open with
+          review bookkeeping — a progress bar and a CSV export — before the
+          reader had chosen anything, and its primary filter was the DETECTOR
+          VERDICT: four chips reading "Change at point", "No signal", "Not
+          assessable". Filtering by that verdict is worse than useless, because
+          this project measured the tier and it cannot tell a flagged contract
+          from an ordinary one. Offering it first invited people to narrow by a
+          number that means nothing.
+
+          An inspector picks a site by WHERE it is, HOW BIG it is and WHETHER
+          ANYONE HAS LOOKED YET. Those are the controls now. The detector's own
+          categories are still reachable, folded away and carrying the warning.
+      ─────────────────────────────────────────────────────────────────── */}
       <aside className="w-72 shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <div className="px-4 py-3 border-b border-gray-100">
           <div className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
-            <SatIcon size={14} style={{ color: "#1e3a7b" }} />Assessed contracts
+            <SatIcon size={14} style={{ color: "#1e3a7b" }} />Pick a site to inspect
           </div>
           <div className="text-[11px] text-gray-500 mt-0.5">
-            {SATELLITE.coverage.assessed} of {SATELLITE.coverage.assessable.toLocaleString()} that could be assessed
-          </div>
-          {/* Review progress. The detector's own numbers are on the banner; this
-              is the count of sites a person has actually looked at. */}
-          <div className="mt-2.5">
-            <div className="flex items-center justify-between text-[11px] mb-1">
-              <span className="text-gray-500 flex items-center gap-1"><Eye size={11}/>Looked at by a person</span>
-              <span className="font-mono font-semibold text-gray-700">{reviewed}/{assessed.length}</span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all"
-                style={{ width: `${assessed.length ? (reviewed / assessed.length) * 100 : 0}%`, background: "#1e3a7b" }} />
-            </div>
-            <button onClick={exportCsv} disabled={reviewed === 0}
-              className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
-              <Download size={11}/>Export reviews (CSV)
-            </button>
+            {list.length.toLocaleString()} of {assessed.length} sites with imagery
           </div>
         </div>
 
-        <div className="px-4 py-2.5 border-b border-gray-100 space-y-2">
+        <div className="px-4 py-3 border-b border-gray-100 space-y-2.5">
           <div className="relative">
-            <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Contract or place…"
-              className="w-full pl-7 pr-3 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input value={q} onChange={e => setQ(e.target.value)}
+              placeholder="A town, a company, a contract…"
+              className="w-full pl-8 pr-7 py-2 text-[12px] border border-gray-200 rounded bg-gray-50 focus:outline-none focus:border-[#1e3a7b]" />
+            {q && <button onClick={() => setQ("")} aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={12}/></button>}
           </div>
-          <div className="flex flex-wrap gap-1">
-            {VERDICT_ORDER.map(v => {
-              const n = counts.get(v) ?? 0, on = verdicts.has(v);
-              return (
-                <button key={v} onClick={() => toggle(v)} disabled={n === 0}
-                  className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 whitespace-nowrap ${
-                    on ? "text-white" : n === 0 ? "border-gray-100 text-gray-300" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-                  style={on ? { background: VERDICT_CFG[v].color, borderColor: VERDICT_CFG[v].color } : undefined}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? "#fff" : accent(VERDICT_CFG[v].color) }} />
-                  {VERDICT_CFG[v].short}<span className="font-mono opacity-70">{n}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <select value={sort} onChange={e => setSort(e.target.value as Sort)}
-              className="flex-1 text-[11px] border border-gray-200 rounded px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
-              <option value="value">Largest contract first</option>
-              <option value="clear">Clearest imagery first</option>
-              <option value="verdict">Detector verdict</option>
-              <option value="id">Contract number</option>
-            </select>
-            <button onClick={() => setUnreviewedOnly(v => !v)}
-              title="Hide sites someone has already looked at"
-              className={`text-[11px] px-2 py-1.5 rounded border whitespace-nowrap ${
-                unreviewedOnly ? "bg-[#1e3a7b] text-white border-[#1e3a7b]" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-              To do
-            </button>
-          </div>
+
+          {/* Where. An inspection is a trip, and trips are planned by town. */}
+          <select value={town} onChange={e => setTown(e.target.value)}
+            className="w-full text-[12px] border border-gray-200 rounded px-2.5 py-2 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
+            <option value="">Every town ({assessed.length})</option>
+            {towns.map(([t, n]) => <option key={t} value={t}>{t} ({n})</option>)}
+          </select>
+
+          {/* Order. Plain sentences, not column names. */}
+          <select value={sort} onChange={e => setSort(e.target.value as Sort)}
+            className="w-full text-[12px] border border-gray-200 rounded px-2.5 py-2 bg-gray-50 text-gray-700 focus:outline-none focus:border-[#1e3a7b]">
+            <option value="value">Biggest contracts first</option>
+            <option value="clear">Clearest imagery first</option>
+            <option value="id">Contract number</option>
+            <option value="verdict">What the detector said</option>
+          </select>
+
+          <button onClick={() => setUnreviewedOnly(v => !v)}
+            aria-pressed={unreviewedOnly}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded border text-left transition-colors"
+            style={unreviewedOnly ? { background: tint("#1e3a7b", 12), borderColor: accent("#1e3a7b") } : { borderColor: "#e5e7eb" }}>
+            <span className="w-4 h-4 rounded border-2 flex items-center justify-center shrink-0"
+              style={unreviewedOnly ? { background: accent("#1e3a7b"), borderColor: accent("#1e3a7b") } : { borderColor: "#d1d5db" }}>
+              {unreviewedOnly && <Check size={9} color="#fff"/>}
+            </span>
+            <span className="text-[12px]" style={{ color: unreviewedOnly ? accent("#1e3a7b") : "#374151" }}>
+              Hide ones already looked at
+            </span>
+            <span className="ml-auto text-[10px] font-mono text-gray-400">{assessed.length - reviewed}</span>
+          </button>
+
+          {/* The detector's categories, folded away and labelled for what they
+              are worth. Reachable for an analyst; not offered to an inspector
+              as if it were a useful way to narrow a list. */}
+          <details>
+            <summary className="text-[11px] text-gray-500 cursor-pointer list-none select-none hover:text-gray-700">
+              ▸ Filter by what the detector said
+            </summary>
+            <div className="mt-2">
+              <p className="text-[10px] leading-snug mb-1.5" style={{ color: accent("#c0272d") }}>
+                The detector does not discriminate — it fires on ordinary contracts at the same rate.
+                Narrowing by it selects nothing meaningful.
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {VERDICT_ORDER.map(v => {
+                  const n = counts.get(v) ?? 0, on = verdicts.has(v);
+                  return (
+                    <button key={v} onClick={() => toggle(v)} disabled={n === 0}
+                      className={`text-[10px] px-2 py-1 rounded-full border flex items-center gap-1 whitespace-nowrap ${
+                        on ? "text-white" : n === 0 ? "border-gray-100 text-gray-300" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                      style={on ? { background: VERDICT_CFG[v].color, borderColor: VERDICT_CFG[v].color } : undefined}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: on ? "#fff" : accent(VERDICT_CFG[v].color) }} />
+                      {VERDICT_CFG[v].short}<span className="font-mono opacity-70">{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
         </div>
 
+        {/* The list. Place first, because that is how a site is recognised. */}
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-          {list.map(({ r, p }) => (
-            <button key={r.id} onClick={() => setSelId(r.id)}
-              className={`w-full text-left px-4 py-2.5 border-b border-gray-50 hover:bg-gray-50 ${
-                r.id === sel?.r.id ? "bg-blue-50" : ""}`}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent(VERDICT_CFG[r.verdict].color) }} />
-                <span className="text-[11px] font-mono text-gray-500">{r.id}</span>
-                {reviews[r.id] && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
-                    style={{ background: tint(EYE_CFG[reviews[r.id].verdict].color), color: accent(EYE_CFG[reviews[r.id].verdict].color) }}
-                    title={`Looked at: ${EYE_CFG[reviews[r.id].verdict].label}`}>
-                    <Check size={8}/>{EYE_CFG[reviews[r.id].verdict].short}
+          {list.map(({ r, p }) => {
+            const mine = reviews[r.id];
+            return (
+              <button key={r.id} onClick={() => setSelId(r.id)}
+                className={`w-full text-left px-4 py-2.5 border-b border-gray-50 hover:bg-gray-50 ${
+                  r.id === sel?.r.id ? "bg-blue-50" : ""}`}>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[12px] font-semibold text-gray-800">{p.municipality}</span>
+                  <span className="ml-auto text-[11px] font-mono font-semibold text-gray-600 shrink-0">
+                    {value(p) ? `₱${(value(p) / 1e6).toFixed(0)}M` : "—"}
                   </span>
-                )}
-                <span className="ml-auto text-[10px] font-mono text-gray-400 shrink-0">
-                  {value(p) ? `₱${(value(p) / 1e6).toFixed(0)}M` : `${Math.round(r.cloudFreeFraction * 100)}%`}
-                </span>
-              </div>
-              <div className="text-[11px] text-gray-700 mt-1 leading-tight">{p.municipality} · {p.description.slice(0, 46)}…</div>
-            </button>
-          ))}
+                </div>
+                <div className="text-[11px] text-gray-600 leading-tight mt-0.5">
+                  {(p as unknown as { structureType?: string | null }).structureType ?? p.description.slice(0, 40)}
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-[10px] font-mono text-gray-400">{r.id}</span>
+                  {mine && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5"
+                      style={{ background: tint(EYE_CFG[mine.verdict].color), color: accent(EYE_CFG[mine.verdict].color) }}
+                      title={`Looked at: ${EYE_CFG[mine.verdict].label}`}>
+                      <Check size={8}/>{EYE_CFG[mine.verdict].short}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
           {list.length === 0 && (
             <div className="px-4 py-8 text-center text-[12px] text-gray-400">
               {unreviewedOnly && reviewed > 0 ? "Everything matching has been looked at." : "Nothing matches"}
             </div>
           )}
+        </div>
+
+        {/* Bookkeeping, at the bottom where it belongs — it is a record of work
+            done, not a control for choosing what to do next. */}
+        <div className="px-4 py-2.5 border-t border-gray-100">
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="text-gray-500 flex items-center gap-1"><Eye size={11}/>Looked at by a person</span>
+            <span className="font-mono font-semibold text-gray-700">{reviewed}/{assessed.length}</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all"
+              style={{ width: `${assessed.length ? (reviewed / assessed.length) * 100 : 0}%`, background: "#1e3a7b" }} />
+          </div>
+          <button onClick={exportCsv} disabled={reviewed === 0}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+            <Download size={11}/>Export reviews (CSV)
+          </button>
         </div>
       </aside>
 
