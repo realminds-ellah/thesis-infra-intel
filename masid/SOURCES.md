@@ -808,3 +808,71 @@ npm run dev
 
 Source files cache to `data/` (untracked; 24 MB parquet + 532 MB boundary
 GeoJSON) and are downloaded once. Regenerated outputs land in `src/app/data/`.
+
+---
+
+## 5. OpenStreetMap waterways
+
+| | |
+|---|---|
+| **Dataset** | `waterway=river\|stream\|canal\|drain` over 14.65–15.10 N, 120.60–121.10 E |
+| **Access** | Overpass API — `overpass.kumi.systems`, falling back to `overpass-api.de` and `overpass.private.coffee` |
+| **Licence** | ODbL 1.0 — © OpenStreetMap contributors |
+| **Size** | 5,062 channels, 101,206 vertices |
+| **Pipeline** | `pipeline/scope.py` → `src/app/data/scope.json` (218 KB) |
+
+**What it is used for.** The register publishes one point per contract and, for
+some, a stated length — but never a direction. Flood-control work follows a
+watercourse, so the direction can be looked up rather than guessed: each
+contract's point is projected onto the nearest mapped channel, half the stated
+length is walked along it in each direction, and that stretch is buffered into a
+corridor.
+
+**Fields shipped:** geometry only, plus the matched channel's `name` and
+`waterway` class. No other OSM tags are carried.
+
+**Coverage:** 219 corridors, the ceiling being the 220 contracts that state a
+length. 15 distinct channels across 12 municipalities — Angat River 63,
+unnamed river 48, Balagtas River 33, unnamed stream 33, Santa Maria River 17,
+Guiguinto River 10, Tabang River 7, and nine others with one each.
+
+**This is an inference and the app labels it as one.** Three specific limits,
+all disclosed in the interface:
+
+- The work may be on **one bank**; the corridor covers both, because which bank
+  is not published either.
+- The **nearest** channel may not be the one the contract names. The channel's
+  name and the distance to it are both shown so a reader can check that against
+  the description themselves — and **34 corridors were derived from a channel
+  more than 100 m away**, which the panel flags in red.
+- Where the mapped channel runs out, the corridor is **truncated** and says so.
+  This affected 16 contracts.
+
+Where no channel is within 500 m, or the contract states no length, **no polygon
+is drawn** — the panel reads "Stated extent — not published" rather than showing
+a shape the record cannot support.
+
+---
+
+## 6. Esri World Imagery Wayback
+
+| | |
+|---|---|
+| **Catalogue** | `config.maptiles.arcgis.com/waybackconfig.json` — 196 dated releases, 2014-02 → present |
+| **Tiles** | `wayback.maptiles.arcgis.com/.../MapServer/tile/{release}/{z}/{row}/{col}` |
+| **Metadata** | per-release metadata layer, queried by point for flight date, resolution, accuracy, provider |
+| **Attribution** | Imagery © Esri, Maxar, Earthstar Geographics |
+| **Pipeline** | `pipeline/wayback.py` → `src/app/data/wayback.json` |
+
+Tiles are **served live to the browser and never redistributed** by this project.
+Anything published beyond research should be checked against Esri's current terms.
+
+**How a version is found.** Requesting a tile for release *N* returns `301`
+redirecting to whichever release actually holds imagery for that tile; most of
+the 196 have never re-flown Bulacan. Following the redirects collapses them to
+28 — and reading the acquisition metadata collapses those 28 to **six actual
+photographs**. See FINDINGS.md §4.
+
+**Resolution ceiling:** the metadata reports `MaxMapLevel 19` and zoom 20 returns
+HTTP 404. Native sampling is 0.3 m/px. Positional accuracy at the sampled point
+is ±8.47 m.

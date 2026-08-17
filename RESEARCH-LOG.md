@@ -141,4 +141,25 @@ reaching the vulnerable?*
 
 `README` · `SIGNIFICANCE` (Topic 1) · `FUSION` (Topic 1 upgrade) · `IDEAS` (first pass) ·
 `TOPIC-BANK` (emerging-tech top 10) · `RESEARCH-LOG` (this file) · `criteria.yaml` ·
-`audit.py` · `power/` (de-risking).
+`audit.py` · `power/` (de-risking) · **`FINDINGS`** (what the built system measured) ·
+`DEMO-SCRIPT` (5-minute walkthrough) · `masid/` (the app) · `masid/SOURCES` (every dataset and its limits).
+
+---
+
+## Findings from the built system
+
+Recorded in **`FINDINGS.md`**, measured rather than asserted. The one that most
+changes the thesis argument:
+
+**83% of flood-control contracts publish no dimension of any kind.** 1,069 of
+1,293 state no length, area or volume — only 186 of them contain a digit at all,
+and six length formats plus the detail export's `components` array were tested
+before concluding it. You cannot tell from the public record whether a ₱96
+million contract built fifty metres or two kilometres.
+
+This is upstream of every other limitation in the project: no dimension means no
+quantity to check imagery against, no unit-cost comparison, and no way to tell a
+repair from a major work at the same price. Together with the 102 contracts that
+publish no coordinate, most of this register cannot be checked against the ground
+even in principle — which is a direct answer to *why* delivery monitoring needs
+the DPWH and PhilSA data requests rather than a cleverer method.
