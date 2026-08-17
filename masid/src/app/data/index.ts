@@ -7,6 +7,7 @@
 import projectsRaw from "./projects.json";
 import contractorsRaw from "./contractors.json";
 import boundariesRaw from "./boundaries.json";
+import scopeRaw from "./scope.json";
 import satelliteRaw from "./satellite.json";
 import procurementRaw from "./procurement.json";
 import hazardRaw from "./hazard.json";
@@ -598,3 +599,35 @@ function fmtDate(d: string): string {
   return Number.isNaN(t.getTime()) ? d
     : t.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
+
+
+// ─── Contract scope corridors ─────────────────────────────────────────────────
+/**
+ * The ground each contract claims to cover, as a polygon following the
+ * watercourse it runs along. Built by pipeline/scope.py.
+ *
+ * An INFERENCE, and every consumer must present it as one: the register gives a
+ * point and a length but no direction and no bank, so the direction comes from
+ * OpenStreetMap channel geometry rather than from DPWH. `metresToWaterway` is
+ * the check on it — a corridor derived from a channel 300 m away is a much
+ * weaker claim than one derived from a channel the point sits on, and a
+ * flood-control coordinate that far from water is worth noticing on its own.
+ */
+export interface ScopeCorridor {
+  id: string;
+  lengthMetres: number;
+  coveredMetres: number;
+  metresToWaterway: number;
+  waterwayName: string | null;
+  waterwayClass: string | null;
+  ring: [number, number][];
+}
+
+export const SCOPE = scopeRaw as unknown as {
+  generated: string; source: string; licence: string; method: string;
+  searchRadiusMetres: number;
+  counts: { corridors: number; noChannel: number; truncated: number; over100mFromWater: number };
+  corridors: ScopeCorridor[];
+};
+
+export const SCOPE_BY_ID = new Map(SCOPE.corridors.map(c => [c.id, c]));

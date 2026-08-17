@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import {
+  SCOPE_BY_ID,
   PROJECTS, CONTRACTORS, META, MUNI_BREAKDOWN, STATUS_PIE, BUDGET_BY_YEAR,
   FLAG_BREAKDOWN, FLAGGED_VALUE, MAP_BOUNDS, FLAG_LABELS, SEVERITY_CFG,
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
@@ -1256,6 +1257,28 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
                 ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
                 : <span className="text-gray-400">not published</span>}/>
+            {/* What the yellow shape on the map is, and how far to trust it. The
+                corridor's direction comes from OSM channel geometry, not from
+                DPWH, so the channel it was derived from is named and the
+                distance to it is given — a corridor built off a channel 300 m
+                away is a much weaker claim than one the point sits on. */}
+            {(()=>{const sc=SCOPE_BY_ID.get(project.id); if(!sc) return null;
+              const weak=sc.metresToWaterway>100;
+              return (
+                <div className="col-span-2 mt-1 rounded border px-2.5 py-2 text-[11px] leading-relaxed"
+                  style={{background:tint("#b45309",10),borderColor:tint("#b45309",34),color:"var(--color-gray-700)"}}>
+                  <strong>The yellow shape is an estimate.</strong> {sc.coveredMetres.toLocaleString()} m
+                  along {sc.waterwayName?<>the <strong>{sc.waterwayName}</strong></>:<>an unnamed {sc.waterwayClass??"channel"}</>},
+                  centred on the published point. The register gives a length but no direction, so the
+                  line of it comes from OpenStreetMap, not from DPWH.
+                  <div className="mt-1" style={{color:weak?accent("#c0272d"):"var(--color-gray-500)"}}>
+                    {weak
+                      ? `The nearest mapped channel is ${sc.metresToWaterway} m away — far enough that this corridor may follow the wrong watercourse, and far enough to be worth asking about on its own.`
+                      : `Nearest mapped channel is ${sc.metresToWaterway} m from the point.`}
+                    {sc.coveredMetres<sc.lengthMetres-20&&` The mapped channel ran out, so ${sc.coveredMetres} m of the stated ${sc.lengthMetres} m is drawn.`}
+                  </div>
+                </div>
+              );})()}
             <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
           </Section>
 

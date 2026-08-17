@@ -14,10 +14,10 @@
  */
 
 import { useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, LayersControl, ScaleControl, Circle } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, LayersControl, ScaleControl, Circle, Polygon } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { PROJECTS, type Project } from "./data";
+import { PROJECTS, SCOPE_BY_ID, type Project } from "./data";
 import { colorOf, type Encoding } from "./mapColor";
 
 export function ProjectMap({
@@ -30,6 +30,8 @@ export function ProjectMap({
 }) {
   // Half the stated length: the contract's own claim about how much ground it
   // covers, in metres, or null when the description states no chainage.
+  const scope = SCOPE_BY_ID.get(project.id) ?? null;
+
   const scopeRadius = (() => {
     const m = (project as unknown as { lengthMetres?: number | null }).lengthMetres;
     return m && m > 0 ? m / 2 : null;
@@ -71,25 +73,21 @@ export function ProjectMap({
       {/*
         HOW MUCH GROUND THE CONTRACT CLAIMS TO COVER.
 
-        224 contracts state chainage limits in their description — "STA 0+000 to
-        STA 0+780" — which is 780 m of work. A single dot says nothing about
-        whether that is a 30 m repair or a two-kilometre stretch, and the
-        difference is most of what "is this plausible" depends on.
+        A corridor along the watercourse, exactly as long as the contract says,
+        centred on the published point. The direction is not in the register —
+        it comes from OpenStreetMap channel geometry — which is why this is drawn
+        as an inference and captioned as one wherever it appears.
 
-        Drawn as a CIRCLE of half the stated length, not a line, and that is a
-        deliberate limit rather than a shortcut: the register publishes one point
-        and no bearing. Which way the 780 m runs is not in the record, so drawing
-        it as a line in a chosen direction would be inventing the one fact the
-        shape appears to assert. A circle says "this much ground, somewhere around
-        here", which is exactly what is known.
-
-        Where two of these overlap, two contracts claim overlapping ground — the
-        "built more than once" question, drawn instead of buried in a flag.
+        The circle is the fallback for contracts whose nearest channel is beyond
+        reach: same stated length, no claim about direction.
       */}
-      {scopeRadius && (
+      {scope ? (
+        <Polygon positions={scope.ring.map(([lng, lat]) => [lat, lng] as [number, number])}
+          pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.95, fillColor: "#f7c948", fillOpacity: 0.18 }} />
+      ) : scopeRadius ? (
         <Circle center={[project.lat, project.lng]} radius={scopeRadius}
-          pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10 }} />
-      )}
+          pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10, dashArray: "5 4" }} />
+      ) : null}
 
       {near.map(p => (
         <CircleMarker key={p.id} center={[p.lat, p.lng]} radius={4}

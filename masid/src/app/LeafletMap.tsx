@@ -24,7 +24,7 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { BOUNDARIES, META, type Project } from "./data";
+import { BOUNDARIES, META, SCOPE_BY_ID, type Project } from "./data";
 import { colorOf, type Encoding } from "./mapColor";
 
 const BULACAN_CENTRE: [number, number] = [14.86, 120.83];
@@ -207,10 +207,16 @@ export function LeafletMap({
           publishes a point and no bearing. */}
       {(() => {
         const sel = mappable.find(p => p.id === selectedId);
-        const m = sel && (sel as unknown as { lengthMetres?: number | null }).lengthMetres;
-        return sel && m && m > 0 ? (
+        if (!sel) return null;
+        const sc = SCOPE_BY_ID.get(sel.id);
+        if (sc) return (
+          <Polygon positions={sc.ring.map(([lng, lat]) => [lat, lng] as [number, number])}
+            pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.95, fillColor: "#f7c948", fillOpacity: 0.18 }} />
+        );
+        const m = (sel as unknown as { lengthMetres?: number | null }).lengthMetres;
+        return m && m > 0 ? (
           <Circle center={[sel.lat, sel.lng]} radius={m / 2}
-            pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10 }} />
+            pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10, dashArray: "5 4" }} />
         ) : null;
       })()}
 
