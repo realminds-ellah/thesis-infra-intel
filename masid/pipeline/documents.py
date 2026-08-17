@@ -82,6 +82,9 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+import threading
+import time
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from hashlib import sha1
@@ -106,6 +109,16 @@ MAX_PAGES = 8
 # states the share, rather than either hiding a real partial result or dressing
 # it up as the full Bill of Quantities.
 MIN_COVERAGE = 0.35
+
+# dcs.infrawatch.ph is a volunteer-run civic mirror, not a CDN. OCR wants every
+# core, but pointing eight of them at someone else's server for 1,177 files is
+# roughly sixteen requests a second from one client, which is rude and is the
+# kind of thing that gets a public archive taken down. Fetching is serialised
+# behind a lock with a small gap; it costs almost nothing in wall clock because
+# a fetch is 0.5 s against 12 s of OCR, and it keeps this a good citizen of the
+# archive it depends on.
+FETCH_LOCK = threading.Lock()
+FETCH_GAP_S = 0.35
 
 try:
     import certifi
@@ -184,15 +197,22 @@ def classify(description: str, code: str | None) -> str:
 
 # ── fetch + OCR ──────────────────────────────────────────────────────────────
 def fetch(url: str) -> Path | None:
-    """Cached by URL hash. These are large scans; never fetch one twice."""
+    """
+    Cached by URL hash. These are large scans; never fetch one twice.
+
+    The cache check is outside the lock so a warm run never serialises, and only
+    an actual network round trip waits its turn.
+    """
     CACHE.mkdir(parents=True, exist_ok=True)
     dest = CACHE / (sha1(url.encode()).hexdigest() + ".pdf")
     if dest.exists() and dest.stat().st_size > 1000:
         return dest
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "masid-thesis/1.0"})
-        with urllib.request.urlopen(req, timeout=90, context=SSL_CTX) as r:
-            data = r.read()
+        with FETCH_LOCK:
+            req = urllib.request.Request(url, headers={"User-Agent": "masid-thesis/1.0"})
+            with urllib.request.urlopen(req, timeout=90, context=SSL_CTX) as r:
+                data = r.read()
+            time.sleep(FETCH_GAP_S)
         if len(data) < 1000:
             return None
         dest.write_bytes(data)
@@ -283,14 +303,36 @@ ITEM = re.compile(
 
 
 def num(s: str) -> float | None:
+    """
+    Parse a peso figure out of OCR.
+
+    THE DECIMAL POINT IS THE WHOLE PROBLEM. On the full corpus this was the
+    single largest source of error: a printed "4,850,890.09" is read back as
+    "4,850,890,09" often enough that stripping commas blindly turned it into
+    485,089,009 — exactly a hundred times too big. Four of the six visible
+    mismatches in the first full run were that, to the centavo.
+
+    So the LAST separator is decided on shape rather than on character: if
+    exactly two digits follow it, it is the decimal point, whether OCR rendered
+    it as a dot or a comma. Every earlier separator is a thousands mark and goes.
+    """
     if not s:
         return None
-    t = re.sub(r"[,\s]", "", s.strip())
-    # A trailing group of exactly two digits after the last dot is the centavos;
-    # any other dot in an OCR'd figure is noise from the table rule.
-    if t.count(".") > 1:
-        head, _, tail = t.rpartition(".")
-        t = head.replace(".", "") + "." + tail
+    t = re.sub(r"\s", "", s.strip())
+    m = re.search(r"[.,](\d{2})$", t)
+    if m:
+        head = t[: m.start()]
+        return _f(re.sub(r"[.,]", "", head) + "." + m.group(1))
+    # No two-digit tail: a whole-peso figure, so every separator is a thousands
+    # mark — unless a single dot has 1 or 3+ digits after it, which is a real
+    # decimal the printer chose not to pad.
+    if t.count(".") == 1 and not re.search(r"\.\d{3}$", t):
+        head, _, tail = t.partition(".")
+        return _f(head.replace(",", "") + "." + tail)
+    return _f(re.sub(r"[.,]", "", t))
+
+
+def _f(t: str) -> float | None:
     try:
         return float(t)
     except ValueError:
@@ -384,23 +426,68 @@ def main() -> int:
         todo = todo[: args.limit]
     print(f"reading {len(todo)} contract agreements at {DPI} dpi…")
 
+    done = 0
+    started = time.time()
+    fails: Counter[str] = Counter()
+    lock = threading.Lock()
+
     def one(r: dict) -> dict | None:
-        pdf = fetch(r["documents"]["contractAgreement"])
-        if not pdf:
-            return None
+        """
+        Returns the extraction, or None having recorded WHY.
+
+        The sample run had 19 of 30 documents yield nothing and the cause was
+        never established, which made the failure rate uninterpretable — a
+        document with no Bill of Quantities in it and a document whose table the
+        parser could not read are very different facts. Every exit is counted.
+        """
+        nonlocal done
+        outcome = "ok"
+        result: dict | None = None
         try:
-            text = ocr(pdf)
-        except Exception:
-            return None
-        items = parse_boq(text)
-        if not items:
-            return None
+            pdf = fetch(r["documents"]["contractAgreement"])
+            if not pdf:
+                outcome = "fetch failed"
+                return None
+            try:
+                text = ocr(pdf)
+            except subprocess.TimeoutExpired:
+                outcome = "OCR timed out"
+                return None
+            except Exception:
+                outcome = "OCR failed"
+                return None
+            if len(text.strip()) < 200:
+                outcome = "no text recovered"
+                return None
+            items = parse_boq(text)
+            if not items:
+                outcome = "text but no parsable rows"
+                return None
+            result = build(r, text, items)
+            return result
+        finally:
+            with lock:
+                done += 1
+                if outcome != "ok":
+                    fails[outcome] += 1
+                if done % 25 == 0 or done == len(todo):
+                    el = time.time() - started
+                    rate = done / el if el else 0
+                    left = (len(todo) - done) / rate if rate else 0
+                    print(f"  {done}/{len(todo)}  {el/60:.1f} min elapsed, "
+                          f"~{left/60:.0f} min left", file=sys.stderr, flush=True)
+
+    def build(r: dict, text: str, items: list[dict]) -> dict:
         total = round(sum(i["amount"] for i in items), 2)
         by_vis: dict[str, float] = {}
         for i in items:
             by_vis[i["visibility"]] = round(by_vis.get(i["visibility"], 0) + i["amount"], 2)
         stated = stated_price(text)
         award = r.get("awardAmount")
+        # A measured length or area in the paper for a contract whose published
+        # description carries no dimension at all. This is the 83% gap closing,
+        # counted per contract rather than asserted.
+        linear = [i for i in items if i["unit"] and re.search(r"\bm\b|\bl\.?m|met", i["unit"], re.I)]
         return {
             "id": r["id"],
             # How much of the contract the parsed rows actually account for.
@@ -414,12 +501,69 @@ def main() -> int:
             "statedTotal": stated,
             "awardAmount": r.get("awardAmount"),
             "byVisibility": by_vis,
+            "hasMeasuredQuantity": bool(linear),
         }
 
+    def write_out(got: list[dict], partial: bool = False) -> None:
+        """
+        Emit the file. Called periodically as well as at the end, so an hour of
+        work is not lost to a crash at 90% — the OCR cache makes a re-run cheap
+        but the aggregation is not free.
+        """
+        checked = [g for g in got if g["statedTotal"] and g["awardAmount"]]
+        exact = [g for g in checked if abs(g["statedTotal"] - g["awardAmount"]) < 1.0]
+        agg: dict[str, float] = {}
+        for g in got:
+            for k, v in g["byVisibility"].items():
+                agg[k] = agg.get(k, 0) + v
+        cov = sorted(g["coverage"] for g in got if g.get("coverage"))
+        recovered = [g for g in got
+                     if g.get("hasMeasuredQuantity")
+                     and not (by_id.get(g["id"], {}) or {}).get("lengthMetres")]
+        no_dim = [r for r in todo if not (by_id.get(r["id"], {}) or {}).get("lengthMetres")]
+        shown = [g for g in got if (g.get("coverage") or 0) >= MIN_COVERAGE]
+        OUT.write_text(json.dumps({
+            "generated": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "partial": partial,
+            "source": "DPWH contract agreements (scanned PDFs) via dcs.infrawatch.ph",
+            "method": (f"pdftoppm at {DPI} dpi then tesseract --psm 6, twice: plain text and a "
+                       "second pass reconstructing rows from word coordinates, unioned. No vision "
+                       "model and no API key — these scans are readable by ordinary OCR, which "
+                       "keeps the tier free, offline and reproducible."),
+            "visibilityNote": VISIBILITY_NOTE,
+            "minCoverage": MIN_COVERAGE,
+            "corpus": {
+                "documentsAttempted": len(todo),
+                "withBoQ": len(got),
+                "shownInApp": len(shown),
+                "priceReadable": len(checked),
+                "priceExact": len(exact),
+                "coverageMedian": cov[len(cov) // 2] if cov else None,
+                "coverageBest": cov[-1] if cov else None,
+                "contractsWithNoPublishedDimension": len(no_dim),
+                "dimensionRecovered": len(recovered),
+                "failures": dict(fails),
+            },
+            "aggregateByVisibility": {k: round(v, 2) for k, v in agg.items()},
+            # Only what the app will display, so the bundle stays small; the
+            # corpus figures above describe the whole run.
+            "contracts": shown,
+        }, indent=1) + "\n")
+
+    got: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
-        got = [x for x in ex.map(one, todo) if x]
+        for res in ex.map(one, todo):
+            if res:
+                got.append(res)
+                if len(got) % 50 == 0:
+                    write_out(got, partial=True)
+    write_out(got)
 
     print(f"  {len(got)} of {len(todo)} yielded a Bill of Quantities")
+    if fails:
+        print("  why the rest produced nothing:")
+        for reason, n in fails.most_common():
+            print(f"    {n:>5}  {reason}")
 
     # ── the free evaluation ──────────────────────────────────────────────────
     checked = [g for g in got if g["statedTotal"] and g["awardAmount"]]
@@ -462,22 +606,6 @@ def main() -> int:
     print(f"\ncontracts with no length in the description that DO carry "
           f"measured quantities in the paper: {len(recovered)} of {len(got)}")
 
-    OUT.write_text(json.dumps({
-        "generated": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "source": "DPWH contract agreements (scanned PDFs) via dcs.infrawatch.ph",
-        "method": (f"pdftoppm at {DPI} dpi then tesseract --psm 6. No vision model and no "
-                   "API key: these scans are readable by ordinary OCR, which keeps the tier "
-                   "free, offline and reproducible."),
-        "visibilityNote": VISIBILITY_NOTE,
-        "minCoverage": MIN_COVERAGE,
-        "accuracy": {
-            "read": len(got), "priceReadable": len(checked), "priceExact": len(exact),
-            "coverageMedian": round(sorted(cov)[len(cov) // 2], 3) if cov else None,
-            "usable": len(usable),
-        },
-        "aggregateByVisibility": {k: round(v, 2) for k, v in agg.items()},
-        "contracts": got,
-    }, indent=1) + "\n")
     print(f"\nwrote {OUT.relative_to(ROOT)}")
     return 0
 

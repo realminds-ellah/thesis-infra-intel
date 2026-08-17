@@ -40,6 +40,57 @@ against the ground even in principle.
 **Scope corridors are limited by this, not by the method.** 219 corridors were
 built — the ceiling is 220, because that is how many contracts state a length.
 
+### What the documents turned out to hold — the whole corpus, read
+
+The dimensions are not missing from the record. They are published in a form
+nothing could read. All **1,237 contract agreements** were fetched, rasterised at
+300 dpi and OCR'd (`pipeline/documents.py`, 43 minutes, ordinary `tesseract` —
+no vision model and no API key).
+
+| | |
+|---|---|
+| Documents attempted | 1,237 |
+| Genuinely unreadable — no text, or fetch failed | **22 (1.8%)** |
+| Yielded a parsable Bill of Quantities | **419 (34%)** |
+| Text recovered but the table defeated the parser | **796 (64%)** |
+| Contract price read and matched against the register | **352 / 362 = 97.2%** |
+| **Contracts with no published dimension that DO carry a measured quantity in the paper** | **209 of 1,015 (21%)** |
+
+Two things follow, and they pull in opposite directions.
+
+**The information exists.** A fifth of the contracts whose description states no
+size do state one inside the scan. That is not a gap in the record; it is a gap
+in what the record can be read with.
+
+**And the barrier is now precisely located.** Only 1.8% of documents are
+genuinely unreadable. **64% produce text and defeat the table parser** — the
+tables are the obstacle, not the scans. Parse completeness runs at a median of
+18% of contract value, best 86%, and never reaches 90%. That is the honest
+measure, since a Bill of Quantities sums to the contract price by construction.
+
+*A correction worth recording: the first full run reported 92.3% price accuracy.
+Inspecting the mismatches showed a single cause — a printed `4,850,890.09` OCR'd
+as `4,850,890,09`, so stripping commas made it exactly a hundred times too big.
+Deciding the decimal separator by shape rather than by character took accuracy
+to 97.2% and raised the BoQ yield from 330 to 419.*
+
+### How much of a contract any camera can check
+
+Every pay item was classified by whether it survives to be photographed, across
+all 419 contracts read:
+
+| share of read value | |
+|---|---|
+| **0.1%** | visible from above or from beside it |
+| **32.7%** | outline visible only — structural concrete, where thickness and volume are not |
+| **67.1%** | **invisible to any camera** — excavation and embankment backfilled (65.8%), reinforcing steel cast in (1.3%) |
+
+**This is not a resolution limit and no satellite fixes it.** Two thirds of what
+is paid for is underneath or inside the finished structure. Remote monitoring of
+flood-control delivery can establish *existence and footprint* and cannot
+establish *quantity* — which is a finding about the ceiling on this whole
+approach, not a shortcoming of any one method.
+
 ---
 
 ## 2. This office awards at exactly 96.00% of the approved budget far more often than the country does

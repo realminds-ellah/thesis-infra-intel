@@ -1,7 +1,8 @@
 {
- "generated": "2026-08-17T16:55:56Z",
+ "generated": "2026-08-17T17:52:00Z",
+ "partial": false,
  "source": "DPWH contract agreements (scanned PDFs) via dcs.infrawatch.ph",
- "method": "pdftoppm at 300 dpi then tesseract --psm 6. No vision model and no API key: these scans are readable by ordinary OCR, which keeps the tier free, offline and reproducible.",
+ "method": "pdftoppm at 300 dpi then tesseract --psm 6, twice: plain text and a second pass reconstructing rows from word coordinates, unioned. No vision model and no API key \u2014 these scans are readable by ordinary OCR, which keeps the tier free, offline and reproducible.",
  "visibilityNote": {
   "surface": "at the surface when finished \u2014 measurable in 0.3 m imagery",
   "footprint": "outline visible from above; thickness and volume are not",
@@ -12,17 +13,29 @@
   "none": "not a physical work item"
  },
  "minCoverage": 0.35,
- "accuracy": {
-  "read": 11,
-  "priceReadable": 10,
-  "priceExact": 10,
-  "coverageMedian": 0.624,
-  "usable": 0
+ "corpus": {
+  "documentsAttempted": 1237,
+  "withBoQ": 419,
+  "shownInApp": 101,
+  "priceReadable": 362,
+  "priceExact": 352,
+  "coverageMedian": 0.175,
+  "coverageBest": 0.862,
+  "contractsWithNoPublishedDimension": 1015,
+  "dimensionRecovered": 209,
+  "failures": {
+   "text but no parsable rows": 796,
+   "no text recovered": 18,
+   "fetch failed": 4
+  }
  },
  "aggregateByVisibility": {
-  "buried": 202151847.81,
-  "inside": 22299259.5,
-  "footprint": 442461215.66
+  "buried": 3678029316.64,
+  "inside": 71292106.51,
+  "footprint": 1830446193.69,
+  "gone": 1197135.46,
+  "ground": 6553814.4,
+  "none": 2355457.84
  },
  "contracts": [
   {
@@ -37,19 +50,38 @@
      "unitPrice": 3744.0,
      "amount": 130762944.0,
      "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "ous 1701(4) [sete Excavation [oso 6,322.98 | cu.m. [ mente| 426.00 \u2014rersese",
+     "quantity": 2.69,
+     "unit": null,
+     "unitPrice": 3.58,
+     "amount": 9.48,
+     "visibility": "buried"
     }
    ],
-   "boqTotal": 130762944.0,
+   "boqTotal": 130762953.48,
    "statedTotal": 209524421.84,
    "awardAmount": 209524421.8,
    "byVisibility": {
-    "buried": 130762944.0
-   }
+    "buried": 130762953.48
+   },
+   "hasMeasuredQuantity": true
   },
   {
    "id": "23CC0192",
    "coverage": 0.771,
    "items": [
+    {
+     "code": null,
+     "description": ") Furnitures/Fixtures,",
+     "quantity": 1.0,
+     "unit": null,
+     "unitPrice": 5.08,
+     "amount": 4.97,
+     "visibility": "footprint"
+    },
     {
      "code": null,
      "description": "al Protection)",
@@ -60,17 +92,27 @@
      "visibility": "footprint"
     }
    ],
-   "boqTotal": 107100358.56,
+   "boqTotal": 107100363.53,
    "statedTotal": 138918095.2,
    "awardAmount": 138918095.2,
    "byVisibility": {
-    "footprint": 107100358.56
-   }
+    "footprint": 107100363.53
+   },
+   "hasMeasuredQuantity": true
   },
   {
    "id": "23CC0191",
    "coverage": 0.771,
    "items": [
+    {
+     "code": null,
+     "description": ") Furnitures/Fixtures,",
+     "quantity": 1.0,
+     "unit": null,
+     "unitPrice": 5.07,
+     "amount": 4.72,
+     "visibility": "footprint"
+    },
     {
      "code": null,
      "description": "al Protection)",
@@ -81,17 +123,27 @@
      "visibility": "footprint"
     }
    ],
-   "boqTotal": 107097935.76,
+   "boqTotal": 107097940.48,
    "statedTotal": 138914412.14,
    "awardAmount": 138914412.1,
    "byVisibility": {
-    "footprint": 107097935.76
-   }
+    "footprint": 107097940.48
+   },
+   "hasMeasuredQuantity": true
   },
   {
    "id": "23CC0190",
    "coverage": 0.771,
    "items": [
+    {
+     "code": null,
+     "description": ") Furnitures/Fixtures,",
+     "quantity": 1.0,
+     "unit": null,
+     "unitPrice": 4.89,
+     "amount": 6.54,
+     "visibility": "footprint"
+    },
     {
      "code": null,
      "description": "al Protection)",
@@ -102,12 +154,13 @@
      "visibility": "footprint"
     }
    ],
-   "boqTotal": 107055052.2,
+   "boqTotal": 107055058.74,
    "statedTotal": 138858553.38,
    "awardAmount": 138858553.4,
    "byVisibility": {
-    "footprint": 107055052.2
-   }
+    "footprint": 107055058.74
+   },
+   "hasMeasuredQuantity": true
   },
   {
    "id": "23CC0193",
@@ -121,14 +174,24 @@
      "unitPrice": 4417.29,
      "amount": 107022102.12,
      "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "Pe 404(1)a_ | [Sem Grade 40 eie | 35,367.25 mn lan| kg. saan] 70.76 sansa",
+     "quantity": 2.5,
+     "unit": null,
+     "unitPrice": 2.58,
+     "amount": 6.61,
+     "visibility": "footprint"
     }
    ],
-   "boqTotal": 107022102.12,
+   "boqTotal": 107022108.73,
    "statedTotal": 138815993.57,
    "awardAmount": 138815993.6,
    "byVisibility": {
-    "footprint": 107022102.12
-   }
+    "footprint": 107022108.73
+   },
+   "hasMeasuredQuantity": true
   },
   {
    "id": "24CC0289",
@@ -149,7 +212,2692 @@
    "awardAmount": 95039699.28,
    "byVisibility": {
     "buried": 60924007.86
-   }
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0195",
+   "coverage": 0.645,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15768.0,
+     "unit": "meter",
+     "unitPrice": 3797.08,
+     "amount": 59872357.44,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 59872357.44,
+   "statedTotal": 92880172.91,
+   "awardAmount": 92880172.91,
+   "byVisibility": {
+    "buried": 59872357.44
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0246",
+   "coverage": 0.659,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 129.95,
+     "unit": "cubic meter",
+     "unitPrice": 9648.67,
+     "amount": 1253844.67,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15792.0,
+     "unit": "meter",
+     "unitPrice": 3793.59,
+     "amount": 59908373.28,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61162217.95,
+   "statedTotal": 92844782.5,
+   "awardAmount": 92844782.5,
+   "byVisibility": {
+    "footprint": 1253844.67,
+    "buried": 59908373.28
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0071",
+   "coverage": 0.65,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 144.48,
+     "unit": "cubic meter",
+     "unitPrice": 9857.9,
+     "amount": 1424269.39,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15516.0,
+     "unit": "meter",
+     "unitPrice": 3799.66,
+     "amount": 58955524.56,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 60379793.95,
+   "statedTotal": 92844587.53,
+   "awardAmount": 92844587.53,
+   "byVisibility": {
+    "footprint": 1424269.39,
+    "buried": 58955524.56
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0606",
+   "coverage": 0.662,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 126.96,
+     "unit": "cubic meter",
+     "unitPrice": 10169.77,
+     "amount": 1291154.0,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15813.0,
+     "unit": "meter",
+     "unitPrice": 3806.66,
+     "amount": 60194714.58,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61485868.58,
+   "statedTotal": 92830143.67,
+   "awardAmount": 92830143.67,
+   "byVisibility": {
+    "footprint": 1291154.0,
+    "buried": 60194714.58
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0605",
+   "coverage": 0.662,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 126.96,
+     "unit": "cubic meter",
+     "unitPrice": 10169.77,
+     "amount": 1291154.0,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15813.0,
+     "unit": "meter",
+     "unitPrice": 3806.66,
+     "amount": 60194714.58,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61485868.58,
+   "statedTotal": 92826409.41,
+   "awardAmount": 92826409.41,
+   "byVisibility": {
+    "footprint": 1291154.0,
+    "buried": 60194714.58
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0133",
+   "coverage": 0.64,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15660.0,
+     "unit": "meter",
+     "unitPrice": 3792.62,
+     "amount": 59392429.2,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 59392429.2,
+   "statedTotal": 92823238.32,
+   "awardAmount": 92823238.32,
+   "byVisibility": {
+    "buried": 59392429.2
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0592",
+   "coverage": 0.654,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 125.37,
+     "unit": "cubic meter",
+     "unitPrice": 9732.47,
+     "amount": 1220159.76,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15666.0,
+     "unit": "meter",
+     "unitPrice": 3794.58,
+     "amount": 59445890.28,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 60666050.04,
+   "statedTotal": 92818653.02,
+   "awardAmount": 92818653.02,
+   "byVisibility": {
+    "footprint": 1220159.76,
+    "buried": 59445890.28
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0588",
+   "coverage": 0.662,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 16152.0,
+     "unit": "meter",
+     "unitPrice": 3802.0,
+     "amount": 61409904.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61409904.0,
+   "statedTotal": 92815501.81,
+   "awardAmount": 92815501.81,
+   "byVisibility": {
+    "buried": 61409904.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0197",
+   "coverage": 0.675,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 113.58,
+     "unit": "cubic meter",
+     "unitPrice": 9885.47,
+     "amount": 1122791.68,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 16200.0,
+     "unit": "meter",
+     "unitPrice": 3800.25,
+     "amount": 61564050.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 62686841.68,
+   "statedTotal": 92815178.13,
+   "awardAmount": 92815178.13,
+   "byVisibility": {
+    "footprint": 1122791.68,
+    "buried": 61564050.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0329",
+   "coverage": 0.451,
+   "items": [
+    {
+     "code": "1047(7)Structural",
+     "description": "Steel",
+     "quantity": 1.0,
+     "unit": "sum",
+     "unitPrice": 3678161.1,
+     "amount": 3678161.1,
+     "visibility": "inside"
+    },
+    {
+     "code": "1725(1)capacity",
+     "description": "and below",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 12773341.95,
+     "amount": 12773341.95,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1726(2)Generator",
+     "description": "Set",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 16200111.71,
+     "amount": 16200111.71,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1726(3)Auxiliary",
+     "description": "Equipment)",
+     "quantity": 1.0,
+     "unit": "sum",
+     "unitPrice": 4773737.12,
+     "amount": 4773737.12,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1727(3)a",
+     "description": "chain hoist with trolley)",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 4398320.02,
+     "amount": 4398320.02,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 41823671.9,
+   "statedTotal": 92748245.71,
+   "awardAmount": 92748245.71,
+   "byVisibility": {
+    "inside": 3678161.1,
+    "footprint": 38145510.8
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0091",
+   "coverage": 0.651,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15897.0,
+     "unit": "meter",
+     "unitPrice": 3795.81,
+     "amount": 60341991.57,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 60341991.57,
+   "statedTotal": 92736595.39,
+   "awardAmount": 92736595.39,
+   "byVisibility": {
+    "buried": 60341991.57
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0327",
+   "coverage": 0.487,
+   "items": [
+    {
+     "code": "1716(23)a1",
+     "description": "10mm thick",
+     "quantity": 336.0,
+     "unit": "meter",
+     "unitPrice": 20691.16,
+     "amount": 6952229.76,
+     "visibility": "buried"
+    },
+    {
+     "code": "1725(1)capacity",
+     "description": "and below",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 12768398.06,
+     "amount": 12768398.06,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1726(2)Generator",
+     "description": "Set",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 16193841.5,
+     "amount": 16193841.5,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1726(3)Auxiliary",
+     "description": "Equipment)",
+     "quantity": 1.0,
+     "unit": "sum",
+     "unitPrice": 4771889.46,
+     "amount": 4771889.46,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1727(3)a",
+     "description": "chain hoist with trolley)",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 4436988.09,
+     "amount": 4436988.09,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 45123346.87,
+   "statedTotal": 92712522.71,
+   "awardAmount": 92712522.71,
+   "byVisibility": {
+    "buried": 6952229.76,
+    "footprint": 38171117.11
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0196",
+   "coverage": 0.645,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15768.0,
+     "unit": "meter",
+     "unitPrice": 3790.12,
+     "amount": 59762612.16,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 59762612.16,
+   "statedTotal": 92710206.94,
+   "awardAmount": 92710206.94,
+   "byVisibility": {
+    "buried": 59762612.16
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0251",
+   "coverage": 0.66,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 129.95,
+     "unit": "cubic meter",
+     "unitPrice": 9627.34,
+     "amount": 1251072.83,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15792.0,
+     "unit": "meter",
+     "unitPrice": 3795.95,
+     "amount": 59945642.4,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61196715.23,
+   "statedTotal": 92688858.48,
+   "awardAmount": 92688858.48,
+   "byVisibility": {
+    "footprint": 1251072.83,
+    "buried": 59945642.4
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0585",
+   "coverage": 0.676,
+   "items": [
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 339.68,
+     "unit": "cubic meter",
+     "unitPrice": 10350.56,
+     "amount": 3515878.22,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15600.0,
+     "unit": "meter",
+     "unitPrice": 3793.62,
+     "amount": 59180472.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 62696350.22,
+   "statedTotal": 92687844.27,
+   "awardAmount": 92687844.27,
+   "byVisibility": {
+    "footprint": 3515878.22,
+    "buried": 59180472.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0247",
+   "coverage": 0.66,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 130.25,
+     "unit": "cubic meter",
+     "unitPrice": 9609.89,
+     "amount": 1251688.17,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15834.0,
+     "unit": "meter",
+     "unitPrice": 3786.48,
+     "amount": 59955124.32,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61206812.49,
+   "statedTotal": 92671196.24,
+   "awardAmount": 92671196.24,
+   "byVisibility": {
+    "footprint": 1251688.17,
+    "buried": 59955124.32
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0598",
+   "coverage": 0.624,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 152.1,
+     "unit": "cubic meter",
+     "unitPrice": 9709.8,
+     "amount": 1476860.58,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 14865.0,
+     "unit": "meter",
+     "unitPrice": 3793.01,
+     "amount": 56383093.65,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 57859954.23,
+   "statedTotal": 92659259.27,
+   "awardAmount": 92659259.27,
+   "byVisibility": {
+    "footprint": 1476860.58,
+    "buried": 56383093.65
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0110",
+   "coverage": 0.701,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 237.38,
+     "unit": "cubic meter",
+     "unitPrice": 9635.0,
+     "amount": 2287156.3,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 16536.0,
+     "unit": "meter",
+     "unitPrice": 3789.0,
+     "amount": 62654904.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 64942060.3,
+   "statedTotal": 92643669.84,
+   "awardAmount": 92643669.84,
+   "byVisibility": {
+    "footprint": 2287156.3,
+    "buried": 62654904.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0170",
+   "coverage": 0.675,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 16506.0,
+     "unit": "meter",
+     "unitPrice": 3789.9,
+     "amount": 62556089.4,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 62556089.4,
+   "statedTotal": 92639607.63,
+   "awardAmount": 92639607.63,
+   "byVisibility": {
+    "buried": 62556089.4
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0104",
+   "coverage": 0.409,
+   "items": [
+    {
+     "code": "1701(1)",
+     "description": "Excavation",
+     "quantity": 34100.0,
+     "unit": "cu.m.",
+     "unitPrice": 793.18,
+     "amount": 27047438.0,
+     "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 405.14,
+     "unit": "cum.",
+     "unitPrice": 10521.01,
+     "amount": 4262481.99,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "10,886.40",
+     "quantity": 13.0,
+     "unit": null,
+     "unitPrice": 0.63,
+     "amount": 6.8,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1724(1)",
+     "description": "Pump",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 6553814.4,
+     "amount": 6553814.4,
+     "visibility": "ground"
+    }
+   ],
+   "boqTotal": 37863741.19,
+   "statedTotal": 92639264.61,
+   "awardAmount": 92639264.61,
+   "byVisibility": {
+    "buried": 27047438.0,
+    "footprint": 4262488.79,
+    "ground": 6553814.4
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0076",
+   "coverage": 0.777,
+   "items": [
+    {
+     "code": null,
+     "description": "101(6 Concrete",
+     "quantity": 889.56,
+     "unit": "cu.m.",
+     "unitPrice": 2500.0,
+     "amount": 2223900.0,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 358.25,
+     "unit": "cu.m.",
+     "unitPrice": 10200.0,
+     "amount": 3654150.0,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "508(1 Embankment",
+     "quantity": 2732.4,
+     "unit": "cu.m.",
+     "unitPrice": 2000.0,
+     "amount": 5464800.0,
+     "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "al Protection",
+     "quantity": 13500.0,
+     "unit": null,
+     "unitPrice": 4490.0,
+     "amount": 60615000.0,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 71957850.0,
+   "statedTotal": 92638632.1,
+   "awardAmount": 92638632.1,
+   "byVisibility": {
+    "footprint": 66493050.0,
+    "buried": 5464800.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0609",
+   "coverage": 0.623,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 170.96,
+     "unit": "cubic meter",
+     "unitPrice": 9635.0,
+     "amount": 1647199.6,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 14790.0,
+     "unit": "meter",
+     "unitPrice": 3789.0,
+     "amount": 56039310.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 57686509.6,
+   "statedTotal": 92638356.42,
+   "awardAmount": 92638356.42,
+   "byVisibility": {
+    "footprint": 1647199.6,
+    "buried": 56039310.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0045",
+   "coverage": 0.587,
+   "items": [
+    {
+     "code": null,
+     "description": "Piles, Furnished",
+     "quantity": 14316.0,
+     "unit": null,
+     "unitPrice": 3796.23,
+     "amount": 54346828.68,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 54346828.68,
+   "statedTotal": 92629504.7,
+   "awardAmount": 92629504.7,
+   "byVisibility": {
+    "buried": 54346828.68
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "24CC0604",
+   "coverage": 0.652,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15981.0,
+     "unit": "meter",
+     "unitPrice": 3779.13,
+     "amount": 60394276.53,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 60394276.53,
+   "statedTotal": 92585187.67,
+   "awardAmount": 92585187.67,
+   "byVisibility": {
+    "buried": 60394276.53
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0586",
+   "coverage": 0.642,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 155.51,
+     "unit": "cubic meter",
+     "unitPrice": 9851.73,
+     "amount": 1532042.53,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 15270.0,
+     "unit": "meter",
+     "unitPrice": 3792.06,
+     "amount": 57904756.2,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 59436798.73,
+   "statedTotal": 92558671.69,
+   "awardAmount": 92558671.69,
+   "byVisibility": {
+    "footprint": 1532042.53,
+    "buried": 57904756.2
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0593",
+   "coverage": 0.682,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 257.17,
+     "unit": "cubic meter",
+     "unitPrice": 9656.13,
+     "amount": 2483266.95,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 16012.5,
+     "unit": "meter",
+     "unitPrice": 3786.21,
+     "amount": 60626687.63,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 63109954.58,
+   "statedTotal": 92469575.03,
+   "awardAmount": 92469575.03,
+   "byVisibility": {
+    "footprint": 2483266.95,
+    "buried": 60626687.63
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "22CC0263",
+   "coverage": 0.387,
+   "items": [
+    {
+     "code": "1703(3)",
+     "description": "backhoe on barge",
+     "quantity": 35856.0,
+     "unit": "m.",
+     "unitPrice": 766.28,
+     "amount": 27475735.68,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "508(1 Embankment",
+     "quantity": 2721.83,
+     "unit": "m.",
+     "unitPrice": 1737.86,
+     "amount": 4730159.48,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 32205895.16,
+   "statedTotal": 35856.0,
+   "awardAmount": 83296299.43,
+   "byVisibility": {
+    "footprint": 27475735.68,
+    "buried": 4730159.48
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0052",
+   "coverage": 0.644,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 13381.5,
+     "unit": "meter",
+     "unitPrice": 3789.9,
+     "amount": 50714546.85,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 50714546.85,
+   "statedTotal": null,
+   "awardAmount": 78743878.98,
+   "byVisibility": {
+    "buried": 50714546.85
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0053",
+   "coverage": 0.644,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 13381.5,
+     "unit": "meter",
+     "unitPrice": 3789.9,
+     "amount": 50714546.85,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 50714546.85,
+   "statedTotal": 78743385.85,
+   "awardAmount": 78743385.85,
+   "byVisibility": {
+    "buried": 50714546.85
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0100",
+   "coverage": 0.595,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12337.5,
+     "unit": "meter",
+     "unitPrice": 3794.55,
+     "amount": 46815260.63,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46815260.63,
+   "statedTotal": 78743367.44,
+   "awardAmount": 78743367.44,
+   "byVisibility": {
+    "buried": 46815260.63
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0283",
+   "coverage": 0.473,
+   "items": [
+    {
+     "code": "400(14)Piles",
+     "description": ", driven",
+     "quantity": 3450.0,
+     "unit": "m.",
+     "unitPrice": 3394.33,
+     "amount": 11710438.5,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "2 ng",
+     "quantity": 4980.0,
+     "unit": "sq.m.",
+     "unitPrice": 4873.44,
+     "amount": 24269731.2,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 35980169.7,
+   "statedTotal": null,
+   "awardAmount": 76032217.52,
+   "byVisibility": {
+    "footprint": 35980169.7
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0642",
+   "coverage": 0.598,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11700.0,
+     "unit": "meter",
+     "unitPrice": 3826.54,
+     "amount": 44770518.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 44770518.0,
+   "statedTotal": null,
+   "awardAmount": 74882150.08,
+   "byVisibility": {
+    "buried": 44770518.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0664",
+   "coverage": 0.821,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12748.5,
+     "unit": "meter",
+     "unitPrice": 3820.22,
+     "amount": 48702074.67,
+     "visibility": "buried"
+    },
+    {
+     "code": "1716(12)",
+     "description": "Driven",
+     "quantity": 11801.5,
+     "unit": "meter",
+     "unitPrice": 1068.93,
+     "amount": 12614977.4,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 61317052.07,
+   "statedTotal": 74681195.86,
+   "awardAmount": 74681195.86,
+   "byVisibility": {
+    "buried": 61317052.07
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0654",
+   "coverage": 0.654,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12756.0,
+     "unit": "meter",
+     "unitPrice": 3819.43,
+     "amount": 48720649.08,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 48720649.08,
+   "statedTotal": null,
+   "awardAmount": 74551863.53,
+   "byVisibility": {
+    "buried": 48720649.08
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0657",
+   "coverage": 0.674,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 143.88,
+     "unit": "cubic meter",
+     "unitPrice": 9876.31,
+     "amount": 1421003.48,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12786.0,
+     "unit": "meter",
+     "unitPrice": 3808.62,
+     "amount": 48697015.32,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 50118018.8,
+   "statedTotal": 74398060.61,
+   "awardAmount": 74398060.61,
+   "byVisibility": {
+    "footprint": 1421003.48,
+    "buried": 48697015.32
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0072",
+   "coverage": 0.664,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 101.43,
+     "unit": "cubic meter",
+     "unitPrice": 9873.08,
+     "amount": 1001426.5,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12705.0,
+     "unit": "meter",
+     "unitPrice": 3799.66,
+     "amount": 48274680.3,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 49276106.8,
+   "statedTotal": null,
+   "awardAmount": 74266427.73,
+   "byVisibility": {
+    "footprint": 1001426.5,
+    "buried": 48274680.3
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0649",
+   "coverage": 0.632,
+   "items": [
+    {
+     "code": "902(1)a1",
+     "description": "Grade 40 8,930.93 | kilogram",
+     "quantity": 78.4,
+     "unit": null,
+     "unitPrice": 0.09,
+     "amount": 5.6,
+     "visibility": "inside"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12348.0,
+     "unit": "meter",
+     "unitPrice": 3797.66,
+     "amount": 46893505.68,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46893511.28,
+   "statedTotal": 74246676.96,
+   "awardAmount": 74246676.96,
+   "byVisibility": {
+    "inside": 5.6,
+    "buried": 46893505.68
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0655",
+   "coverage": 0.659,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12888.0,
+     "unit": "meter",
+     "unitPrice": 3796.7,
+     "amount": 48931869.6,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 48931869.6,
+   "statedTotal": null,
+   "awardAmount": 74240389.89,
+   "byVisibility": {
+    "buried": 48931869.6
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0653",
+   "coverage": 0.674,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 144.18,
+     "unit": "cubic meter",
+     "unitPrice": 9892.38,
+     "amount": 1426283.35,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12816.0,
+     "unit": "meter",
+     "unitPrice": 3790.55,
+     "amount": 48579688.8,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 50005972.15,
+   "statedTotal": 74165562.32,
+   "awardAmount": 74165562.32,
+   "byVisibility": {
+    "footprint": 1426283.35,
+    "buried": 48579688.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0181",
+   "coverage": 0.603,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11790.0,
+     "unit": "meter",
+     "unitPrice": 3789.0,
+     "amount": 44672310.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 44672310.0,
+   "statedTotal": 74113084.27,
+   "awardAmount": 74113084.27,
+   "byVisibility": {
+    "buried": 44672310.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0097",
+   "coverage": 0.649,
+   "items": [
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 619.84,
+     "unit": "cubic meter",
+     "unitPrice": 10223.9,
+     "amount": 6337182.18,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11010.0,
+     "unit": "meter",
+     "unitPrice": 3794.55,
+     "amount": 41777995.5,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 48115177.68,
+   "statedTotal": null,
+   "awardAmount": 74111783.62,
+   "byVisibility": {
+    "footprint": 6337182.18,
+    "buried": 41777995.5
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0644",
+   "coverage": 0.624,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12174.0,
+     "unit": "meter",
+     "unitPrice": 3800.0,
+     "amount": 46261200.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46261200.0,
+   "statedTotal": 74111068.59,
+   "awardAmount": 74111068.59,
+   "byVisibility": {
+    "buried": 46261200.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0191",
+   "coverage": 0.636,
+   "items": [
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 236.48,
+     "unit": "cubic meter",
+     "unitPrice": 10416.0,
+     "amount": 2463175.68,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11790.0,
+     "unit": "meter",
+     "unitPrice": 3789.0,
+     "amount": 44672310.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 47135485.68,
+   "statedTotal": 74110815.98,
+   "awardAmount": 74110815.98,
+   "byVisibility": {
+    "footprint": 2463175.68,
+    "buried": 44672310.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0641",
+   "coverage": 0.676,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 128.52,
+     "unit": "cubic meter",
+     "unitPrice": 9651.0,
+     "amount": 1240346.52,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 222.41,
+     "unit": "cubic meter",
+     "unitPrice": 10445.1,
+     "amount": 2323094.69,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12282.0,
+     "unit": "meter",
+     "unitPrice": 3789.9,
+     "amount": 46547551.8,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 50110993.01,
+   "statedTotal": null,
+   "awardAmount": 74110545.0,
+   "byVisibility": {
+    "footprint": 3563441.21,
+    "buried": 46547551.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0082",
+   "coverage": 0.576,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11250.0,
+     "unit": "meter",
+     "unitPrice": 3791.15,
+     "amount": 42650437.5,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 42650437.5,
+   "statedTotal": null,
+   "awardAmount": 74102199.0,
+   "byVisibility": {
+    "buried": 42650437.5
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0397",
+   "coverage": 0.584,
+   "items": [
+    {
+     "code": "1716(6)_",
+     "description": "Furnished",
+     "quantity": 11412.0,
+     "unit": "lm.",
+     "unitPrice": 3793.0,
+     "amount": 43285716.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 43285716.0,
+   "statedTotal": 74101460.68,
+   "awardAmount": 74101460.68,
+   "byVisibility": {
+    "buried": 43285716.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0077",
+   "coverage": 0.649,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11907.0,
+     "unit": "meter",
+     "unitPrice": 3796.75,
+     "amount": 45207902.25,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 45207902.25,
+   "statedTotal": 69623039.0,
+   "awardAmount": 69623039.0,
+   "byVisibility": {
+    "buried": 45207902.25
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0594",
+   "coverage": 0.663,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12144.0,
+     "unit": "meter",
+     "unitPrice": 3802.0,
+     "amount": 46171488.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46171488.0,
+   "statedTotal": 69612554.17,
+   "awardAmount": 69612554.17,
+   "byVisibility": {
+    "buried": 46171488.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0662",
+   "coverage": 0.674,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 12360.0,
+     "unit": "meter",
+     "unitPrice": 3795.08,
+     "amount": 46907188.8,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46907188.8,
+   "statedTotal": 69606979.11,
+   "awardAmount": 69606979.11,
+   "byVisibility": {
+    "buried": 46907188.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0086",
+   "coverage": 0.653,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11976.0,
+     "unit": "meter",
+     "unitPrice": 3795.9,
+     "amount": 45459698.4,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 45459698.4,
+   "statedTotal": 69595997.24,
+   "awardAmount": 69595997.24,
+   "byVisibility": {
+    "buried": 45459698.4
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0067",
+   "coverage": 0.673,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "A, 14 days",
+     "quantity": 134.67,
+     "unit": "cubic meter",
+     "unitPrice": 9806.41,
+     "amount": 1320629.23,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11976.0,
+     "unit": "meter",
+     "unitPrice": 3800.96,
+     "amount": 45520296.96,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 46840926.19,
+   "statedTotal": 69575865.08,
+   "awardAmount": 69575865.08,
+   "byVisibility": {
+    "footprint": 1320629.23,
+    "buried": 45520296.96
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0516",
+   "coverage": 0.651,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "days",
+     "quantity": 195.45,
+     "unit": "cum.",
+     "unitPrice": 10716.78,
+     "amount": 2094594.65,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "1712(2 Protection",
+     "quantity": 301.47,
+     "unit": "cu.m.",
+     "unitPrice": 11310.03,
+     "amount": 3409634.74,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "Furnished",
+     "quantity": 10434.0,
+     "unit": null,
+     "unitPrice": 3808.46,
+     "amount": 39737471.64,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 45241701.03,
+   "statedTotal": 69479920.9,
+   "awardAmount": 69479920.9,
+   "byVisibility": {
+    "footprint": 45241701.03
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0061",
+   "coverage": 0.651,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11907.0,
+     "unit": "meter",
+     "unitPrice": 3794.74,
+     "amount": 45183969.18,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 45183969.18,
+   "statedTotal": 69429991.13,
+   "awardAmount": 69429991.13,
+   "byVisibility": {
+    "buried": 45183969.18
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0076",
+   "coverage": 0.654,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11976.0,
+     "unit": "meter",
+     "unitPrice": 3789.49,
+     "amount": 45382932.24,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 45382932.24,
+   "statedTotal": 69365851.02,
+   "awardAmount": 69365851.02,
+   "byVisibility": {
+    "buried": 45382932.24
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0075",
+   "coverage": 0.651,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 11907.0,
+     "unit": "meter",
+     "unitPrice": 3785.68,
+     "amount": 45076091.76,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 45076091.76,
+   "statedTotal": 69285418.52,
+   "awardAmount": 69285418.52,
+   "byVisibility": {
+    "buried": 45076091.76
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0491",
+   "coverage": 0.396,
+   "items": [
+    {
+     "code": "1716(23)al",
+     "description": "10mm thick",
+     "quantity": 288.0,
+     "unit": "meter",
+     "unitPrice": 21054.42,
+     "amount": 6063672.96,
+     "visibility": "buried"
+    },
+    {
+     "code": "1727(4)b",
+     "description": "Automatic, Primary",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 16860119.18,
+     "amount": 16860119.18,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 22923792.14,
+   "statedTotal": 57890588.66,
+   "awardAmount": 57890588.66,
+   "byVisibility": {
+    "buried": 6063672.96,
+    "footprint": 16860119.18
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0446",
+   "coverage": 0.35,
+   "items": [
+    {
+     "code": "1727(4)a",
+     "description": "Automatic, Primary",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 19936667.92,
+     "amount": 19936667.92,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 19936667.92,
+   "statedTotal": 56990638.04,
+   "awardAmount": 56990638.04,
+   "byVisibility": {
+    "footprint": 19936667.92
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "22CC0187",
+   "coverage": 0.384,
+   "items": [
+    {
+     "code": "1703(3)",
+     "description": "backhoe on barge",
+     "quantity": 16022.85,
+     "unit": "cu.m.",
+     "unitPrice": 1080.0,
+     "amount": 17304678.0,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1712(2)",
+     "description": "Protection",
+     "quantity": 349.27,
+     "unit": "cu.m.",
+     "unitPrice": 11500.0,
+     "amount": 4016605.0,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 21321283.0,
+   "statedTotal": null,
+   "awardAmount": 55583397.45,
+   "byVisibility": {
+    "footprint": 21321283.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "22CC0269",
+   "coverage": 0.395,
+   "items": [
+    {
+     "code": "1703(3)",
+     "description": "backhoe on barge",
+     "quantity": 15499.67,
+     "unit": "cu.m.",
+     "unitPrice": 1104.62,
+     "amount": 17121245.48,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1712(2)",
+     "description": "Protection",
+     "quantity": 382.2,
+     "unit": "cu.m.",
+     "unitPrice": 12609.8,
+     "amount": 4819465.56,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 21940711.04,
+   "statedTotal": null,
+   "awardAmount": 55582867.75,
+   "byVisibility": {
+    "footprint": 21940711.04
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0020",
+   "coverage": 0.615,
+   "items": [
+    {
+     "code": "1716(6)",
+     "description": "Furnished",
+     "quantity": 7572.0,
+     "unit": "meter",
+     "unitPrice": 3861.0,
+     "amount": 29235492.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 29235492.0,
+   "statedTotal": 47519980.21,
+   "awardAmount": 47519980.21,
+   "byVisibility": {
+    "buried": 29235492.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0506",
+   "coverage": 0.485,
+   "items": [
+    {
+     "code": "1716(6)_",
+     "description": "Furnished",
+     "quantity": 6000.0,
+     "unit": "lm.",
+     "unitPrice": 3840.4,
+     "amount": 23042400.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 23042400.0,
+   "statedTotal": 47518521.72,
+   "awardAmount": 47518521.72,
+   "byVisibility": {
+    "buried": 23042400.0
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0447",
+   "coverage": 0.406,
+   "items": [
+    {
+     "code": "1716(23)a1",
+     "description": "10mm thick",
+     "quantity": 192.0,
+     "unit": "meter",
+     "unitPrice": 20662.52,
+     "amount": 3967203.84,
+     "visibility": "buried"
+    },
+    {
+     "code": "1727(4)a",
+     "description": "Automatic, Primary",
+     "quantity": 1.0,
+     "unit": "set",
+     "unitPrice": 15298137.8,
+     "amount": 15298137.8,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 19265341.64,
+   "statedTotal": 47491338.11,
+   "awardAmount": 47491338.11,
+   "byVisibility": {
+    "buried": 3967203.84,
+    "footprint": 15298137.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "21CC0160",
+   "coverage": 0.739,
+   "items": [
+    {
+     "code": "405(1)a2_",
+     "description": "days",
+     "quantity": 135.7,
+     "unit": "cu.m.",
+     "unitPrice": 9971.48,
+     "amount": 1353129.84,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "< Protection",
+     "quantity": 8077.5,
+     "unit": null,
+     "unitPrice": 4175.64,
+     "amount": 33728732.1,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 35081861.94,
+   "statedTotal": 47488252.17,
+   "awardAmount": 47488252.17,
+   "byVisibility": {
+    "footprint": 35081861.94
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0640",
+   "coverage": 0.497,
+   "items": [
+    {
+     "code": "1702(4)b",
+     "description": "(Cribbing/Cofferdamming)",
+     "quantity": 1.0,
+     "unit": "sum",
+     "unitPrice": 12130521.77,
+     "amount": 12130521.77,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1716(4)a2",
+     "description": "Furnished (450mm x 450mm)",
+     "quantity": 1890.0,
+     "unit": "meter",
+     "unitPrice": 5986.91,
+     "amount": 11315259.9,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 23445781.67,
+   "statedTotal": 47211743.45,
+   "awardAmount": 47211743.45,
+   "byVisibility": {
+    "footprint": 12130521.77,
+    "buried": 11315259.9
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0321",
+   "coverage": 0.497,
+   "items": [
+    {
+     "code": "1701(1)",
+     "description": "Excavation",
+     "quantity": 8640.0,
+     "unit": "cu.m.",
+     "unitPrice": 806.62,
+     "amount": 6969196.8,
+     "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "b3 Coated",
+     "quantity": 2620.8,
+     "unit": "cu.m.",
+     "unitPrice": 4370.28,
+     "amount": 11453629.82,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "508(1 Embankment",
+     "quantity": 2402.24,
+     "unit": "cu.m.",
+     "unitPrice": 2054.76,
+     "amount": 4936026.66,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 23358853.28,
+   "statedTotal": 47040149.97,
+   "awardAmount": 47040149.97,
+   "byVisibility": {
+    "buried": 11905223.46,
+    "footprint": 11453629.82
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0274",
+   "coverage": 0.425,
+   "items": [
+    {
+     "code": "1701(1)",
+     "description": "Excavation",
+     "quantity": 16200.0,
+     "unit": "cu.m.",
+     "unitPrice": 806.62,
+     "amount": 13067244.0,
+     "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "b3 Coated",
+     "quantity": 1243.31,
+     "unit": "cu.m.",
+     "unitPrice": 3342.24,
+     "amount": 4155440.41,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "508(1 Embankment",
+     "quantity": 1274.4,
+     "unit": "cu.m.",
+     "unitPrice": 2054.76,
+     "amount": 2618586.14,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 19841270.55,
+   "statedTotal": 46731257.73,
+   "awardAmount": 46731257.73,
+   "byVisibility": {
+    "buried": 15685830.14,
+    "footprint": 4155440.41
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0138",
+   "coverage": 0.862,
+   "items": [
+    {
+     "code": null,
+     "description": "1712(2 Protection",
+     "quantity": 580.88,
+     "unit": "cu.m.",
+     "unitPrice": 11874.09,
+     "amount": 6897421.4,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "1 Slope Protection",
+     "quantity": 8145.0,
+     "unit": "lm.",
+     "unitPrice": 3996.62,
+     "amount": 32552469.9,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 39449891.3,
+   "statedTotal": 45788289.5,
+   "awardAmount": 45788289.5,
+   "byVisibility": {
+    "footprint": 39449891.3
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0291",
+   "coverage": 0.639,
+   "items": [
+    {
+     "code": "1716(6)_",
+     "description": "Furnished",
+     "quantity": 6228.0,
+     "unit": "lm.",
+     "unitPrice": 3858.16,
+     "amount": 24028620.48,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 24028620.48,
+   "statedTotal": null,
+   "awardAmount": 37632150.5,
+   "byVisibility": {
+    "buried": 24028620.48
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0271",
+   "coverage": 0.652,
+   "items": [
+    {
+     "code": "1716(6)_",
+     "description": "Furnished",
+     "quantity": 4770.0,
+     "unit": "lm.",
+     "unitPrice": 3898.44,
+     "amount": 18595558.8,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 18595558.8,
+   "statedTotal": 28517980.6,
+   "awardAmount": 28517980.6,
+   "byVisibility": {
+    "buried": 18595558.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "21CC0263",
+   "coverage": 0.608,
+   "items": [
+    {
+     "code": "1703(3)",
+     "description": "backhoe on barge",
+     "quantity": 18985.12,
+     "unit": "cu.m.",
+     "unitPrice": 913.11,
+     "amount": 17335502.92,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 17335502.92,
+   "statedTotal": null,
+   "awardAmount": 28511931.69,
+   "byVisibility": {
+    "footprint": 17335502.92
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "21CC0274",
+   "coverage": 0.609,
+   "items": [
+    {
+     "code": "1703(3)",
+     "description": "backhoe on barge",
+     "quantity": 19009.5,
+     "unit": "cu.m.",
+     "unitPrice": 913.11,
+     "amount": 17357764.55,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 17357764.55,
+   "statedTotal": 28511872.87,
+   "awardAmount": 28511872.87,
+   "byVisibility": {
+    "footprint": 17357764.55
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "22CC0123",
+   "coverage": 0.385,
+   "items": [
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 1389.1,
+     "unit": "cum.",
+     "unitPrice": 7896.56,
+     "amount": 10969111.5,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 10969111.5,
+   "statedTotal": 28511856.54,
+   "awardAmount": 28511856.54,
+   "byVisibility": {
+    "footprint": 10969111.5
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "21CC0245",
+   "coverage": 0.589,
+   "items": [
+    {
+     "code": "1703(4)",
+     "description": "Backhoe on Barge",
+     "quantity": 21561.75,
+     "unit": "cu.m.",
+     "unitPrice": 779.13,
+     "amount": 16799406.28,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 16799406.28,
+   "statedTotal": 28511537.53,
+   "awardAmount": 28511537.53,
+   "byVisibility": {
+    "footprint": 16799406.28
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0187",
+   "coverage": 0.465,
+   "items": [
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 1559.44,
+     "unit": "cu.m.",
+     "unitPrice": 8448.0,
+     "amount": 13174149.12,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 13174149.12,
+   "statedTotal": 28329287.63,
+   "awardAmount": 28329287.63,
+   "byVisibility": {
+    "footprint": 13174149.12
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0094",
+   "coverage": 0.846,
+   "items": [
+    {
+     "code": "1704(2)b",
+     "description": "Borrow)",
+     "quantity": 2096.62,
+     "unit": "cu.m.",
+     "unitPrice": 683.0,
+     "amount": 1431991.46,
+     "visibility": "buried"
+    },
+    {
+     "code": null,
+     "description": "i Steel Sheet Piles",
+     "quantity": 5790.0,
+     "unit": "lm.",
+     "unitPrice": 3875.0,
+     "amount": 22436250.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 23868241.46,
+   "statedTotal": 28225198.86,
+   "awardAmount": 28225198.86,
+   "byVisibility": {
+    "buried": 23868241.46
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0067",
+   "coverage": 0.556,
+   "items": [
+    {
+     "code": "1716(6)_",
+     "description": "Furnished",
+     "quantity": 4008.0,
+     "unit": "lm.",
+     "unitPrice": 3892.26,
+     "amount": 15600178.08,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 15600178.08,
+   "statedTotal": 28081475.0,
+   "awardAmount": 28081475.0,
+   "byVisibility": {
+    "buried": 15600178.08
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0147",
+   "coverage": 0.393,
+   "items": [
+    {
+     "code": "405(1)a2_",
+     "description": "14 days",
+     "quantity": 899.5,
+     "unit": "cum.",
+     "unitPrice": 8380.0,
+     "amount": 7537810.0,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 7537810.0,
+   "statedTotal": 9693927.58,
+   "awardAmount": 19202964.05,
+   "byVisibility": {
+    "footprint": 7537810.0
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0376",
+   "coverage": 0.374,
+   "items": [
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 492.57,
+     "unit": "cubic meter",
+     "unitPrice": 10934.24,
+     "amount": 5385878.6,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 5385878.6,
+   "statedTotal": 14405530.64,
+   "awardAmount": 14405530.64,
+   "byVisibility": {
+    "footprint": 5385878.6
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0202",
+   "coverage": 0.681,
+   "items": [
+    {
+     "code": null,
+     "description": "al Protection)",
+     "quantity": 2160.0,
+     "unit": "lm.",
+     "unitPrice": 4495.04,
+     "amount": 9709286.4,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 9709286.4,
+   "statedTotal": 14250121.85,
+   "awardAmount": 14250121.85,
+   "byVisibility": {
+    "footprint": 9709286.4
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "24CC0420",
+   "coverage": 0.381,
+   "items": [
+    {
+     "code": "404(1)a",
+     "description": "Deformed)",
+     "quantity": 51103.08,
+     "unit": "kg.",
+     "unitPrice": 72.3,
+     "amount": 3694752.68,
+     "visibility": "inside"
+    }
+   ],
+   "boqTotal": 3694752.68,
+   "statedTotal": 9699369.56,
+   "awardAmount": 9699369.56,
+   "byVisibility": {
+    "inside": 3694752.68
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0421",
+   "coverage": 0.643,
+   "items": [
+    {
+     "code": "900(1)b",
+     "description": "Class A, 14 days",
+     "quantity": 102.94,
+     "unit": "cubic meter",
+     "unitPrice": 10264.0,
+     "amount": 1056576.16,
+     "visibility": "footprint"
+    },
+    {
+     "code": "1704(1)b",
+     "description": "Embankment, from Borrow",
+     "quantity": 2096.35,
+     "unit": "cubic meter",
+     "unitPrice": 735.39,
+     "amount": 1541634.83,
+     "visibility": "buried"
+    },
+    {
+     "code": "1712(1)",
+     "description": "Concrete Slope Protection",
+     "quantity": 324.96,
+     "unit": "cubic meter",
+     "unitPrice": 10911.71,
+     "amount": 3545869.28,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 6144080.27,
+   "statedTotal": 9554281.04,
+   "awardAmount": 9554281.04,
+   "byVisibility": {
+    "footprint": 4602445.44,
+    "buried": 1541634.83
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0515",
+   "coverage": 0.401,
+   "items": [
+    {
+     "code": "801(6)Obstruction",
+     "description": ", Concrete",
+     "quantity": 1302.0,
+     "unit": "cubic meter",
+     "unitPrice": 2913.13,
+     "amount": 3792895.26,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 3792895.26,
+   "statedTotal": 9456581.31,
+   "awardAmount": 9456581.31,
+   "byVisibility": {
+    "footprint": 3792895.26
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0154",
+   "coverage": 0.451,
+   "items": [
+    {
+     "code": "405(1)a2_",
+     "description": "days",
+     "quantity": 297.0,
+     "unit": "cum.",
+     "unitPrice": 8752.26,
+     "amount": 2599421.22,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2599421.22,
+   "statedTotal": 5761547.67,
+   "awardAmount": 5761547.67,
+   "byVisibility": {
+    "footprint": 2599421.22
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "20CC0055",
+   "coverage": 0.817,
+   "items": [
+    {
+     "code": "1710(2)a_",
+     "description": "}| Class A",
+     "quantity": 1012.77,
+     "unit": "cum.",
+     "unitPrice": 3915.56,
+     "amount": 3965561.7,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 3965561.7,
+   "statedTotal": 4851257.85,
+   "awardAmount": 4851257.85,
+   "byVisibility": {
+    "footprint": 3965561.7
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0017",
+   "coverage": 0.38,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "14 days",
+     "quantity": 192.64,
+     "unit": "cu.m.",
+     "unitPrice": 9560.17,
+     "amount": 1841671.15,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "TOTAL",
+     "quantity": 4.85,
+     "unit": null,
+     "unitPrice": 0.98,
+     "amount": 3.28,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 1841674.43,
+   "statedTotal": 4850983.28,
+   "awardAmount": 4850983.28,
+   "byVisibility": {
+    "footprint": 1841674.43
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "23CC0034",
+   "coverage": 0.386,
+   "items": [
+    {
+     "code": null,
+     "description": "2 20.68MPa, 14 days",
+     "quantity": 187.11,
+     "unit": "cum.",
+     "unitPrice": 10003.44,
+     "amount": 1871743.66,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 1871743.66,
+   "statedTotal": 4850968.37,
+   "awardAmount": 4850968.37,
+   "byVisibility": {
+    "footprint": 1871743.66
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "22CC0027",
+   "coverage": 0.428,
+   "items": [
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 220.85,
+     "unit": "cu.m.",
+     "unitPrice": 9395.29,
+     "amount": 2074949.8,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2074949.8,
+   "statedTotal": 4850890.09,
+   "awardAmount": 4850890.09,
+   "byVisibility": {
+    "footprint": 2074949.8
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0207",
+   "coverage": 0.445,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "14 days",
+     "quantity": 205.34,
+     "unit": "cubic meter",
+     "unitPrice": 10508.29,
+     "amount": 2157772.27,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2157772.27,
+   "statedTotal": 4850799.7,
+   "awardAmount": 4850799.7,
+   "byVisibility": {
+    "footprint": 2157772.27
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0022",
+   "coverage": 0.444,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "Class A, 14 days",
+     "quantity": 270.27,
+     "unit": "cubic meter",
+     "unitPrice": 7975.0,
+     "amount": 2155403.25,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "TOTAL",
+     "quantity": 4.85,
+     "unit": null,
+     "unitPrice": 0.06,
+     "amount": 1.31,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2155404.56,
+   "statedTotal": 4850061.31,
+   "awardAmount": 4850061.31,
+   "byVisibility": {
+    "footprint": 2155404.56
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "22CC0048",
+   "coverage": 0.364,
+   "items": [
+    {
+     "code": null,
+     "description": "2 days",
+     "quantity": 187.72,
+     "unit": "cum.",
+     "unitPrice": 9395.29,
+     "amount": 1763683.84,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 1763683.84,
+   "statedTotal": 4845795.2,
+   "awardAmount": 4845795.2,
+   "byVisibility": {
+    "footprint": 1763683.84
+   },
+   "hasMeasuredQuantity": false
+  },
+  {
+   "id": "25CC0226",
+   "coverage": 0.441,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "Class A, 14 days",
+     "quantity": 199.29,
+     "unit": "cubic meter",
+     "unitPrice": 10613.2,
+     "amount": 2115104.63,
+     "visibility": "footprint"
+    },
+    {
+     "code": null,
+     "description": "TOTAL",
+     "quantity": 4.8,
+     "unit": null,
+     "unitPrice": 1.53,
+     "amount": 9.09,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2115113.72,
+   "statedTotal": 4801539.09,
+   "awardAmount": 4801539.09,
+   "byVisibility": {
+    "footprint": 2115113.72
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0023",
+   "coverage": 0.444,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "Class A, 14 days",
+     "quantity": 267.98,
+     "unit": "cubic meter",
+     "unitPrice": 7951.5,
+     "amount": 2130842.97,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2130842.97,
+   "statedTotal": 4801223.19,
+   "awardAmount": 4801223.19,
+   "byVisibility": {
+    "footprint": 2130842.97
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "25CC0343",
+   "coverage": 0.56,
+   "items": [
+    {
+     "code": "405(1)a2",
+     "description": "Class A, 14 days",
+     "quantity": 324.17,
+     "unit": "cubic meter",
+     "unitPrice": 8257.12,
+     "amount": 2676710.59,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2676710.59,
+   "statedTotal": 4776591.16,
+   "awardAmount": 4776591.16,
+   "byVisibility": {
+    "footprint": 2676710.59
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0280",
+   "coverage": 0.611,
+   "items": [
+    {
+     "code": "405(1)a2_",
+     "description": "days",
+     "quantity": 334.96,
+     "unit": "cu.m.",
+     "unitPrice": 8621.43,
+     "amount": 2887834.19,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 2887834.19,
+   "statedTotal": 4729523.67,
+   "awardAmount": 4729523.67,
+   "byVisibility": {
+    "footprint": 2887834.19
+   },
+   "hasMeasuredQuantity": true
+  },
+  {
+   "id": "20CC0051",
+   "coverage": 0.563,
+   "items": [
+    {
+     "code": null,
+     "description": "Billboard/Signboard",
+     "quantity": 1.0,
+     "unit": "each",
+     "unitPrice": 15477.83,
+     "amount": 15477.83,
+     "visibility": "none"
+    },
+    {
+     "code": null,
+     "description": "B.7 and Health Program",
+     "quantity": 4.0,
+     "unit": "mo.",
+     "unitPrice": 4847.24,
+     "amount": 19388.96,
+     "visibility": "none"
+    },
+    {
+     "code": "103(1)a__",
+     "description": "- Common Soil",
+     "quantity": 256.8,
+     "unit": "cu.m.",
+     "unitPrice": 299.83,
+     "amount": 76996.34,
+     "visibility": "buried"
+    },
+    {
+     "code": "405(1)a2_",
+     "description": "14 days",
+     "quantity": 124.12,
+     "unit": "cu.m.",
+     "unitPrice": 7809.14,
+     "amount": 969270.46,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 1081133.59,
+   "statedTotal": 1921055.81,
+   "awardAmount": 1921055.81,
+   "byVisibility": {
+    "none": 34866.79,
+    "buried": 76996.34,
+    "footprint": 969270.46
+   },
+   "hasMeasuredQuantity": true
   }
  ]
 }

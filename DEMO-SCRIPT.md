@@ -212,6 +212,15 @@ It can't. The metadata reports `MaxMapLevel 19`, and zoom 20 returns HTTP 404. N
 **"Is the citizen data real?"**
 No — the three reports are seeded examples, badged DEMO, with obvious placeholder images rather than fabricated site photos. It's a prototype: reports live in the browser and go nowhere. A real deployment needs submission, moderation, an audit trail and a takedown route.
 
+**"Can you check the contract against what is actually built?"**
+Partly, and now with a number. All 1,237 scanned contract agreements were OCR'd — the
+Bills of Quantities are in there, and 209 of the 1,015 contracts with no published
+dimension do carry a measured quantity in the paper. But classifying every pay item by
+whether it survives to be photographed: **0.1% is directly visible, 32.7% is outline
+only, and 67.1% is invisible to any camera** — excavation backfilled, reinforcing steel
+cast into concrete. Remote monitoring can establish existence and footprint. It cannot
+establish quantity, and no satellite changes that. See `FINDINGS.md` §1.
+
 **"What would you do next?"**
 Extend past one district office, get the COA audit findings in so "built more than once" becomes a recorded finding rather than an inference, and add Sentinel-1 radar, which sees through the wet-season cloud that makes 59 of 200 assessed sites unreadable.
 
