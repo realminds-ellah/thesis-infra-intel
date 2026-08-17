@@ -346,9 +346,6 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                           {l.label}<ExternalLink size={9} />
                         </a>
                       ))}
-                      {/* Eye level. Everything else in this row looks straight down. */}
-                      <span className="text-[10px] text-gray-400">· from the ground:</span>
-                      <StreetLevel lat={sel.p.lat} lng={sel.p.lng} compact />
                     </div>
                   </>
                 ) : (
@@ -362,6 +359,21 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                 <WaybackStrip lat={sel.p.lat} lng={sel.p.lng}
                   startDate={sel.p.startDate} endDate={sel.p.endDate}
                   verdictColor={cfg.color} />
+              )}
+
+              {/*
+                Ground level, directly under the sky-level strip.
+
+                Deliberately adjacent, because they answer different halves of
+                the same question and neither is sufficient. The strip above
+                shows six flights in sixteen years and can say whether something
+                appeared. This shows the structure from beside it, which is the
+                only view that can say whether it is cracked, undermined or half
+                the height it was meant to be — and it is dated too, so the two
+                time series can be read against each other.
+              */}
+              {sel.p.lat != null && sel.p.lng != null && (
+                <StreetLevel lat={sel.p.lat} lng={sel.p.lng} />
               )}
 
               {/* ── what a person makes of it ────────────────────────────
