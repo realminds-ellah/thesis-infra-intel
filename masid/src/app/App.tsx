@@ -2257,7 +2257,7 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} layers={mapLayers} setLayers={setMapLayers} colorBy={colorBy} setColorBy={setColorBy}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} lang={lang} layers={mapLayers} setLayers={setMapLayers} colorBy={colorBy} setColorBy={setColorBy}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}

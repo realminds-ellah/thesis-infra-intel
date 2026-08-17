@@ -68,6 +68,26 @@ const FIL: Dict = {
   "status.terminated": "Kanselado",
   "status.flagged": "Kailangang suriin",
 
+  // ── the sidebar, in the words a citizen would use ────────────────────────
+  "panel.search": "Maghanap",
+  "panel.searchPlaceholder": "Bayan, kompanya, o proyekto…",
+  "panel.searchHint": "Subukan ang Hagonoy, Wawao, o revetment. Hinahanap ang bayan, barangay, kontratista at kontrata.",
+  "panel.town": "Bayan",
+  "panel.everyTown": "Lahat ng bayan",
+  "panel.howFar": "Gaano na katapos",
+  "panel.needsCheck": "Yaong kailangang suriin lang",
+  "panel.needsCheckWhy": "Kung saan hindi tugma ang mismong papeles. Dahilan para tingnan, hindi patunay ng kahit ano.",
+  "panel.more": "Iba pang pagpipilian",
+  "panel.year": "Taon ng pondo",
+  "panel.anyYear": "Kahit anong taon",
+  "panel.colours": "Ibig sabihin ng mga kulay",
+  "panel.draw": "Ano ang ipapakita",
+  "panel.pins": "Mga tuldok ng proyekto",
+  "panel.cluster": "Pagsama-samahin ang magkakalapit",
+  "panel.boundaries": "Hangganan ng bayan",
+  "panel.townNames": "Pangalan ng bayan",
+  "panel.clearSearch": "Burahin ang hinahanap",
+
   // ── map + filters ────────────────────────────────────────────────────────
   "map.nearMe": "Ano ang malapit sa akin?",
   "map.finding": "Hinahanap ka…",
@@ -167,6 +187,18 @@ export function makeT(lang: Lang, en: Dict) {
 
 /** English strings, kept beside the Filipino so the pair stays in sync. */
 export const EN: Dict = {
+  "panel.search": "Search",
+  "panel.searchPlaceholder": "A town, a company, a project…",
+  "panel.searchHint": "Try Hagonoy, Wawao, or revetment. Searches the town, the barangay, the contractor and the contract.",
+  "panel.town": "Town", "panel.everyTown": "Every town",
+  "panel.howFar": "How far along",
+  "panel.needsCheck": "Only the ones needing a check",
+  "panel.needsCheckWhy": "Where the paperwork disagrees with itself. A reason to look, not proof of anything.",
+  "panel.more": "More options", "panel.year": "Year it was funded", "panel.anyYear": "Any year",
+  "panel.colours": "What the colours mean", "panel.draw": "What to draw",
+  "panel.pins": "Project pins", "panel.cluster": "Group nearby pins",
+  "panel.boundaries": "Town boundaries", "panel.townNames": "Town names",
+  "panel.clearSearch": "Clear search",
   "nav.dashboard": "Dashboard", "nav.map": "Map", "nav.satellite": "Satellite",
   "nav.documents": "Documents", "nav.reports": "Reports", "nav.contractors": "Contractors",
   "nav.admin": "Admin", "nav.nationwide": "Nationwide", "nav.public": "Public",

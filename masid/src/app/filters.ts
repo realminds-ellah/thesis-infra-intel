@@ -127,7 +127,22 @@ const deliveryStates = (p: Project): DeliveryState[] => {
 type Pred = (p: Project) => boolean;
 
 const preds = (f: Filters): Record<keyof Filters, Pred> => ({
-  q: p => !f.q || `${p.id} ${p.description} ${p.municipality}`.toLowerCase().includes(f.q.toLowerCase()),
+  /**
+   * One box that searches everything a person might type.
+   *
+   * There used to be two: a general one and a separate "Contractor" field, which
+   * asked the reader to know in advance which category their words belonged to.
+   * Nobody thinks "I am about to type a contractor name" — they type WAWAO, or
+   * Hagonoy, or revetment, and expect results. Contractor and barangay are in
+   * the haystack now, so all three work from the same box.
+   */
+  q: p => {
+    if (!f.q) return true;
+    const x = p as unknown as { barangay?: string | null; structureType?: string | null };
+    const hay = `${p.id} ${p.description} ${p.municipality} ${p.contractor} ${x.barangay ?? ""} ${x.structureType ?? ""}`.toLowerCase();
+    // Every word must appear somewhere, so "wawao hagonoy" narrows rather than widens.
+    return f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+  },
   contractor: p => !f.contractor || p.contractor.toLowerCase().includes(f.contractor.toLowerCase()),
   status: p => f.status.size === 0 || f.status.has(p.status),
   delivery: p => f.delivery.size === 0 || deliveryStates(p).some(s => f.delivery.has(s)),
