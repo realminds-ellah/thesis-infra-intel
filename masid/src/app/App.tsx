@@ -15,7 +15,7 @@ import {
   Satellite, MessageSquare, ZoomIn, ZoomOut, Check, MapPin, Shield,
   Percent, BarChart2, Plus, LogOut, Settings, Users, Globe, Eye,
   EyeOff, Lock, Activity, Wifi, WifiOff, Star, Clock, TrendingUp,
-  TrendingDown, CheckSquare, AlertCircle, Command, Inbox, Sun, Moon, Monitor,
+  TrendingDown, CheckSquare, AlertCircle, Command, Inbox, Sun, Moon, MessageSquareWarning,
 } from "lucide-react";
 
 import {
@@ -29,18 +29,22 @@ import type { Project, Contractor, ProjectStatus } from "./data";
 import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
+import { metresBetween } from "./geo";
 import { LeafletMap } from "./LeafletMap";
 import { SatelliteScreen } from "./SatelliteScreen";
+import { NationwideScreen } from "./NationwideScreen";
+import { RightOfReply } from "./RightOfReply";
 import { InspectionBrief } from "./InspectionBrief";
 import { ReportsFeed } from "./ReportsFeed";
 import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
-import { type Theme, loadTheme, saveTheme, applyTheme, watchSystem, tint, accent } from "./theme";
+import { type Theme, loadTheme, saveTheme, applyTheme, watchSystem, resolveTheme, tint, accent } from "./theme";
+import { type Lang, loadLang, saveLang, makeT, EN } from "./i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Screen = "dashboard" | "map" | "project-detail" | "satellite" | "documents" | "citizen-report" | "contractors" | "admin" | "transparency";
+type Screen = "dashboard" | "map" | "project-detail" | "satellite" | "documents" | "citizen-report" | "contractors" | "admin" | "transparency" | "nationwide";
 import type { Role } from "./roles";
 type SortDir = "asc" | "desc" | null;
 
@@ -399,6 +403,47 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
           <kbd className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">ESC</kbd>
         </div>
         <div className="overflow-auto" style={{maxHeight:400,scrollbarWidth:"none"}}>
+          {(near||nearErr)&&(
+            <div className="absolute left-3 bottom-16 bg-white rounded border border-gray-200 shadow-xl overflow-hidden"
+              style={{zIndex:900,width:320,maxHeight:"48vh"}}>
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <MapPin size={12} className="text-[#1e3a7b]"/>
+                <span className="text-[12px] font-bold text-gray-700">Nearest to you</span>
+                <button onClick={()=>{setNear(null);setNearErr(null);}}
+                  className="ml-auto p-0.5 text-gray-400 hover:text-gray-600"><X size={13}/></button>
+              </div>
+              {nearErr?(
+                <p className="px-3 py-3 text-[12px] text-gray-600 leading-relaxed">{nearErr}</p>
+              ):(
+                <div className="overflow-y-auto" style={{maxHeight:"40vh"}}>
+                  {nearest.map(({p,m})=>(
+                    <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                      className="w-full text-left px-3 py-2 border-b border-gray-50 hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{background:colorOf(p,enc)}}/>
+                        <span className="font-mono text-[10px] text-gray-500">{p.id}</span>
+                        <span className="ml-auto font-mono text-[11px] font-semibold text-gray-700">
+                          {m<1000?`${m} m`:`${(m/1000).toFixed(1)} km`}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                        {p.municipality} · {p.description.slice(0,54)}…
+                      </div>
+                    </button>
+                  ))}
+                  {nearest.length===0&&(
+                    <p className="px-3 py-3 text-[12px] text-gray-500">
+                      No contract in the current filters has a coordinate to measure against.
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="px-3 py-2 text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+                Straight-line distance from your device to the coordinate DPWH published. Your
+                location is used in this browser only and is not sent anywhere.
+              </p>
+            </div>
+          )}
           {filtered.length===0&&(
             <div className="py-10 text-center text-[13px] text-gray-400">No commands matching "{q}"</div>
           )}
@@ -668,30 +713,36 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
 // ─── Top Nav ──────────────────────────────────────────────────────────────────
 
 /**
- * Three states in one control, because two would be a lie.
+ * Light or dark, and nothing else.
  *
- * A plain light/dark switch has to start somewhere, and whichever it starts on
- * is a decision made for a reader whose machine already stated a preference.
- * The third state — follow the system — is the default, and it keeps following:
- * a machine that turns dark at sunset turns this dashboard dark at sunset.
+ * This carried a third option — follow the operating system — and the argument
+ * for it was good: a machine that turns dark at sunset should turn the dashboard
+ * dark at sunset without being told. It was removed on request, and the request
+ * is reasonable. Three states in a 78px control meant most people never worked
+ * out what the monitor icon did, and a setting nobody understands is worse than
+ * one that does not exist.
  *
- * Segmented rather than a cycling icon button, so the current state and the
- * available ones are both visible without clicking to find out.
+ * The system preference still decides the FIRST view — see the inline script in
+ * index.html — so a reader who has never touched this still lands in the theme
+ * their device asked for. What is gone is only the ability to go back to
+ * following it after choosing, which is a small loss for a much clearer control.
  */
 function ThemeToggle({theme,setTheme}:{theme:Theme;setTheme:(t:Theme)=>void}) {
   const opts:[Theme,React.ReactNode,string][] = [
-    ["light",  <Sun size={12}/>,     "Always light"],
-    ["dark",   <Moon size={12}/>,    "Always dark"],
-    ["system", <Monitor size={12}/>, "Follow this device"],
+    ["light",  <Sun size={12}/>,  "Light"],
+    ["dark",   <Moon size={12}/>, "Dark"],
   ];
+  // "system" is still a valid stored value from before this changed; show it as
+  // whichever it currently resolves to rather than leaving nothing selected.
+  const shown = theme === "system" ? (resolveTheme("system")) : theme;
   return (
     <div role="radiogroup" aria-label="Colour theme"
       className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-white/15 shrink-0">
       {opts.map(([t,icon,label])=>(
-        <button key={t} role="radio" aria-checked={theme===t} title={label} aria-label={label}
+        <button key={t} role="radio" aria-checked={shown===t} title={label} aria-label={label}
           onClick={()=>setTheme(t)}
           className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
-            theme===t ? "bg-white/20 text-white" : "text-white/45 hover:text-white hover:bg-white/10"}`}>
+            shown===t ? "bg-white/20 text-white" : "text-white/45 hover:text-white hover:bg-white/10"}`}>
           {icon}
         </button>
       ))}
@@ -699,21 +750,23 @@ function ThemeToggle({theme,setTheme}:{theme:Theme;setTheme:(t:Theme)=>void}) {
   );
 }
 
-function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette,theme,setTheme}:{
+function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette,theme,setTheme,lang,setLang}:{
   screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;canToggleSidebar:boolean;onToggleNotifications:()=>void;
   unreadCount:number;role:Role;onLogout:()=>void;onCreateProject:()=>void;canCreate:boolean;onOpenPalette:()=>void;
-  theme:Theme;setTheme:(t:Theme)=>void;
+  theme:Theme;setTheme:(t:Theme)=>void;lang:Lang;setLang:(l:Lang)=>void;
 }) {
   const rc=ROLE_CFG[role];
+  const t=makeT(lang,EN);
   const links:[string,Screen,React.ReactNode,Role[]|null][]=[
-    ["Dashboard","dashboard",<BarChart2 size={13}/>,null],
-    ["Map","map",<MapIcon size={13}/>,null],
-    ["Satellite","satellite",<Satellite size={13}/>,null],
-    ["Documents","documents",<FileText size={13}/>,null],
-    ["Reports","citizen-report",<Camera size={13}/>,null],
-    ["Contractors","contractors",<Building2 size={13}/>,["dpwh-admin","dpwh-engineer"]],
-    ["Admin","admin",<Settings size={13}/>,["dpwh-admin"]],
-    ["Public","transparency",<Globe size={13}/>,null],
+    [t("nav.dashboard"),"dashboard",<BarChart2 size={13}/>,null],
+    [t("nav.map"),"map",<MapIcon size={13}/>,null],
+    [t("nav.satellite"),"satellite",<Satellite size={13}/>,null],
+    [t("nav.documents"),"documents",<FileText size={13}/>,null],
+    [t("nav.reports"),"citizen-report",<Camera size={13}/>,null],
+    [t("nav.contractors"),"contractors",<Building2 size={13}/>,["dpwh-admin","dpwh-engineer"]],
+    [t("nav.admin"),"admin",<Settings size={13}/>,["dpwh-admin"]],
+    [t("nav.nationwide"),"nationwide",<Globe size={13}/>,null],
+    [t("nav.public"),"transparency",<Shield size={13}/>,null],
   ];
   const visible=links.filter(([,,, roles])=>!roles||roles.includes(role));
   return (
@@ -750,6 +803,19 @@ function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNoti
           <Plus size={13}/>New Project
         </button>
       )}
+      {/* Language before theme: which words the interface uses matters more to
+          the person this was built for than whether it is light or dark. */}
+      <div role="radiogroup" aria-label="Language"
+        className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-white/15 shrink-0">
+        {([["en","EN","English"],["fil","FIL","Filipino"]] as const).map(([v,short,full])=>(
+          <button key={v} role="radio" aria-checked={lang===v} title={full} aria-label={full}
+            onClick={()=>setLang(v)}
+            className={`px-1.5 h-6 flex items-center justify-center rounded text-[10px] font-bold tracking-wide transition-colors ${
+              lang===v?"bg-white/20 text-white":"text-white/45 hover:text-white hover:bg-white/10"}`}>
+            {short}
+          </button>
+        ))}
+      </div>
       <ThemeToggle theme={theme} setTheme={setTheme}/>
       <button onClick={onToggleNotifications} aria-label={`Notifications${unreadCount>0?`, ${unreadCount} unread`:""}`}
         className="relative w-8 h-8 flex items-center justify-center text-white/55 hover:text-white transition-colors shrink-0">
@@ -1114,6 +1180,20 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
   // Site status unless the reader picks otherwise, or unless the filters they
   // set imply a different question. The dots and the filter checkboxes have to
   // agree out of the box; anything else is two legends contradicting each other.
+  const [replyFor,setReplyFor]=useState<Project|null>(null);
+  const [near,setNear]=useState<[number,number]|null>(null);
+  const [nearBusy,setNearBusy]=useState(false);
+  const [nearErr,setNearErr]=useState<string|null>(null);
+
+  /** The ten nearest contracts to the reader, measured not guessed. */
+  const nearest=useMemo(()=>{
+    if(!near) return [];
+    return projects
+      .filter(p=>p.lat!=null&&p.lng!=null)
+      .map(p=>({p,m:metresBetween(near,[p.lat!,p.lng!])}))
+      .sort((a,b)=>a.m-b.m).slice(0,10);
+  },[near,projects]);
+
   const suggested=suggestEncoding(filters as never);
   const encKey=colorBy??(suggested==="priority"?roleDefault:suggested);
   const enc=ENCODING_BY_KEY.get(encKey)!;
@@ -1257,6 +1337,15 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
                 ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
                 : <span className="text-gray-400">not published</span>}/>
+            {/* A route for the people named here to answer. Placed with the
+                contract facts rather than buried, because the party best placed
+                to correct a coordinate is the firm that built at it. */}
+            <div className="col-span-2 mt-1">
+              <button onClick={()=>setReplyFor(project)}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded border border-gray-200 text-[11px] text-gray-600 hover:bg-gray-50">
+                <MessageSquareWarning size={12}/>Is something here wrong? Answer this record
+              </button>
+            </div>
             {/* What the yellow shape on the map is, and how far to trust it. The
                 corridor's direction comes from OSM channel geometry, not from
                 DPWH, so the channel it was derived from is named and the
@@ -1399,9 +1488,71 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
+          {/*
+            The question an ordinary person actually arrives with.
+
+            Until now the only way in was a contract id or 1,293 rows of table —
+            fine for an auditor, useless for someone who wants to know what was
+            built on their own barangay's riverbank. The device already knows
+            where it is, and every contract has a coordinate, so the answer is
+            one tap away and was simply never offered.
+          */}
+          <button onClick={()=>{
+              if(!navigator.geolocation){setNearErr("This browser will not share a location.");return;}
+              setNearBusy(true); setNearErr(null);
+              navigator.geolocation.getCurrentPosition(
+                pos=>{ setNearBusy(false); setNear([pos.coords.latitude,pos.coords.longitude]); },
+                ()=>{ setNearBusy(false); setNearErr("Location permission was declined, so nothing can be measured from where you are."); },
+                {enableHighAccuracy:true,timeout:10000});
+            }}
+            className="absolute left-3 bottom-3 flex items-center gap-1.5 px-3 py-2 rounded shadow-lg text-[12px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+            style={{background:"var(--masid-navy)",zIndex:900}} disabled={nearBusy}>
+            <MapPin size={13}/>{nearBusy?"Finding you…":near?"Update my location":"What is near me?"}
+          </button>
           <LeafletMap projects={layers.markers?filtered:[]} enc={enc} selectedId={selectedId}
             onSelect={setSelectedId} showBoundaries={layers.boundaries}
             cluster={layers.cluster}/>
+          {(near||nearErr)&&(
+            <div className="absolute left-3 bottom-16 bg-white rounded border border-gray-200 shadow-xl overflow-hidden"
+              style={{zIndex:900,width:320,maxHeight:"48vh"}}>
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <MapPin size={12} className="text-[#1e3a7b]"/>
+                <span className="text-[12px] font-bold text-gray-700">Nearest to you</span>
+                <button onClick={()=>{setNear(null);setNearErr(null);}}
+                  className="ml-auto p-0.5 text-gray-400 hover:text-gray-600"><X size={13}/></button>
+              </div>
+              {nearErr?(
+                <p className="px-3 py-3 text-[12px] text-gray-600 leading-relaxed">{nearErr}</p>
+              ):(
+                <div className="overflow-y-auto" style={{maxHeight:"40vh"}}>
+                  {nearest.map(({p,m})=>(
+                    <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                      className="w-full text-left px-3 py-2 border-b border-gray-50 hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{background:colorOf(p,enc)}}/>
+                        <span className="font-mono text-[10px] text-gray-500">{p.id}</span>
+                        <span className="ml-auto font-mono text-[11px] font-semibold text-gray-700">
+                          {m<1000?`${m} m`:`${(m/1000).toFixed(1)} km`}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                        {p.municipality} · {p.description.slice(0,54)}…
+                      </div>
+                    </button>
+                  ))}
+                  {nearest.length===0&&(
+                    <p className="px-3 py-3 text-[12px] text-gray-500">
+                      No contract in the current filters has a coordinate to measure against.
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="px-3 py-2 text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+                Straight-line distance from your device to the coordinate DPWH published. Your
+                location is used in this browser only and is not sent anywhere.
+              </p>
+            </div>
+          )}
           {filtered.length===0&&(
             <div className="absolute inset-0 flex items-center justify-center bg-white/80" style={{zIndex:900}}>
               <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={onClearFilters}/>
@@ -1409,6 +1560,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
           )}
           {selected&&<SlidePanel project={selected}/>}
           {briefFor&&<InspectionBrief project={briefFor} onClose={()=>setBriefFor(null)}/>}
+          {replyFor&&<RightOfReply contractId={replyFor.id} contractName={replyFor.name} onClose={()=>setReplyFor(null)}/>}
         </div>
       ):(
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -2033,6 +2185,11 @@ export default function App() {
   useEffect(()=>{ applyTheme(theme); saveTheme(theme); },[theme]);
   useEffect(()=>watchSystem(()=>themeRef.current),[]);
   const setTheme = (t:Theme)=>setThemeState(t);
+
+  /* Language. Filipino by default on a device set to Filipino, without asking. */
+  const [lang,setLangState] = useState<Lang>(()=>loadLang());
+  useEffect(()=>{ saveLang(lang); document.documentElement.lang = lang==="fil"?"fil":"en"; },[lang]);
+  const setLang = (l:Lang)=>setLangState(l);
   const [notificationsOpen,setNotifs] = useState(false);
   const [paletteOpen,setPalette]      = useState(false);
   const [createModalOpen,setCreate]   = useState(false);
@@ -2090,7 +2247,7 @@ export default function App() {
 
       <div className="relative shrink-0">
         <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)} canToggleSidebar={showSidebar}
-          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole} theme={theme} setTheme={setTheme}
+          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole} theme={theme} setTheme={setTheme} lang={lang} setLang={setLang}
           onLogout={handleLogout} onCreateProject={()=>setCreate(true)} canCreate={canCreate}
           onOpenPalette={()=>setPalette(true)}/>
         {notificationsOpen&&(
@@ -2111,6 +2268,7 @@ export default function App() {
           {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail} role={ROLE_LABELS_PUBLIC[userRole]}/>}
           {screen==="contractors"  &&<ContractorsScreen/>}
           {screen==="admin"        &&<AdminScreen/>}
+          {screen==="nationwide"   &&<NationwideScreen/>}
           {screen==="transparency" &&<TransparencyScreen onLogin={()=>setIsLoggedIn(false)}/>}
         </main>
       </div>
