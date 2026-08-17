@@ -40,6 +40,7 @@ import {
 } from "./satReview";
 import { tint, accent } from "./theme";
 import { WaybackStrip } from "./WaybackStrip";
+import { StreetLevel } from "./StreetLevel";
 
 const VERDICT_ORDER: Verdict[] = ["change-at-point", "change-offset", "no-change-signal", "not-assessable"];
 type Sort = "value" | "verdict" | "id" | "clear";
@@ -345,6 +346,9 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                           {l.label}<ExternalLink size={9} />
                         </a>
                       ))}
+                      {/* Eye level. Everything else in this row looks straight down. */}
+                      <span className="text-[10px] text-gray-400">· from the ground:</span>
+                      <StreetLevel lat={sel.p.lat} lng={sel.p.lng} compact />
                     </div>
                   </>
                 ) : (

@@ -34,6 +34,7 @@ import { LeafletMap } from "./LeafletMap";
 import { SatelliteScreen } from "./SatelliteScreen";
 import { NationwideScreen } from "./NationwideScreen";
 import { RightOfReply } from "./RightOfReply";
+import { StreetLevel } from "./StreetLevel";
 import { InspectionBrief } from "./InspectionBrief";
 import { ReportsFeed } from "./ReportsFeed";
 import { HAZARD_BY_ID, plainSummary } from "./data";
@@ -1337,6 +1338,10 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
                 ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
                 : <span className="text-gray-400">not published</span>}/>
+            {/* Eye level, where a sky view stops being able to help. */}
+            {project.lat!=null&&project.lng!=null&&(
+              <div className="col-span-2 mt-1"><StreetLevel lat={project.lat} lng={project.lng}/></div>
+            )}
             {/* A route for the people named here to answer. Placed with the
                 contract facts rather than buried, because the party best placed
                 to correct a coordinate is the firm that built at it. */}
