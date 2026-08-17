@@ -1,0 +1,155 @@
+{
+ "generated": "2026-08-17T16:55:56Z",
+ "source": "DPWH contract agreements (scanned PDFs) via dcs.infrawatch.ph",
+ "method": "pdftoppm at 300 dpi then tesseract --psm 6. No vision model and no API key: these scans are readable by ordinary OCR, which keeps the tier free, offline and reproducible.",
+ "visibilityNote": {
+  "surface": "at the surface when finished \u2014 measurable in 0.3 m imagery",
+  "footprint": "outline visible from above; thickness and volume are not",
+  "ground": "visible only from beside it \u2014 this is what street level is for",
+  "buried": "under ground or under a surface course when finished",
+  "inside": "cast into the concrete \u2014 invisible forever",
+  "gone": "the item is removal; nothing remains to see",
+  "none": "not a physical work item"
+ },
+ "minCoverage": 0.35,
+ "accuracy": {
+  "read": 11,
+  "priceReadable": 10,
+  "priceExact": 10,
+  "coverageMedian": 0.624,
+  "usable": 0
+ },
+ "aggregateByVisibility": {
+  "buried": 202151847.81,
+  "inside": 22299259.5,
+  "footprint": 442461215.66
+ },
+ "contracts": [
+  {
+   "id": "24CC0400",
+   "coverage": 0.624,
+   "items": [
+    {
+     "code": "1716(6)Piles",
+     "description": ", Furnished",
+     "quantity": 34926.0,
+     "unit": "lm.",
+     "unitPrice": 3744.0,
+     "amount": 130762944.0,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 130762944.0,
+   "statedTotal": 209524421.84,
+   "awardAmount": 209524421.8,
+   "byVisibility": {
+    "buried": 130762944.0
+   }
+  },
+  {
+   "id": "23CC0192",
+   "coverage": 0.771,
+   "items": [
+    {
+     "code": null,
+     "description": "al Protection)",
+     "quantity": 24228.0,
+     "unit": "lm.",
+     "unitPrice": 4420.52,
+     "amount": 107100358.56,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 107100358.56,
+   "statedTotal": 138918095.2,
+   "awardAmount": 138918095.2,
+   "byVisibility": {
+    "footprint": 107100358.56
+   }
+  },
+  {
+   "id": "23CC0191",
+   "coverage": 0.771,
+   "items": [
+    {
+     "code": null,
+     "description": "al Protection)",
+     "quantity": 24228.0,
+     "unit": "lm.",
+     "unitPrice": 4420.42,
+     "amount": 107097935.76,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 107097935.76,
+   "statedTotal": 138914412.14,
+   "awardAmount": 138914412.1,
+   "byVisibility": {
+    "footprint": 107097935.76
+   }
+  },
+  {
+   "id": "23CC0190",
+   "coverage": 0.771,
+   "items": [
+    {
+     "code": null,
+     "description": "al Protection)",
+     "quantity": 24228.0,
+     "unit": "lm.",
+     "unitPrice": 4418.65,
+     "amount": 107055052.2,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 107055052.2,
+   "statedTotal": 138858553.38,
+   "awardAmount": 138858553.4,
+   "byVisibility": {
+    "footprint": 107055052.2
+   }
+  },
+  {
+   "id": "23CC0193",
+   "coverage": 0.771,
+   "items": [
+    {
+     "code": null,
+     "description": "al Protection)",
+     "quantity": 24228.0,
+     "unit": "lm.",
+     "unitPrice": 4417.29,
+     "amount": 107022102.12,
+     "visibility": "footprint"
+    }
+   ],
+   "boqTotal": 107022102.12,
+   "statedTotal": 138815993.57,
+   "awardAmount": 138815993.6,
+   "byVisibility": {
+    "footprint": 107022102.12
+   }
+  },
+  {
+   "id": "24CC0289",
+   "coverage": 0.641,
+   "items": [
+    {
+     "code": null,
+     "description": "_| Piles, Furnished",
+     "quantity": 16098.0,
+     "unit": null,
+     "unitPrice": 3784.57,
+     "amount": 60924007.86,
+     "visibility": "buried"
+    }
+   ],
+   "boqTotal": 60924007.86,
+   "statedTotal": 95039699.28,
+   "awardAmount": 95039699.28,
+   "byVisibility": {
+    "buried": 60924007.86
+   }
+  }
+ ]
+}

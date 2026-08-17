@@ -35,6 +35,7 @@ import { SatelliteScreen } from "./SatelliteScreen";
 import { NationwideScreen } from "./NationwideScreen";
 import { RightOfReply } from "./RightOfReply";
 import { StreetLevel } from "./StreetLevel";
+import { WhatThePaperSays } from "./WhatThePaperSays";
 import { InspectionBrief } from "./InspectionBrief";
 import { ReportsFeed } from "./ReportsFeed";
 import { HAZARD_BY_ID, plainSummary } from "./data";
@@ -1338,6 +1339,11 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
               v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
                 ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
                 : <span className="text-gray-400">not published</span>}/>
+            {/* The contract's own quantities, split by what can be seen. This
+                is the only thing in the panel that says what SHOULD be here
+                rather than what the register says about it. */}
+            <div className="col-span-2 mt-1"><WhatThePaperSays contractId={project.id}/></div>
+
             {/* Eye level, where a sky view stops being able to help. */}
             {project.lat!=null&&project.lng!=null&&(
               <div className="col-span-2 mt-1"><StreetLevel lat={project.lat} lng={project.lng}/></div>

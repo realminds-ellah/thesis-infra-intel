@@ -29,6 +29,7 @@ import {
   PROC_BY_ID, HAZARD_BY_ID, SAT_BY_ID, FLAG_LABELS, PROC_FLAG_LABELS,
   VERDICT_CFG, type Project,
 } from "./data";
+import { DOC_BY_ID } from "./WhatThePaperSays";
 
 const pesoFull = (n: number) => `₱${n.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 const fmt = (d?: string | null) => d
@@ -193,6 +194,61 @@ export function InspectionBrief({ project, onClose }:
               </p>
             </section>
           )}
+
+          {/*
+            The contract's own quantities, on paper, in the inspector's hand.
+
+            Until this existed the brief could only say "is there a flood control
+            structure at the coordinate". Now it can say what the contract was
+            paid for, item by item, and — just as usefully — which of those items
+            nobody can confirm without opening the structure. An inspector who
+            knows that 47% of the value is buried does not waste the visit
+            pretending otherwise.
+          */}
+          {(() => {
+            const doc = DOC_BY_ID.get(project.id);
+            if (!doc) return null;
+            const SEEN = new Set(["surface", "ground", "footprint"]);
+            const visible = doc.items.filter(i => SEEN.has(i.visibility));
+            const hidden = doc.items.filter(i => !SEEN.has(i.visibility));
+            const sum = (xs: typeof doc.items) => xs.reduce((a, b) => a + b.amount, 0);
+            const tot = doc.boqTotal || 1;
+            return (
+              <section className="mb-5">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-1 mb-2">
+                  What the contract says is here
+                </h3>
+                <p className="text-[10px] text-gray-500 mb-2">
+                  Read by OCR from the scanned contract agreement. Quantities are the contract&apos;s own.
+                </p>
+                <table className="w-full text-[11px] mb-2">
+                  <tbody>
+                    {visible.map((i, n) => (
+                      <tr key={n}>
+                        <td className="py-0.5 pr-2 align-top" style={{ width: 13 }}>
+                          <span className="inline-block border border-gray-400 rounded-sm" style={{ width: 11, height: 11 }} />
+                        </td>
+                        <td className="py-0.5">{i.description}</td>
+                        <td className="py-0.5 text-right font-mono whitespace-nowrap pl-2">
+                          {i.quantity.toLocaleString(undefined, { maximumFractionDigits: 2 })}{i.unit ? ` ${i.unit}` : ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {hidden.length > 0 && (
+                  <p className="text-[10px] text-gray-600 leading-relaxed">
+                    <strong>Cannot be confirmed on a site visit —{" "}
+                    {Math.round((sum(hidden) / tot) * 100)}% of the contract by value.</strong>{" "}
+                    {hidden.slice(0, 6).map(i => i.description).join("; ")}
+                    {hidden.length > 6 ? `; and ${hidden.length - 6} more.` : "."}{" "}
+                    Reinforcing steel is cast in, excavation is backfilled, subbase sits under the
+                    surface course. Record what is visible; do not record an opinion about what is not.
+                  </p>
+                )}
+              </section>
+            );
+          })()}
 
           <section className="mb-5">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200 pb-1 mb-2">What to check</h3>
