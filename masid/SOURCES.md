@@ -876,3 +876,118 @@ photographs**. See FINDINGS.md §4.
 **Resolution ceiling:** the metadata reports `MaxMapLevel 19` and zoom 20 returns
 HTTP 404. Native sampling is 0.3 m/px. Positional accuracy at the sampled point
 is ±8.47 m.
+
+---
+
+# Considered and not used, and why
+
+A panel's first question about a Philippine remote-sensing thesis is why it does
+not use Philippine satellites. The short answer is that this build was
+constrained to sources anyone can re-download without permission, and the
+national assets are not among them. The longer answer is below, with what was
+actually tested.
+
+## PhilSA — Diwata, Maya, MULA
+
+**Not used. Access is by formal request, and that request is pending.**
+
+Checked on 18 August 2026:
+
+| Endpoint | Result |
+|---|---|
+| `philsa.gov.ph` | HTTP 200 — an ordinary website |
+| `spacedata.philsa.gov.ph` | HTTP 200 — an ordinary website |
+| `spacedata.philsa.gov.ph/api`, `/stac`, `/catalog`, `/collections` | **HTTP 404 — no machine-readable catalogue** |
+| `data.philsa.gov.ph`, `pedro.asti.dost.gov.ph` | did not resolve |
+
+Against the Sentinel-2 path this project does use:
+
+| Endpoint | Result |
+|---|---|
+| `earth-search.aws.element84.com/v1/collections` | HTTP 200, **9 open collections, anonymous, no signup** |
+
+That difference is the whole reason. `pipeline/satellite.py` can walk 200 sites
+unattended, and any reader can re-run it and get the same answer. PhilSA imagery
+requires a bilateral grant, so "we did not use PhilSA" and "we are waiting on
+PhilSA" are the same sentence.
+
+**Three further reasons it would not have rescued this tier even with access:**
+
+1. **Diwata is a tasked telescope, not a sweeper.** Diwata-1 deorbited around
+   2020; Diwata-2 points at targets on request rather than systematically
+   imaging the country on a schedule. There is therefore very unlikely to be a
+   repeat archive over 1,293 Bulacan coordinates on the dates these contracts
+   were built. Sentinel-2's value here was never resolution — it is that it
+   images everywhere every ~5 days, unasked.
+2. **Resolution would not fix the null result.** Diwata's high-precision
+   telescope is roughly 3 m and MULA is specified around 5 m. Better than
+   Sentinel-2's 10 m, but a 2 m revetment is still a pixel or two. What actually
+   lets a person read a structure is the 0.3 m in §6, and nothing in the
+   national fleet is near that.
+3. **Reproducibility.** Every dataset in this build can be re-downloaded by a
+   panel, a journalist or a rival researcher with no one's permission. A finding
+   resting on a data grant cannot be independently checked, which is a reason to
+   build the public-data version first regardless of access.
+
+*Mission specifications above are from public descriptions and should be
+confirmed with PhilSA directly; the endpoint results are what was tested.*
+
+**What PhilSA would genuinely unlock — and it is not resolution.**
+
+- **Tasking.** Imagery acquired *on request, inside a contract's construction
+  window*. This is the only fix for FINDINGS.md §4: the 2022–2024 surge was
+  awarded, built and completed with no high-resolution photograph taken over it.
+  No open-data source can solve that, because open satellites image on their own
+  schedule and the moment has passed.
+- **SAR.** Cloud penetration. 59 of the 200 assessed sites are unreadable
+  because of wet-season cloud over Bulacan.
+
+## Google Maps and Street View imagery
+
+**Used only as out-links and as the keyless classic embed; never as data.**
+
+- **Historical imagery is exposed by no API.** The "see more dates" slider in
+  Street View, and the time slider in Google Earth, are features of Google's own
+  interfaces. `StreetViewService` returns the current panorama and its
+  `imageDate` and offers no way to enumerate older ones. A year-by-year
+  comparison therefore cannot be rebuilt in this app at any price.
+- **Every Maps Platform key requires a billing-enabled project**, including the
+  Embed API whose basic usage is not charged. A public static site would be
+  shipping a spendable credential to every visitor.
+- **The tiles cannot be embedded outside Google's own services** under the Maps
+  Platform terms, which is why the archived-imagery strip runs on Esri Wayback:
+  Esri publishes its past versions as addressable tile layers precisely so third
+  parties can use them with attribution.
+
+The classic `maps.google.com/maps?q=…&output=embed` endpoint predates Maps
+Platform, needs no key and bills nothing, so it is used for the map and Street
+View panes — Google's own viewer, inside an iframe, with a link out to the date
+control that cannot be drawn here.
+
+## Planet / PlanetScope
+
+**Not used.** 3–5 m daily imagery would materially improve cadence over
+Sentinel-2, and the NICFI programme has covered tropical regions including the
+Philippines. It needs registration, its access terms have changed over time, and
+its licence restricts redistribution — so a result built on it is not
+reproducible by a reader in the way the rest of this build is. Worth revisiting
+through Planet's education and research programme as a *supplement*, not a
+foundation.
+
+## Maxar Open Data
+
+**Not used systematically.** Genuinely free and genuinely sub-metre, but released
+only around specific disaster events rather than continuously. Worth checking
+per typhoon that hits Bulacan — an event release covering a flood-control site
+shortly after a storm would be the single most useful frame this project could
+obtain — but it cannot be planned around.
+
+## COA audit reports
+
+**Not used, and this is the most consequential omission.** Only an audit finding
+turns "built more than once" from an inference into a recorded fact. The
+Independent Commission for Infrastructure turned its findings over to the DOJ
+and the Ombudsman rather than publishing an itemised list, so there is no public
+ground truth to validate any ranking in this project against — which is why the
+Audit-Priority Triage is described everywhere as an ordering and never as a
+prediction.

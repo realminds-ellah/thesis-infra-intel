@@ -192,6 +192,17 @@ No. Every flag is a discrepancy between published records. Whether anything is m
 **"Why doesn't the satellite part work?"**
 Sentinel-2 is 10 m per pixel. That's wider than most structures in this register — a 2 m revetment cannot produce a signal. I measured it against seeded controls rather than assuming it worked.
 
+**"Did you use PhilSA's satellites?"**
+No, and the reason is access rather than choice. PhilSA imagery comes through a formal
+request, which is pending — there is no open catalogue. I tested it: every machine-readable
+path on their data portal returns 404, against nine anonymous open collections for
+Sentinel-2. It would not have rescued the detector either: Diwata is a tasked telescope
+rather than a sweeper, so there is unlikely to be a repeat archive over these coordinates
+on these dates, and at ~3 m a two-metre revetment is still a pixel. What PhilSA would
+genuinely unlock is **tasking** — imagery acquired inside a contract's construction window,
+which is the only fix for the five-and-a-half-year gap — and **SAR**, which sees through the
+cloud that makes 59 of 200 sites unreadable. Written up in `masid/SOURCES.md`.
+
 **"Why not Google Earth?"**
 Historical imagery isn't exposed by any Google API — the time slider is a UI feature of Earth Pro and Earth web only. Their tiles also can't be embedded in a third-party map under the Maps Platform terms. So the app links out to it instead, which is genuinely useful as a second opinion since Google often flies on different dates.
 
