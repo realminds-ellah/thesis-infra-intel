@@ -28,6 +28,13 @@ export function ProjectMap({
   onPick?: (id: string) => void;
   height?: number;
 }) {
+  // Half the stated length: the contract's own claim about how much ground it
+  // covers, in metres, or null when the description states no chainage.
+  const scopeRadius = (() => {
+    const m = (project as unknown as { lengthMetres?: number | null }).lengthMetres;
+    return m && m > 0 ? m / 2 : null;
+  })();
+
   // Neighbours within roughly a kilometre, so the frame carries context without
   // becoming another cluttered overview.
   const near = useMemo(() => {
@@ -60,6 +67,29 @@ export function ProjectMap({
           the innermost radius the satellite tier samples. */}
       <Circle center={[project.lat, project.lng]} radius={30}
         pathOptions={{ color: "#ffffff", weight: 1.5, opacity: 0.85, fill: false, dashArray: "4 3" }} />
+
+      {/*
+        HOW MUCH GROUND THE CONTRACT CLAIMS TO COVER.
+
+        224 contracts state chainage limits in their description — "STA 0+000 to
+        STA 0+780" — which is 780 m of work. A single dot says nothing about
+        whether that is a 30 m repair or a two-kilometre stretch, and the
+        difference is most of what "is this plausible" depends on.
+
+        Drawn as a CIRCLE of half the stated length, not a line, and that is a
+        deliberate limit rather than a shortcut: the register publishes one point
+        and no bearing. Which way the 780 m runs is not in the record, so drawing
+        it as a line in a chosen direction would be inventing the one fact the
+        shape appears to assert. A circle says "this much ground, somewhere around
+        here", which is exactly what is known.
+
+        Where two of these overlap, two contracts claim overlapping ground — the
+        "built more than once" question, drawn instead of buried in a flag.
+      */}
+      {scopeRadius && (
+        <Circle center={[project.lat, project.lng]} radius={scopeRadius}
+          pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10 }} />
+      )}
 
       {near.map(p => (
         <CircleMarker key={p.id} center={[p.lat, p.lng]} radius={4}

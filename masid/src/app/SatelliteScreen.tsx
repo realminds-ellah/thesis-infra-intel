@@ -473,7 +473,11 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                     in this site&apos;s own surroundings. Construction reads as vegetation down and built
                     surface up; both must pass {String(SATELLITE.method.ndviZThreshold)}σ / +{String(SATELLITE.method.ndbiZThreshold)}σ.
                   </p>
-                  <table className="w-full text-[12px]">
+                  <div className="overflow-x-auto">
+                    {/* Scrolls rather than clips. The card around this table is
+                        overflow-hidden, so on a 390px phone columns four onward were
+                        not merely cramped, they were invisible and unreachable. */}
+                  <table className="w-full text-[12px] min-w-[760px]">
                     <thead><tr className="border-b border-gray-100">
                       {/* keyed by position: two columns are both headed σ */}
                       {["Radius", "Vegetation", "σ", "Built surface", "σ", "Reads as"].map((h, i) =>
@@ -502,6 +506,7 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 <div className="bg-white rounded border border-gray-200 p-4">

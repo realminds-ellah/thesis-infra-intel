@@ -19,14 +19,13 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, LayersControl, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Circle, Popup, Polygon, LayersControl, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 import { BOUNDARIES, META, type Project } from "./data";
 import { colorOf, type Encoding } from "./mapColor";
-import type { Marker as LMarker } from "leaflet";
 
 const BULACAN_CENTRE: [number, number] = [14.86, 120.83];
 
@@ -57,35 +56,30 @@ function FitToProjects({ projects }: { projects: Project[] }) {
 }
 
 /**
- * Cluster bubbles coloured by what is inside them, not by how many.
+ * Cluster bubbles that say how many, and nothing else.
  *
- * leaflet.markercluster ships green/yellow/orange bubbles keyed to COUNT — green
- * under 10, yellow to 100, orange above. On this map those are the same three
- * hues the dots use for something else entirely: green means no flags, orange
- * means several. A green bubble reading "clean" when it only meant "small" is
- * worse than no colour at all.
+ * They used to be coloured by the share of contracts inside that were flagged,
+ * on the same traffic light the dots use. That was better than leaflet's default
+ * — which colours by COUNT, in the same three hues, so a green bubble reading
+ * "clean" actually meant "small" — but it was still wrong for a subtler reason.
  *
- * So a bubble takes the share of contracts inside it that are flagged for
- * review, on the same traffic light the dots use. The count stays in the middle;
- * the ring shows the share.
+ * A bubble can hold forty contracts spread over three municipalities. Averaging
+ * them into one colour produces a number that is true of no single contract and
+ * cannot be acted on: an amber bubble tells you neither which contracts are
+ * flagged nor where they are. It required a legend to decode and, decoded, said
+ * nothing. So the bubble is now neutral and carries the count alone, and the
+ * colour language belongs entirely to the dots, which are the things a reader
+ * can actually click.
  */
-function clusterIcon(cluster: { getChildCount(): number; getAllChildMarkers(): LMarker[] }) {
-  const kids = cluster.getAllChildMarkers();
+function clusterIcon(cluster: { getChildCount(): number }) {
   const n = cluster.getChildCount();
-  const flagged = kids.filter(m => (m.options as { flagged?: boolean }).flagged).length;
-  const share = n ? flagged / n : 0;
-  const fill = share === 0 ? "#046b04" : share < 0.25 ? "#f7c948"
-    : share < 0.5 ? "#e8722c" : "#c0272d";
   const size = n < 10 ? 32 : n < 100 ? 40 : 48;
-  // Just the count, nothing else. The colour carries the share flagged and the
-  // legend says so; a percentage crammed into the bubble only made the number
-  // harder to read.
   return L.divIcon({
     className: "masid-cluster",
     iconSize: L.point(size, size),
-    html: `<div title="${n} contracts"
+    html: `<div title="${n} contracts here — zoom in to see them"
         style="width:${size}px;height:${size}px;border-radius:50%;
-        background:${fill};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
+        background:#5b6472;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
         display:flex;align-items:center;justify-content:center;
         color:#fff;font-family:Inter,sans-serif;font-weight:700;
         font-size:${n > 999 ? 12 : n > 99 ? 14 : 15}px">${n}</div>`,
@@ -109,11 +103,34 @@ export function LeafletMap({
   const served = useMemo(
     () => new Set(META.coverage.municipalitiesServed), []);
 
+  /**
+   * A ring of DPWH-REPORTED progress around each dot.
+   *
+   * Still a circle — the mark language does not change — but the white outline
+   * now carries a second fact for free. A full ring is 100% reported complete, a
+   * quarter ring is 25%, and the gap is legible at a glance without a legend,
+   * because "how much of the circle is drawn" needs no key.
+   *
+   * The word REPORTED is doing real work. This is the percentage DPWH publishes,
+   * not an observation of the ground, and the popup and detail panel both say so.
+   * A ring that looked like measured progress would be the app asserting exactly
+   * the thing this project exists to question.
+   */
+  const ring = (pct: number, r: number) => {
+    const c = 2 * Math.PI * r;
+    const done = Math.max(0, Math.min(100, pct)) / 100;
+    return { dash: `${(c * done).toFixed(1)} ${(c * (1 - done)).toFixed(1)}` };
+  };
+
   const markers = mappable.map(p => (
     <CircleMarker key={p.id} center={[p.lat, p.lng]}
       radius={selectedId === p.id ? 9 : 5}
       pathOptions={{
-        color: "#ffffff", weight: 1.5,
+        color: "#ffffff", weight: selectedId === p.id ? 3 : 2,
+        // A dash pattern around the circumference: drawn for the reported share,
+        // absent for the rest. No extra DOM, and it survives clustering.
+        dashArray: ring(p.completion, selectedId === p.id ? 9 : 5).dash,
+        lineCap: "butt",
         fillColor: colorOf(p, enc), fillOpacity: 0.95,
       }}
       // read back by clusterIcon to colour the bubble by contents
@@ -124,6 +141,14 @@ export function LeafletMap({
           <div style={{ fontFamily: "monospace", fontSize: 10, color: "var(--color-gray-500)" }}>{p.id}</div>
           <div style={{ fontWeight: 600, fontSize: 12, margin: "2px 0 4px", color: "var(--color-gray-900)" }}>{p.description.slice(0, 90)}</div>
           <div style={{ fontSize: 11, color: "var(--color-gray-600)" }}>{p.municipality} · {p.dpwhStatus}</div>
+          <div style={{ fontSize: 11, color: "var(--color-gray-500)", marginTop: 2 }}>
+            {p.completion}% complete <span style={{ opacity: 0.7 }}>— as reported by DPWH</span>
+          </div>
+          {(p as unknown as { lengthMetres?: number|null }).lengthMetres ? (
+            <div style={{ fontSize: 11, color: "var(--color-gray-500)" }}>
+              contract states {(p as unknown as { lengthMetres: number }).lengthMetres.toLocaleString()} m of work
+            </div>
+          ) : null}
           {p.auditFlags.length > 0 && (
             <div style={{ fontSize: 11, color: "#c05621", marginTop: 4, fontWeight: 600 }}>
               Flagged for review — {p.auditFlags.length} check{p.auditFlags.length === 1 ? "" : "s"} tripped
@@ -175,6 +200,19 @@ export function LeafletMap({
           <Popup>{b.name}</Popup>
         </Polygon>
       ))}
+
+      {/* The selected contract's stated extent, so the scale of the work is
+          visible without opening the detail panel. Same reasoning as
+          ProjectMap: a circle of half the stated length, because the register
+          publishes a point and no bearing. */}
+      {(() => {
+        const sel = mappable.find(p => p.id === selectedId);
+        const m = sel && (sel as unknown as { lengthMetres?: number | null }).lengthMetres;
+        return sel && m && m > 0 ? (
+          <Circle center={[sel.lat, sel.lng]} radius={m / 2}
+            pathOptions={{ color: "#f7c948", weight: 2, opacity: 0.9, fillColor: "#f7c948", fillOpacity: 0.10 }} />
+        ) : null;
+      })()}
 
       {cluster
         ? <MarkerClusterGroup chunkedLoading maxClusterRadius={45} spiderfyOnMaxZoom

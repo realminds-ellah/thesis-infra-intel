@@ -1023,7 +1023,11 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 An ordering, not a prediction: there is no public itemised list of confirmed
                 ghost projects to validate a ranking against.
               </div>
-              <table className="w-full text-[12px]">
+              <div className="overflow-x-auto">
+                {/* Scrolls rather than clips. The card around this table is
+                    overflow-hidden, so on a 390px phone columns four onward were
+                    not merely cramped, they were invisible and unreachable. */}
+              <table className="w-full text-[12px] min-w-[760px]">
                 <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Municipality","Contractor","Value","Signals","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
                 <tbody>
                   {PRIORITY.slice(0,8).map(f=>{
@@ -1044,6 +1048,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                   })}
                 </tbody>
               </table>
+              </div>
             </>
           )}
         </div>
@@ -1056,8 +1061,12 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
           </div>
           {atRisk.length===0?<EmptyState title="No at-risk projects" body="All active projects are progressing on schedule."/>:(
             <>
-            <table className="w-full text-[12px]">
-              <thead><tr className="border-b border-gray-100 bg-gray-50">{["Project","Municipality","Contractor","Completion","Status","Imagery","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
+              <thead><tr className="border-b border-gray-100 bg-gray-50">{["Project","Municipality","Contractor","Reported progress","Status","Imagery","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
                 {pg.paginate(atRisk).map(p=>(
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -1077,6 +1086,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 ))}
               </tbody>
             </table>
+            </div>
             <Pagination page={pg.page} totalPages={pg.totalPages} setPage={pg.setPage}
               total={atRisk.length} pageSize={pg.pageSize}/>
             </>
@@ -1234,6 +1244,11 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             <Fact l="Awarded for" v={pr?.awardAmount?pesoFull(pr.awardAmount):"—"}
               sub={saved?`₱${saved.toLocaleString("en-PH",{maximumFractionDigits:0})} below the approved budget`:undefined}/>
             <Fact l="Reported progress" v={`${project.completion}%`}/>
+            {/* What the contract says it covers. The map draws this as a circle;
+                the number belongs here so the two agree. */}
+            {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null&&(
+              <Fact l="Stated extent" v={`${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`}/>
+            )}
             <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
           </Section>
 
@@ -1371,7 +1386,11 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             {filtered.length===0?(
               <EmptyState title="No projects found" body={q?`No results for "${q}"`:"No projects match the current filters."} action={q?"Clear search":undefined} onAction={q?()=>setQ(""):undefined}/>
             ):(
-              <table className="w-full text-[13px] border-collapse">
+              <div className="overflow-x-auto">
+                {/* Scrolls rather than clips. The card around this table is
+                    overflow-hidden, so on a 390px phone columns four onward were
+                    not merely cramped, they were invisible and unreachable. */}
+              <table className="w-full text-[13px] border-collapse min-w-[760px]">
                 <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                   <tr>
                     <SortTh col={"name" as keyof Project}         label="Project"      sortKey={sort.sortKey as keyof Project|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Project)=>void}/>
@@ -1397,6 +1416,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
           <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
@@ -1474,7 +1494,20 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
               <dl className="p-4 space-y-3.5">
                 {[{l:"Contractor",v:project.contractor},{l:"Municipality",v:`${project.municipality}, Bulacan`},{l:"Funding Source",v:project.fundingSource}].map(({l,v})=>(<div key={l}><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">{l}</dt><dd className="text-[13px] font-medium text-gray-800">{v}</dd></div>))}
                 <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Contract Amount</dt><dd className="text-[17px] font-mono font-bold text-gray-900">{pesoFull(project.budget)}</dd></div>
-                <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 uppercase tracking-wider">Completion</span><span className="text-[13px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={project.completion} aria-valuemin={0} aria-valuemax={100}><div className="h-2 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+                <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 uppercase tracking-wider" title="The percentage DPWH publishes. Not an observation of the site.">Reported progress</span><span className="text-[13px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={project.completion} aria-valuemin={0} aria-valuemax={100}><div className="h-2 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+                {/* What the contract claims to cover. The detail map draws this
+                    as a circle; the number belongs beside it so the two agree. */}
+                {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null&&(
+                  <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Stated extent</dt>
+                    <dd className="text-[13px] font-mono text-gray-800">
+                      {(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m
+                      {(project as unknown as {stationFrom?:string|null}).stationFrom&&(
+                        <span className="text-[11px] text-gray-400 ml-1.5">
+                          STA {(project as unknown as {stationFrom:string}).stationFrom} → {(project as unknown as {stationTo:string}).stationTo}
+                        </span>
+                      )}
+                    </dd></div>
+                )}
                 <div className="grid grid-cols-2 gap-3"><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Start (NTP)</dt><dd className="text-[12px] font-mono text-gray-700">{project.startDate??"—"}</dd></div><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Target End</dt><dd className="text-[12px] font-mono text-gray-700">{project.endDate??"—"}</dd></div></div>
               </dl>
             </div>
@@ -1618,7 +1651,11 @@ function DocumentsScreen() {
           and plans.
         </p>
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
-          <table className="w-full text-[12px]">
+          <div className="overflow-x-auto">
+            {/* Scrolls rather than clips. The card around this table is
+                overflow-hidden, so on a 390px phone columns four onward were
+                not merely cramped, they were invisible and unreachable. */}
+          <table className="w-full text-[12px] min-w-[760px]">
             <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Description","Award","Documents"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
             <tbody>
               {pg.paginate(rows).map(({r,p})=>(
@@ -1641,6 +1678,7 @@ function DocumentsScreen() {
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={pg.page} totalPages={Math.ceil(rows.length/pg.pageSize)} setPage={pg.setPage} total={rows.length} pageSize={pg.pageSize}/>
         </div>
       </div>
@@ -1682,7 +1720,11 @@ function ContractorsScreen() {
         </div>
         <div className="flex-1 overflow-auto" style={{scrollbarWidth:"none"}}>
           {filtered.length===0?<EmptyState title="No contractors found" body={`No results for "${q}"`} action="Clear search" onAction={()=>setQ("")}/>:(
-            <table className="w-full text-[12px]">
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
               <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                 <tr>
                   <SortTh col={"name" as keyof Contractor}           label="Contractor"     sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
@@ -1714,6 +1756,7 @@ function ContractorsScreen() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
         <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
@@ -1793,7 +1836,11 @@ function AdminScreen() {
               <span className="text-[13px] font-bold text-gray-800">System Users</span>
               <button onClick={()=>toast.success("Invite sent")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><Plus size={13}/>Invite User</button>
             </div>
-            <table className="w-full text-[13px]">
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[13px] min-w-[760px]">
               <thead className="border-b border-gray-100 bg-gray-50"><tr>{["Name","Role","Email","Last Login","Status","Actions"].map(h=><th key={h} className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
                 {SYSTEM_USERS.map((u,i)=>(
@@ -1812,6 +1859,7 @@ function AdminScreen() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
         {tab==="audit"&&(
@@ -1820,10 +1868,15 @@ function AdminScreen() {
               <span className="text-[13px] font-bold text-gray-800">Audit Trail</span>
               <button onClick={()=>toast.success("Audit log exported")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export CSV</button>
             </div>
-            <table className="w-full text-[12px]">
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
               <thead className="border-b border-gray-100 bg-gray-50"><tr>{["Timestamp","User","Action","Target","IP Address"].map(h=><th key={h} className="text-left px-5 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>{AUDIT_LOG.map((e,i)=><tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="px-5 py-3 font-mono text-gray-500 whitespace-nowrap">{e.time}</td><td className="px-5 py-3 font-medium text-gray-700">{e.user}</td><td className="px-5 py-3 text-gray-600">{e.action}</td><td className="px-5 py-3 font-mono text-[11px] text-[#1e3a7b]">{e.target}</td><td className="px-5 py-3 font-mono text-gray-400">{e.ip}</td></tr>)}</tbody>
             </table>
+            </div>
           </div>
         )}
         {tab==="integrations"&&(
@@ -1877,7 +1930,11 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
           <span className="text-[13px] text-gray-500">{filtered.length} of {PROJECTS.length} projects</span>
         </div>
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
-          <table className="w-full text-[13px]">
+          <div className="overflow-x-auto">
+            {/* Scrolls rather than clips. The card around this table is
+                overflow-hidden, so on a 390px phone columns four onward were
+                not merely cramped, they were invisible and unreachable. */}
+          <table className="w-full text-[13px] min-w-[760px]">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
                 <SortTh col={"name" as keyof Project}         label="Project Name"  sortKey={sort.sortKey as keyof Project|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Project)=>void}/>
@@ -1901,6 +1958,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
         </div>
         <div className="bg-white rounded border border-gray-200 p-6">
