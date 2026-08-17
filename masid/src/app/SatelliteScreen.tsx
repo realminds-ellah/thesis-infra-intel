@@ -41,6 +41,7 @@ import {
 import { tint, accent } from "./theme";
 import { WaybackStrip } from "./WaybackStrip";
 import { StreetLevel } from "./StreetLevel";
+import { GoogleView } from "./GoogleView";
 
 const VERDICT_ORDER: Verdict[] = ["change-at-point", "change-offset", "no-change-signal", "not-assessable"];
 type Sort = "value" | "verdict" | "id" | "clear";
@@ -359,6 +360,13 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                 <WaybackStrip lat={sel.p.lat} lng={sel.p.lng}
                   startDate={sel.p.startDate} endDate={sel.p.endDate}
                   verdictColor={cfg.color} />
+              )}
+
+              {/* Google's map and pegman, keyless. A second independent source
+                  over the same coordinate, and the fastest route to standing on
+                  the road beside the site. */}
+              {sel.p.lat != null && sel.p.lng != null && (
+                <GoogleView lat={sel.p.lat} lng={sel.p.lng} label={sel.p.id} />
               )}
 
               {/*
