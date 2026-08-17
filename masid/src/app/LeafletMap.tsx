@@ -144,11 +144,11 @@ export function LeafletMap({
           <div style={{ fontSize: 11, color: "var(--color-gray-500)", marginTop: 2 }}>
             {p.completion}% complete <span style={{ opacity: 0.7 }}>— as reported by DPWH</span>
           </div>
-          {(p as unknown as { lengthMetres?: number|null }).lengthMetres ? (
-            <div style={{ fontSize: 11, color: "var(--color-gray-500)" }}>
-              contract states {(p as unknown as { lengthMetres: number }).lengthMetres.toLocaleString()} m of work
-            </div>
-          ) : null}
+          <div style={{ fontSize: 11, color: "var(--color-gray-500)" }}>
+            {(p as unknown as { lengthMetres?: number|null }).lengthMetres
+              ? `contract states ${(p as unknown as { lengthMetres: number }).lengthMetres.toLocaleString()} m of work`
+              : "no extent published — the description states no chainage"}
+          </div>
           {p.auditFlags.length > 0 && (
             <div style={{ fontSize: 11, color: "#c05621", marginTop: 4, fontWeight: 600 }}>
               Flagged for review — {p.auditFlags.length} check{p.auditFlags.length === 1 ? "" : "s"} tripped

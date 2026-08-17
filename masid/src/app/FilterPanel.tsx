@@ -44,7 +44,12 @@ const STATUS_TINT: Record<ProjectStatus, { dot: string; bg: string; text: string
   terminated: { dot: "#c0272d", bg: "#fbe9ea", text: "#c0272d" },
 };
 
-export interface MapLayers { markers: boolean; boundaries: boolean; labels: boolean }
+/**
+ * `markers` used to be wired straight to the map's CLUSTER prop, so a switch
+ * labelled "Project Markers" did not hide markers — it un-grouped them. The two
+ * are separate now and named for what they do.
+ */
+export interface MapLayers { markers: boolean; boundaries: boolean; labels: boolean; cluster: boolean }
 
 /**
  * Download whatever is currently filtered, with the derived columns included —
@@ -231,7 +236,7 @@ export function FilterPanel({
         <div>
           <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Map Layers</label>
           <div className="space-y-2">
-            {([["markers", "Project Markers"], ["boundaries", "Municipal Boundaries"], ["labels", "Municipality Labels"]] as const).map(([k, l]) => (
+            {([["markers", "Project pins"], ["cluster", "Group nearby pins"], ["boundaries", "Municipal Boundaries"], ["labels", "Municipality Labels"]] as const).map(([k, l]) => (
               <div key={k} className="flex items-center justify-between">
                 <span className="text-[12px] text-gray-600">{l}</span>
                 <button onClick={() => setLayers({ ...layers, [k]: !layers[k] })} role="switch" aria-checked={layers[k]} aria-label={`Toggle ${l}`}

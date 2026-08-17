@@ -1110,6 +1110,9 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
   // The filter wins if it implies an encoding; otherwise the role's default —
   // an inspector opens on delivery, an analyst on flood exposure.
   const roleDefault=(ROLE_VIEWS[role]??ROLE_VIEWS["dpwh-admin"]).defaultEncoding;
+  // Site status unless the reader picks otherwise, or unless the filters they
+  // set imply a different question. The dots and the filter checkboxes have to
+  // agree out of the box; anything else is two legends contradicting each other.
   const suggested=suggestEncoding(filters as never);
   const encKey=colorBy??(suggested==="priority"?roleDefault:suggested);
   const enc=ENCODING_BY_KEY.get(encKey)!;
@@ -1246,9 +1249,13 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
             <Fact l="Reported progress" v={`${project.completion}%`}/>
             {/* What the contract says it covers. The map draws this as a circle;
                 the number belongs here so the two agree. */}
-            {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null&&(
-              <Fact l="Stated extent" v={`${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`}/>
-            )}
+            {/* Always shown, including when it is absent. Only 224 of 1,293
+                contracts state chainage, and silently omitting the row made a
+                missing extent look identical to a page that had not loaded. */}
+            <Fact l="Stated extent"
+              v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
+                ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
+                : <span className="text-gray-400">not published</span>}/>
             <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
           </Section>
 
@@ -1369,9 +1376,9 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,col
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
-          <LeafletMap projects={filtered} enc={enc} selectedId={selectedId}
+          <LeafletMap projects={layers.markers?filtered:[]} enc={enc} selectedId={selectedId}
             onSelect={setSelectedId} showBoundaries={layers.boundaries}
-            cluster={layers.markers}/>
+            cluster={layers.cluster}/>
           {filtered.length===0&&(
             <div className="absolute inset-0 flex items-center justify-center bg-white/80" style={{zIndex:900}}>
               <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={onClearFilters}/>
@@ -1497,17 +1504,17 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
                 <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 uppercase tracking-wider" title="The percentage DPWH publishes. Not an observation of the site.">Reported progress</span><span className="text-[13px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={project.completion} aria-valuemin={0} aria-valuemax={100}><div className="h-2 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
                 {/* What the contract claims to cover. The detail map draws this
                     as a circle; the number belongs beside it so the two agree. */}
-                {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null&&(
-                  <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Stated extent</dt>
-                    <dd className="text-[13px] font-mono text-gray-800">
+                <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Stated extent</dt>
+                  <dd className="text-[13px] font-mono text-gray-800">
+                    {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null?(<>
                       {(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m
                       {(project as unknown as {stationFrom?:string|null}).stationFrom&&(
                         <span className="text-[11px] text-gray-400 ml-1.5">
                           STA {(project as unknown as {stationFrom:string}).stationFrom} → {(project as unknown as {stationTo:string}).stationTo}
                         </span>
                       )}
-                    </dd></div>
-                )}
+                    </>):<span className="text-[12px] text-gray-400">not published</span>}
+                  </dd></div>
                 <div className="grid grid-cols-2 gap-3"><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Start (NTP)</dt><dd className="text-[12px] font-mono text-gray-700">{project.startDate??"—"}</dd></div><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Target End</dt><dd className="text-[12px] font-mono text-gray-700">{project.endDate??"—"}</dd></div></div>
               </dl>
             </div>
@@ -2010,7 +2017,7 @@ export default function App() {
   // Filters initialise from the URL so a filtered view can be shared as a link,
   // which is the whole point of a transparency register.
   const [filters,setFilters]          = useState<Filters>(()=>fromQuery(window.location.search.slice(1)));
-  const [mapLayers,setMapLayers]      = useState<MapLayers>({markers:true,boundaries:true,labels:true});
+  const [mapLayers,setMapLayers]      = useState<MapLayers>({markers:true,boundaries:true,labels:true,cluster:false});
   const [colorBy,setColorBy]          = useState<string|null>(null);   // null = follow the filter
 
 
