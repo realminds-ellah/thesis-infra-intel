@@ -142,7 +142,7 @@ reaching the vulnerable?*
 `README` · `SIGNIFICANCE` (Topic 1) · `FUSION` (Topic 1 upgrade) · `IDEAS` (first pass) ·
 `TOPIC-BANK` (emerging-tech top 10) · `RESEARCH-LOG` (this file) · `criteria.yaml` ·
 `audit.py` · `power/` (de-risking) · **`FINDINGS`** (what the built system measured) ·
-`DEMO-SCRIPT` (5-minute walkthrough) · `masid/` (the app) · `masid/SOURCES` (every dataset and its limits).
+`DEMO-SCRIPT` (5-minute walkthrough) · **`AI-LAYER`** (AI architecture and its limits) · `masid/` (the app) · `masid/SOURCES` (every dataset and its limits).
 
 ---
 
