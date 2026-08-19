@@ -99,15 +99,16 @@ PROJECTS = ROOT / "src" / "app" / "data" / "projects.json"
 DPI = 300
 MAX_PAGES = 8
 
-# Below this share of the contract price accounted for, the parsed table is too
-# incomplete to put in front of anyone: a list showing one pay item out of
-# seventeen reads as "this is the contract" and is worse than showing nothing.
+# Kept at a third, and the reason has changed. It used to be a concession to a
+# parser that recovered fragments — the comment here read "median 62%, nothing
+# reaches 90%", and by the last run before the arithmetic rewrite the real
+# figure was a median of 17.5%. Now the median is 92%, the 75th through 95th
+# percentiles all sit at 100%, and only 5 contracts of 972 exceed 105%.
 #
-# Set at a third rather than at completeness, because measured coverage runs at
-# a median of 62% and NOTHING reaches 90%. Two OCR passes recover different rows
-# and neither is close to the whole table. So the app shows what was read and
-# states the share, rather than either hiding a real partial result or dressing
-# it up as the full Bill of Quantities.
+# So the gate no longer decides what most contracts look like; it catches the
+# tail. Below a third, what was read is a fragment, and a list showing one pay
+# item out of seventeen reads as "this is the contract" and is worse than
+# showing nothing. The app shows what was read and states the share.
 MIN_COVERAGE = 0.35
 
 # dcs.infrawatch.ph is a volunteer-run civic mirror, not a CDN. OCR wants every
@@ -281,25 +282,52 @@ def ocr(pdf: Path) -> str:
 
 
 # ── Bill of Quantities ───────────────────────────────────────────────────────
-# OCR drops spaces into digit groups — "7 409,560.00" for 7,409,560.00 — so a
-# number may contain internal whitespace. Matched here, stripped in num().
-NUM = r"[\d][\d,. ]*\d"
-UNIT_WORDS = (r"(?:cu\.?|cubic|sq\.?|square|lin\.?|linear)?\s*"
-              r"(?:m(?:eter|etre)?s?\.?|l\.?\s?m\.?|kgs?\.?|each|ea\.?|sum|mo\.?|"
-              r"bags?|li?t(?:er|re)s?|tons?|pcs?\.?|set)")
-# A pay item line ends in three numbers: quantity, unit price, amount, with the
-# unit sitting between the first and second. OCR wraps "cubic"/"square" onto the
-# previous line often enough that the unit prefix is optional here and recovered
-# from context afterwards.
+# A NUMBER MAY NOT CONTAIN A SPACE, AND ALLOWING ONE WAS THE BUG
+#
+# The old pattern was `[\d][\d,. ]*\d`, with a space inside the class, because
+# OCR sometimes splits a thousands group — "7 409,560.00" for 7,409,560.00. That
+# permission was far too broad: it also let a number swallow the whitespace
+# BETWEEN TWO COLUMNS, so a perfectly readable row came apart —
+#
+#   801(6) Obstruction, Concrete 102.60 meter 2,785.80 285,823.08
+#     qty=102.60   price="2,785.80 285,82" -> 278580285.82   amount="3.08"
+#
+# and the arithmetic check then correctly rejected a row that was only ever
+# misread. That single character accounted for 667 of the 796 documents filed
+# under "text but no parsable rows". The OCR had been fine all along.
+NUM = r"\d[\d,.]*\d|\d"
+NUM_RE = re.compile(NUM)
+
 # Codes carry letters and dots as well as digits — A.1.1(8), B.5(1), 902(1)a1,
-# 1047(5)d, 1716(12) — so the earlier digits-only pattern missed most rows,
-# including the single largest line in a typical contract.
-CODE = r"[A-Z]?\.?\d{1,4}(?:\.\d+)*\s*\(\d+\)\s*[a-z0-9_]*"
-ITEM = re.compile(
-    rf"^\s*\|?\s*(?P<code>{CODE})?\s*\|?\s*(?P<desc>.*?)\s+"
-    rf"(?P<qty>{NUM})\s*\|?\s*(?P<unit>{UNIT_WORDS})?\s*\|?\s*"
-    rf"(?P<price>{NUM})\s*\|?\s*(?P<amount>{NUM})\s*\|?\s*$",
-    re.I)
+# 1047(5)d, 1716(12) — so a digits-only pattern misses most rows, including the
+# single largest line in a typical contract.
+# The trailing suffix is bounded, and the pattern is NOT case-insensitive. A
+# greedy [a-z0-9_]* under re.I swallowed the description into the code —
+# "801(6)Obstruction" — because every letter that followed matched. Real DPWH
+# suffixes are one or two characters: 902(1)a1, 1047(5)d, 311(1)h2, 900(1)b.
+# The suffix must touch the closing bracket. Allowing whitespace before it let
+# "B.7(1) and Health Program" become code "B.7(1)an" with description "d Health
+# Program". Adjacent-only, one or two characters: 902(1)a1, 311(1)h2, 1047(5)d,
+# and the common OCR of a1 as al.
+CODE = r"[A-Z]?\.?\d{1,4}(?:\.\d+)*\s*\(\d+\)(?:[a-z][a-z0-9]?)?"
+CODE_HEAD = re.compile(rf"^\s*\|?\s*({CODE})")
+# The same code anywhere in the text, used to tell a table the parser failed on
+# from a document that has no table in it.
+CODE_HEAD_ANY = re.compile(r"\b\d{3}\s*\(\s*\d+\s*\)")
+HAS_LETTER = re.compile(r"[A-Za-z]")
+
+# Anchored on word boundaries, which is not cosmetic: without them the bare "m"
+# alternative matched the m inside "kilogram" and every steel row was reported
+# in metres. Longest alternatives sit first so "kilogram" wins over "kg".
+UNIT_WORDS = (r"\b(?:cu\.?|cubic|sq\.?|square|lin\.?|linear)?\s*"
+              r"\b(?:kilograms?|kgs?\.?|m(?:eter|etre)s?\.?|l\.?\s?m\.?|m\.?|"
+              r"lump\s*sums?|sums?|each|ea\.?|mo(?:nth)?s?\.?|bags?|"
+              r"li?t(?:er|re)s?|(?:metric\s+)?tons?|pcs?\.?|sets?|days?|has?\.?)\b")
+UNIT_RE = re.compile(UNIT_WORDS, re.I)
+
+# Beyond this many numbers on one line the triple search is scanning debris, not
+# a table row, and every extra token is another chance at a coincidence.
+MAX_TOKENS = 8
 
 
 def num(s: str) -> float | None:
@@ -339,41 +367,104 @@ def _f(t: str) -> float | None:
         return None
 
 
+def _numbers(line: str) -> tuple[list[tuple], list[tuple]]:
+    """Numeric tokens on a line, plus the merged reading OCR sometimes needs.
+
+    A token is (value, start, end, raw). The merged list holds the one case the
+    old space-permissive pattern existed for: two tokens separated by a single
+    space where the right one begins with exactly three digits and a separator,
+    which is a thousands group OCR broke apart rather than the next column.
+    """
+    toks: list[tuple] = []
+    for m in NUM_RE.finditer(line):
+        v = num(m.group(0))
+        if v is not None:
+            toks.append((v, m.start(), m.end(), m.group(0)))
+
+    merged: list[tuple] = []
+    for i in range(len(toks) - 1):
+        v1, a1, b1, s1 = toks[i]
+        v2, a2, b2, s2 = toks[i + 1]
+        if line[b1:a2] == " " and re.match(r"^\d{3}[,.]", s2):
+            v = num(s1 + s2)
+            if v is not None:
+                merged.append((v, a1, b2, s1 + s2))
+    return toks, merged
+
+
+def _row(line: str) -> tuple[tuple, tuple, tuple] | None:
+    """The (quantity, unit price, amount) triple, chosen by the arithmetic.
+
+    THE ARITHMETIC PARSES THE ROW, IT NO LONGER MERELY CHECKS IT
+
+    This file already held the principle — a real BoQ row multiplies out, an OCR
+    misread of a paragraph almost never does — and used it as a filter after a
+    regex had guessed where the columns were. The guessing was the weak part:
+    these scans wrap descriptions, wrap units onto their own line, and interleave
+    junk rows from the table borders, so no whitespace rule survives the corpus.
+
+    So the columns are not guessed at all. Every number on the line is a
+    candidate and the triple that multiplies out is the row. Searching from the
+    right prefers the real trailing columns over any coincidence earlier in a
+    long description, and the plain reading is tried before the merged one so a
+    row is only stitched back together when it cannot be read as printed.
+    """
+    toks, merged = _numbers(line)
+    for pool in (toks, sorted(toks + merged, key=lambda t: t[1])):
+        pool = pool[-MAX_TOKENS:]
+        n = len(pool)
+        for k in range(n - 1, 1, -1):
+            for j in range(k - 1, 0, -1):
+                for i in range(j - 1, -1, -1):
+                    q, p, a = pool[i][0], pool[j][0], pool[k][0]
+                    if q <= 0 or p <= 0 or a <= 0:
+                        continue
+                    if abs(q * p - a) <= max(2.0, a * 0.02):
+                        return pool[i], pool[j], pool[k]
+    return None
+
+
 def parse_boq(text: str) -> list[dict]:
     items: list[dict] = []
     lines = text.split("\n")
     for i, raw in enumerate(lines):
         line = raw.strip()
-        if len(line) < 12:
+        # A row names something. A line of pure numbers is a subtotal band or
+        # the debris OCR makes of a table border, and neither is a pay item.
+        if len(line) < 12 or not HAS_LETTER.search(line):
             continue
-        m = ITEM.match(line)
-        if not m:
+        found = _row(line)
+        if not found:
             continue
-        qty, price, amount = num(m["qty"]), num(m["price"]), num(m["amount"])
-        if qty is None or price is None or amount is None:
+        (qty, q_start, q_end, _), (price, p_start, _, _), (amount, _, _, _) = found
+
+        head = line[:q_start]
+        m = CODE_HEAD.match(head)
+        code = re.sub(r"\s+", "", m.group(1)) if m else None
+        desc = re.sub(r"\s+", " ", head[m.end():] if m else head).strip(" |.,")
+        if len(desc) < 3 and not code:
             continue
-        # The arithmetic is the filter. A real BoQ row multiplies out; an OCR
-        # misread of a paragraph almost never does. 2% tolerance absorbs
-        # rounding in the printed total and the odd misread digit.
-        if amount <= 0 or qty <= 0 or abs(qty * price - amount) > max(2.0, amount * 0.02):
-            continue
-        desc = re.sub(r"\s+", " ", (m["desc"] or "")).strip(" |.")
-        if len(desc) < 3:
-            continue
-        unit = (m["unit"] or "").strip().lower()
+
+        # The unit sits between the quantity and the unit price.
+        between = line[q_end:p_start]
+        um = UNIT_RE.search(between)
+        unit = (um.group(0).strip().lower() if um else "")
+        # OCR wraps "cubic"/"square"/"linear" onto the previous line often
+        # enough to be worth recovering from context.
         prev = lines[i - 1].strip().lower() if i else ""
         if unit.startswith("m") and prev.endswith(("cubic", "square", "linear")):
             unit = prev.split()[-1] + " " + unit
+
         if any(abs(x["amount"] - amount) < 0.01 for x in items):
             continue      # the same row recovered by both OCR passes
         items.append({
-            "code": re.sub(r"\s+", "", m["code"] or "") or None,
+            "code": code,
             "description": desc[:90],
             "quantity": round(qty, 2),
             "unit": unit or None,
             "unitPrice": round(price, 2),
             "amount": round(amount, 2),
-            "visibility": classify(desc, m["code"]),
+            "visibility": classify(desc, code),
         })
     return items
 
@@ -461,9 +552,23 @@ def main() -> int:
                 return None
             items = parse_boq(text)
             if not items:
-                outcome = "text but no parsable rows"
+                # Two very different facts, and lumping them together made the
+                # residual failure rate uninterpretable. A document whose table
+                # the parser could not assemble is a bug to fix; a document that
+                # never carried a Bill of Quantities is a fact about what DPWH
+                # publishes, and belongs in the findings rather than the errata.
+                # The pay item code is the test: it is a national standard and
+                # survives OCR intact when a table is present at all.
+                outcome = ("rows present but unparsed" if CODE_HEAD_ANY.search(text)
+                           else "no Bill of Quantities in the document")
                 return None
             result = build(r, text, items)
+            if not result:
+                # Every row it found exceeded the contract price, so none of
+                # them were rows. Counted as a parse failure, not as a success
+                # with an empty table.
+                outcome = "rows present but unparsed"
+                return None
             return result
         finally:
             with lock:
@@ -478,6 +583,23 @@ def main() -> int:
                           f"~{left/60:.0f} min left", file=sys.stderr, flush=True)
 
     def build(r: dict, text: str, items: list[dict]) -> dict:
+        # A PAY ITEM CANNOT COST MORE THAN THE CONTRACT.
+        #
+        # Letting arithmetic pick the columns is what made the corpus readable,
+        # and it has one failure mode: OCR debris from a table border whose
+        # digits happen to multiply out. 24CC0022 carried a codeless row
+        # described as "[ine [piesowen" at 1,436,200.00 x 1,020.70, twenty times
+        # the whole contract, which is why coverage ran to 2,061%.
+        #
+        # The filter is not a heuristic. A Bill of Quantities sums TO the
+        # contract price by construction, so a single line exceeding it is
+        # arithmetically impossible and the row is a misread whatever it looks
+        # like. The published award amount is the bound, and it is already here.
+        ceiling = r.get("awardAmount") or stated_price(text)
+        if ceiling:
+            items = [i for i in items if i["amount"] <= ceiling]
+            if not items:
+                return {}
         total = round(sum(i["amount"] for i in items), 2)
         by_vis: dict[str, float] = {}
         for i in items:

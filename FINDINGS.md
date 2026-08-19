@@ -51,39 +51,61 @@ no vision model and no API key).
 |---|---|
 | Documents attempted | 1,237 |
 | Genuinely unreadable — no text, or fetch failed | **22 (1.8%)** |
-| Yielded a parsable Bill of Quantities | **419 (34%)** |
-| Text recovered but the table defeated the parser | **796 (64%)** |
-| Contract price read and matched against the register | **352 / 362 = 97.2%** |
-| **Contracts with no published dimension that DO carry a measured quantity in the paper** | **209 of 1,015 (21%)** |
+| Yielded a parsable Bill of Quantities | **1,086 (88%)** |
+| Published **without** a Bill of Quantities | **129 (10%)** |
+| Text recovered but the table defeated the parser | **0** |
+| Contract price read and matched against the register | **932 / 962 = 96.9%** |
+| **Contracts with no published dimension that DO carry a measured quantity in the paper** | **777 of 1,015 (77%)** |
 
 Two things follow, and they pull in opposite directions.
 
-**The information exists.** A fifth of the contracts whose description states no
-size do state one inside the scan. That is not a gap in the record; it is a gap
-in what the record can be read with.
+**The information exists, and there is far more of it than the register admits.**
+More than three quarters of the contracts whose description states no size do
+state one inside the scan. That is not a gap in the record; it is a gap in what
+the record can be read with.
 
-**And the barrier is now precisely located.** Only 1.8% of documents are
-genuinely unreadable. **64% produce text and defeat the table parser** — the
-tables are the obstacle, not the scans. Parse completeness runs at a median of
-18% of contract value, best 86%, and never reaches 90%. That is the honest
-measure, since a Bill of Quantities sums to the contract price by construction.
+**The remaining barrier is not technical.** Of the 151 documents that yield no
+table, 129 contain **no Bill of Quantities at all** — and that is a fact about
+what DPWH publishes, not a limit of the reader. Those documents run to four or
+five pages, well inside the eight this pipeline rasterises, so nothing was
+truncated: for roughly one contract in ten, the published contract agreement
+simply does not include the priced schedule of work.
 
-*A correction worth recording: the first full run reported 92.3% price accuracy.
-Inspecting the mismatches showed a single cause — a printed `4,850,890.09` OCR'd
-as `4,850,890,09`, so stripping commas made it exactly a hundred times too big.
-Deciding the decimal separator by shape rather than by character took accuracy
-to 97.2% and raised the BoQ yield from 330 to 419.*
+Parse completeness now runs at a **median of 92% of contract value**, with the
+75th through 95th percentiles at 100%. That is the honest measure, since a Bill
+of Quantities sums to the contract price by construction — and it is measured
+without ever telling the parser the target. On 24CC0400 the recovered rows total
+₱209,473,417.04 against a published award of ₱209,524,421.80, a gap of 0.02%.
+
+*Two corrections worth recording, both found by inspecting mismatches rather
+than by adding capability.*
+
+*The first full run reported 92.3% price accuracy. A printed `4,850,890.09` was
+OCR'd as `4,850,890,09`, so stripping commas made it exactly a hundred times too
+big. Deciding the decimal separator by shape rather than by character took
+accuracy to 97.2% and raised the BoQ yield from 330 to 419.*
+
+*The 796 documents filed for months under "the table defeated the parser" were
+never defeated by their tables. The number pattern permitted a space inside a
+number — a concession to OCR splitting a thousands group — and that also let a
+number swallow the whitespace between two columns, so `102.60 meter 2,785.80
+285,823.08` was read as a quantity, a price of 278,580,285.82 and an amount of
+3.08. The arithmetic check then correctly rejected a row that was only ever
+misread. Removing the space and letting the arithmetic choose the columns
+instead of guessing them from whitespace took the yield from 419 to 1,086. The
+scans had been readable the whole time; no model was needed, and the assumption
+that one was needed went untested for months.*
 
 ### How much of a contract any camera can check
 
 Every pay item was classified by whether it survives to be photographed, across
-all 419 contracts read:
+all 1,086 contracts read:
 
 | share of read value | |
 |---|---|
-| **0.1%** | visible from above or from beside it |
-| **32.7%** | outline visible only — structural concrete, where thickness and volume are not |
-| **67.1%** | **invisible to any camera** — excavation and embankment backfilled (65.8%), reinforcing steel cast in (1.3%) |
+| **0.2%** | visible from above or from beside it |
+| **34.9%** | outline visible only — structural concrete, where thickness and volume are not |
+| **64.9%** | **invisible to any camera** — excavation and embankment backfilled (58.7%), reinforcing steel cast in (4.6%) |
 
 **This is not a resolution limit and no satellite fixes it.** Two thirds of what
 is paid for is underneath or inside the finished structure. Remote monitoring of
