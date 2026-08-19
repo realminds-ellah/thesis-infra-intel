@@ -43,7 +43,7 @@ flowchart LR
     HJ[("hazard.json<br/>1,293")]
     WJ[("wayback.json<br/>6")]
     SC[("scope.json<br/>219")]
-    DJ[("documents.json<br/>101")]
+    DJ[("documents.json<br/>972")]
     Q[("data-quality.json<br/>36 checks")]
 
     DPWH --> VER --> Q
@@ -76,7 +76,7 @@ flowchart LR
 | **Esri Wayback** | the dated imagery strip and the finding about the 5½-year gap. Live basemap tiles are a separate dependency. | moderate |
 | **UP NOAH** | the hazard join. The register still works; the "is the flood control where the flooding is" question does not. | moderate |
 | **OSM waterways** | 219 scope corridors. The dashed-circle fallback remains for contracts with a stated length. | moderate |
-| **The scanned PDFs** | the Bill of Quantities tier and the 209 recovered dimensions. | moderate |
+| **The scanned PDFs** | the Bill of Quantities tier and the 774 recovered dimensions. | moderate |
 
 ## Fields with no source at all
 

@@ -97,9 +97,9 @@ Two tiers were built so their error rate could be measured against something alr
 
 The contract price appears inside each scan **and** in the structured export, so every document carries its own test.
 
-- price read from **362 of 419** documents that parsed
-- matched the export within one peso on **352 of 362** = **97.2%**
-- parse completeness: median **18%** of contract value, best **86%**, never 90%
+- price read from **962 of 1086** documents that parsed
+- matched the export within one peso on **932 of 962** = **96.9%**
+- parse completeness: median **92%** of contract value, best **161%**, never 90%
 
 The completeness figure is exact rather than estimated: a Bill of Quantities sums to the contract price by construction, so parsed-rows over price *is* the coverage.
 

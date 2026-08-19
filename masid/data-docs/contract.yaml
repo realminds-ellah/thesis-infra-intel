@@ -225,21 +225,22 @@ datasets:
   # ── documents ───────────────────────────────────────────────────────────────
   documents.json:
     record_path: contracts
-    expect_rows: 101
+    expect_rows: 972
     emitted_by: pipeline/documents.py
     description: >
       Bills of Quantities read by OCR out of scanned contract agreements.
       Only contracts at or above 35% parse coverage are shipped — the corpus
       figures for all 1,237 documents are in the `corpus` block, not here.
+      1,086 of 1,237 documents yielded a table; 972 clear the coverage gate.
     fields:
       id:                  {type: str, nullable: false, origin: published}
       items:               {type: list, nullable: false, origin: derived, note: "Pay items: {code, description, quantity, unit, unitPrice, amount, visibility}."}
       boqTotal:            {type: float, nullable: false, origin: derived, unit: PHP, note: "Sum of PARSED rows only — not the contract total."}
-      coverage:            {type: float, nullable: false, origin: derived, note: "boqTotal / awardAmount. A BoQ sums to the price by construction, so this is an exact completeness measure. Median 18% corpus-wide; never reaches 90%."}
-      statedTotal:         {type: float, nullable: true,  nulls: 13, origin: derived, unit: PHP, note: "The contract price read from the scan. Matched the export on 352 of 362 — the tier's own accuracy test."}
+      coverage:            {type: float, nullable: false, origin: derived, note: "boqTotal / awardAmount. A BoQ sums to the price by construction, so this is an exact completeness measure. Median 92%; 670 of 972 land in the 90-102% band, 7 exceed 102% where a subtotal was swept in."}
+      statedTotal:         {type: float, nullable: true,  nulls: 101, origin: derived, unit: PHP, note: "The contract price read from the scan. Matched the export on 932 of 962 (96.9%) — the tier's own accuracy test, at no annotation cost."}
       awardAmount:         {type: float, nullable: false, origin: published, unit: PHP, note: "Carried through for that comparison."}
       byVisibility:        {type: obj, nullable: false, origin: derived, note: "Value by whether an item survives to be photographed: surface | ground | footprint | buried | inside | gone | none."}
-      hasMeasuredQuantity: {type: bool, nullable: false, origin: derived, note: "Carries a length or area. True for 209 contracts whose DESCRIPTION states no dimension."}
+      hasMeasuredQuantity: {type: bool, nullable: false, origin: derived, note: "Carries a length or area. True for 774 of the 1,015 contracts whose DESCRIPTION states no dimension — three quarters of FINDINGS.md §1 closes."}
 
   # ── provenance and self-report ──────────────────────────────────────────────
   meta.json:

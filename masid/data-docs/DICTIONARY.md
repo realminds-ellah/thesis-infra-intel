@@ -67,20 +67,20 @@ The gate's own results, machine-readable. Rendered for humans in QUALITY.md. 19 
 
 ## `documents.json`
 
-Bills of Quantities read by OCR out of scanned contract agreements. Only contracts at or above 35% parse coverage are shipped — the corpus figures for all 1,237 documents are in the `corpus` block, not here.
+Bills of Quantities read by OCR out of scanned contract agreements. Only contracts at or above 35% parse coverage are shipped — the corpus figures for all 1,237 documents are in the `corpus` block, not here. 1,086 of 1,237 documents yielded a table; 972 clear the coverage gate.
 
-**101 rows** · records at `contracts` · emitted by `pipeline/documents.py`
+**972 rows** · records at `contracts` · emitted by `pipeline/documents.py`
 
 | field | type | null | origin | meaning |
 |---|---|---|---|---|
 | `id` | str | no | **pub** |  |
 | `items` | list | no | *der* | Pay items: {code, description, quantity, unit, unitPrice, amount, visibility}. |
 | `boqTotal` | float · PHP | no | *der* | Sum of PARSED rows only — not the contract total. |
-| `coverage` | float | no | *der* | boqTotal / awardAmount. A BoQ sums to the price by construction, so this is an exact completeness measure. Median 18% corpus-wide; never reaches 90%. |
-| `statedTotal` | float · PHP | yes (13) | *der* | The contract price read from the scan. Matched the export on 352 of 362 — the tier's own accuracy test. |
+| `coverage` | float | no | *der* | boqTotal / awardAmount. A BoQ sums to the price by construction, so this is an exact completeness measure. Median 92%; 670 of 972 land in the 90-102% band, 7 exceed 102% where a subtotal was swept in. |
+| `statedTotal` | float · PHP | yes (101) | *der* | The contract price read from the scan. Matched the export on 932 of 962 (96.9%) — the tier's own accuracy test, at no annotation cost. |
 | `awardAmount` | float · PHP | no | **pub** | Carried through for that comparison. |
 | `byVisibility` | obj | no | *der* | Value by whether an item survives to be photographed: surface | ground | footprint | buried | inside | gone | none. |
-| `hasMeasuredQuantity` | bool | no | *der* | Carries a length or area. True for 209 contracts whose DESCRIPTION states no dimension. |
+| `hasMeasuredQuantity` | bool | no | *der* | Carries a length or area. True for 774 of the 1,015 contracts whose DESCRIPTION states no dimension — three quarters of FINDINGS.md §1 closes. |
 
 ## `hazard.json`
 

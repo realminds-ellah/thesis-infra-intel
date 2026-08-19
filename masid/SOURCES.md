@@ -871,7 +871,7 @@ Anything published beyond research should be checked against Esri's current term
 redirecting to whichever release actually holds imagery for that tile; most of
 the 196 have never re-flown Bulacan. Following the redirects collapses them to
 28 — and reading the acquisition metadata collapses those 28 to **six actual
-photographs**. See FINDINGS.md §4.
+photographs**. See FINDINGS.md §5.
 
 **Resolution ceiling:** the metadata reports `MaxMapLevel 19` and zoom 20 returns
 HTTP 404. Native sampling is 0.3 m/px. Positional accuracy at the sampled point
@@ -935,7 +935,7 @@ confirmed with PhilSA directly; the endpoint results are what was tested.*
 **What PhilSA would genuinely unlock — and it is not resolution.**
 
 - **Tasking.** Imagery acquired *on request, inside a contract's construction
-  window*. This is the only fix for FINDINGS.md §4: the 2022–2024 surge was
+  window*. This is the only fix for FINDINGS.md §5: the 2022–2024 surge was
   awarded, built and completed with no high-resolution photograph taken over it.
   No open-data source can solve that, because open satellites image on their own
   schedule and the moment has passed.

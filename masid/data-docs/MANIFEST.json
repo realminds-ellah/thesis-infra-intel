@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-19T06:13:47Z",
+ "generated": "2026-08-19T13:29:44Z",
  "contract_version": 1,
  "note": "Row counts and checksums for the build these figures came from. A number quoted anywhere in this project can be tied to a sha256 here.",
  "datasets": {
@@ -22,9 +22,9 @@
    "emitted_by": "pipeline/verify_data.py"
   },
   "documents.json": {
-   "rows": 101,
-   "bytes": 61310,
-   "sha256": "3514b54112485ea744e0f2371de3bf71b97fca89a42fe939509d60bf6a025c80",
+   "rows": 972,
+   "bytes": 2646760,
+   "sha256": "22875477a9ccf76ec2e4d2b89e3751eef7c1c7be8e59d11a3b67fd62e36f8bd1",
    "emitted_by": "pipeline/documents.py"
   },
   "hazard.json": {

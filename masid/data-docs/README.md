@@ -82,8 +82,13 @@ tested against a copy of the data and each produced a non-zero exit:
 
 ## What it has already caught
 
-Not hypothetical — three real defects, found while building this:
+Not hypothetical — four real defects, found while building this:
 
+- **The document tier changed underneath the docs.** The parser was improved and
+  re-run; `documents.json` went from 101 shipped contracts to 972, coverage from
+  a median 18% to 92%, and recovered dimensions from 209 to 774. Nothing in the
+  prose knew. `validate.py` failed on the row count, which is precisely the case
+  it exists for — a document would have quietly kept claiming 101.
 - **`wayback.resolutionMetres` was a string.** Esri returns `SRC_RES` as
   `"0.5"`, and the pipeline passed it through, shipping a measurement typed as
   text. Now coerced at the pipeline boundary.

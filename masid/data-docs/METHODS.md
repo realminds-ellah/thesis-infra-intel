@@ -197,9 +197,10 @@ extract a field we already know → compare → report the match rate.
 | | |
 |---|---|
 | documents attempted | 1,237 |
-| yielded a parsable Bill of Quantities | 419 |
-| price read | 362 |
-| **matched the export within one peso** | **352 — 97.2%** |
+| yielded a parsable Bill of Quantities | 1,086 |
+| price read | 962 |
+| **matched the export within one peso** | **932 — 96.9%** |
+| **dimensions recovered where the description states none** | **774 of 1,015 — 76%** |
 
 ### The bug that number found
 
@@ -209,8 +210,12 @@ stripping commas made it **exactly a hundred times too big**. Four of six visibl
 mismatches were that, to the centavo.
 
 Deciding the decimal separator by **shape** — two digits after the last
-separator means it is the decimal, whichever glyph OCR chose — took accuracy to
-97.2% and raised the yield from 330 to 419.
+separator means it is the decimal, whichever glyph OCR chose — fixed it.
+
+A second correction followed. The first table parser recovered a median of only
+**18%** of each Bill of Quantities; the current one recovers **92%**, which moved
+recovered dimensions from **209 to 774**. Neither error was visible on a
+30-document sample.
 
 **This is the argument for running a corpus before trusting a sample.** 100% on
 30 documents was not wrong; it was uninformative.
@@ -218,9 +223,12 @@ separator means it is the decimal, whichever glyph OCR chose — took accuracy t
 ### Coverage is exact, not estimated
 
 A Bill of Quantities sums to the contract price by construction, so
-`parsed rows ÷ price` **is** the completeness. Median **18%**, best **86%**,
-never 90%. The app therefore ships only contracts at or above **35%** coverage
-and states the figure on each one.
+`parsed rows ÷ price` **is** the completeness — not an estimate of it.
+
+Median **92%**. **670 of 972** shipped contracts land between **90% and 102%**,
+the band a complete table should occupy. **22** fall below 50%. **7 (0.7%)**
+exceed 102%, where a subtotal row was swept in and counted twice. The app ships
+only contracts at or above **35%** and states the figure on each one.
 
 ---
 
@@ -240,8 +248,8 @@ is a national standard that survives intact.
 | inside | cast into the concrete |
 | gone | the item is removal; nothing remains |
 
-Across the 419 contracts read: **0.1% directly visible, 32.7% footprint only,
-67.1% invisible to any camera.**
+Across the 1,086 contracts read: **0.2% directly visible, 34.9% footprint only,
+64.9% invisible to any camera.**
 
 That last figure is a limit of **the work**, not of the method. No satellite,
 drone or street-level pass sees rebar inside a beam.
