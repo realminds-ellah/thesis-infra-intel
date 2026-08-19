@@ -17,8 +17,8 @@
    "published": "2014-11-12",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/30195/{level}/{row}/{col}",
    "flown": "2010-02-08",
-   "resolutionMetres": "0.5",
-   "accuracyMetres": "10.2",
+   "resolutionMetres": 0.5,
+   "accuracyMetres": 10.2,
    "provider": " ",
    "republishedAs": 3
   },
@@ -27,8 +27,8 @@
    "published": "2018-10-17",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/18820/{level}/{row}/{col}",
    "flown": "2014-05-27",
-   "resolutionMetres": "0.5",
-   "accuracyMetres": "10.2",
+   "resolutionMetres": 0.5,
+   "accuracyMetres": 10.2,
    "provider": "Vivid - Southeast Asia",
    "republishedAs": 4
   },
@@ -37,8 +37,8 @@
    "published": "2020-03-23",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/16062/{level}/{row}/{col}",
    "flown": "2018-05-23",
-   "resolutionMetres": "0.5",
-   "accuracyMetres": "8.47",
+   "resolutionMetres": 0.5,
+   "accuracyMetres": 8.47,
    "provider": "Vivid",
    "republishedAs": 4
   },
@@ -47,8 +47,8 @@
    "published": "2022-06-08",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/44710/{level}/{row}/{col}",
    "flown": "2019-05-10",
-   "resolutionMetres": "0.5",
-   "accuracyMetres": "5",
+   "resolutionMetres": 0.5,
+   "accuracyMetres": 5.0,
    "provider": "Vivid",
    "republishedAs": 3
   },
@@ -57,8 +57,8 @@
    "published": "2025-04-24",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/27982/{level}/{row}/{col}",
    "flown": "2019-10-05",
-   "resolutionMetres": "0.5",
-   "accuracyMetres": "5",
+   "resolutionMetres": 0.5,
+   "accuracyMetres": 5.0,
    "provider": "Vivid",
    "republishedAs": 12
   },
@@ -67,8 +67,8 @@
    "published": "2026-05-28",
    "tileUrl": "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/10842/{level}/{row}/{col}",
    "flown": "2025-04-07",
-   "resolutionMetres": "0.34",
-   "accuracyMetres": "8.47",
+   "resolutionMetres": 0.34,
+   "accuracyMetres": 8.47,
    "provider": "Vivid Advanced",
    "republishedAs": 2
   }

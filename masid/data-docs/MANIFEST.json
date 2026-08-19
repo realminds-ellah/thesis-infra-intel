@@ -1,0 +1,85 @@
+{
+ "generated": "2026-08-19T06:13:47Z",
+ "contract_version": 1,
+ "note": "Row counts and checksums for the build these figures came from. A number quoted anywhere in this project can be tied to a sha256 here.",
+ "datasets": {
+  "boundaries.json": {
+   "rows": 24,
+   "bytes": 56219,
+   "sha256": "1c6993593d11b761ba82d63d6d84867014e32baf33e32c88e977af4e409baa24",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "contractors.json": {
+   "rows": 176,
+   "bytes": 64146,
+   "sha256": "d94ab27ac445b4a763508327fde8035337b1a584d02f134b2d26d848aa2459c1",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "data-quality.json": {
+   "rows": 36,
+   "bytes": 5407,
+   "sha256": "0c9bce257a9ecc7d651c976e6977ac11ac5256390c999735a0e20909fcea3921",
+   "emitted_by": "pipeline/verify_data.py"
+  },
+  "documents.json": {
+   "rows": 101,
+   "bytes": 61310,
+   "sha256": "3514b54112485ea744e0f2371de3bf71b97fca89a42fe939509d60bf6a025c80",
+   "emitted_by": "pipeline/documents.py"
+  },
+  "hazard.json": {
+   "rows": 1293,
+   "bytes": 119439,
+   "sha256": "1a53089d02725ac82646cd41b3508397156e431bedd1333db4b633d88f5dc70e",
+   "emitted_by": "pipeline/hazard.py"
+  },
+  "meta.json": {
+   "rows": 2,
+   "bytes": 2281,
+   "sha256": "e3fe4139f2686662125dd56d35ad1cb15e6c15797d94f8fab7048afb0ef33e0d",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "national.json": {
+   "rows": 216,
+   "bytes": 69389,
+   "sha256": "caa0362a66cfba26cb4a8d709a53da5dc34428b692596947fe649280656c5da8",
+   "emitted_by": "pipeline/national.py"
+  },
+  "procurement.json": {
+   "rows": 1293,
+   "bytes": 2133298,
+   "sha256": "454703340dd2d5aaebca9b5fb6a3008605d1b00a47738b19d795ea36ebf61c9e",
+   "emitted_by": "pipeline/procurement.py"
+  },
+  "projects.json": {
+   "rows": 1293,
+   "bytes": 1603298,
+   "sha256": "1109ab1ec6551293ab566221da28891d457976762643b81867c8fa644ccbea65",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "satellite.json": {
+   "rows": 200,
+   "bytes": 224748,
+   "sha256": "d9eedbe6678ff3384f323be789550ab5572bc19d8761a2a8092d3c876892aca5",
+   "emitted_by": "pipeline/satellite.py"
+  },
+  "scope.json": {
+   "rows": 219,
+   "bytes": 217771,
+   "sha256": "7e3cd2f537c501ed214c5c8c4f7e7cbf684e7617e3c70b248c1cd48f84098137",
+   "emitted_by": "pipeline/scope.py"
+  },
+  "stat-comparison.json": {
+   "rows": 0,
+   "bytes": 2464,
+   "sha256": "dcc5a0cabe1782490d8c69d14089a4c844f2907fdbb7ac21f27c185f712a30a3",
+   "emitted_by": "pipeline/evaluate.py"
+  },
+  "wayback.json": {
+   "rows": 6,
+   "bytes": 2636,
+   "sha256": "454ac886b117d0780134c3f904db1f4e4b7c65a45c4e7557b3a30795175c8ea4",
+   "emitted_by": "pipeline/wayback.py"
+  }
+ }
+}

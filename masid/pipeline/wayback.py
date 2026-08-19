@@ -159,10 +159,20 @@ def acquisition(rel: dict, lat: float, lng: float) -> dict | None:
     a = res[0].get("attributes", {})
     raw = str(a.get("SRC_DATE", ""))
     flown = f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}" if len(raw) == 8 and raw.isdigit() else None
+    # Esri returns SRC_RES and SRC_ACC as STRINGS ("0.5", "10.2"). Passing them
+    # through shipped a measurement typed as text, which sorts wrong, compares
+    # wrong, and is the kind of thing a data contract exists to catch. Coerced
+    # here at the boundary rather than in the app.
+    def as_float(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
     return {
         "flown": flown,
-        "resolutionMetres": a.get("SRC_RES"),
-        "accuracyMetres": a.get("SRC_ACC"),
+        "resolutionMetres": as_float(a.get("SRC_RES")),
+        "accuracyMetres": as_float(a.get("SRC_ACC")),
         "provider": a.get("NICE_NAME") or a.get("SRC_DESC"),
     }
 

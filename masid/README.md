@@ -203,6 +203,8 @@ src/app/geo.ts              on-device reverse geocoding
 
 data/                       source cache, untracked (~700 MB with OCR cache)
 SOURCES.md                  provenance, licences, gaps, flag definitions
+data-docs/                  the data contract, dictionary, methods, limits, quality
+data-docs/validate.py       enforces the contract — fails on drift
 ../FINDINGS.md              what the data said · ../AI-LAYER.md · ../DEMO-SCRIPT.md
 ```
 

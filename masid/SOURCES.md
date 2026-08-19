@@ -686,7 +686,7 @@ disagree about geography would be a problem, and they agree.
 NOAH models fluvial flooding and does not claim to cover every drainage or
 coastal mechanism, so "outside the model" is never on its own a finding.
 
-## What is deliberately absent## What is deliberately absent
+## What is deliberately absent
 
 The consolidated data request asks DPWH for five categories. Two arrived free.
 The rest are genuinely not public, and the interface leaves them empty:
