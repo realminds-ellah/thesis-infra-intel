@@ -183,6 +183,8 @@ pipeline/national.py        the same indicators for all 216 district offices
 pipeline/satellite.py       STAC search → windowed COG reads → composite → z-score
 pipeline/evaluate.py        statistic ablation for the imagery tier
 pipeline/hazard.py          UP NOAH 100-year flood extent join
+pipeline/hazard_triage.py   hazard x 2x2 triage, allocation, and the confound test
+pipeline/superres_eval.py   does super-resolution recover structures or invent them
 pipeline/wayback.py         Esri archive → distinct flights, dated by acquisition
 pipeline/scope.py           OSM waterways → per-contract scope corridors
 pipeline/documents.py       fetch → rasterise → OCR → Bill of Quantities
@@ -224,11 +226,21 @@ national flood-control rate — **rank 1 of 43 district offices**, more than dou
 second place. 57.8% of its bids land on some whole percentage (national 27.0%).
 A benchmarked statistical anomaly, not proof of collusion.
 
-**Fusion** — the two signals correlate at **r = +0.05**, so they are genuinely
-independent and "high on both" is narrower than either alone. 2×2 triage over all
-1,293 contracts: **49 flagged by both**, 109 records-only, 286 procurement-only,
-849 neither. An ordering, not a prediction — the ICI never published an itemised
-ghost list, so there is no public ground truth to validate a ranking against.
+**Fusion** — the two signals correlate at **r = −0.26**, so they do not merely
+fail to be proxies for each other, they lean apart. 2×2 triage over all 1,293
+contracts: **17 flagged by both**, 141 records-only, 318 procurement-only, 817
+neither. Under independence the overlap would be 41, so "high on both" is a
+narrower list than either alone by some margin. An ordering, not a prediction —
+the ICI never published an itemised ghost list, so there is no public ground
+truth to validate a ranking against.
+
+*This paragraph previously read r = +0.05 with 49 / 109 / 286 / 849. The
+correlation was hand-written into two files as +0.05 and −0.12, contradicting
+each other; `SIGNAL_CORRELATION` in `src/app/data/index.ts` now derives it, and
+`pipeline/hazard_triage.py` reproduces −0.2570 independently in Python. The
+quadrant counts were never revisited when the correlation was corrected. The
+marginals were never wrong — 158 records-flagged and 335 procurement-flagged in
+both readings — only the overlap.*
 
 **Imagery tier** — Sentinel-2 L2A change detection over the pre-construction and
 post-completion periods, sampled at 30 m, 90 m and 150 m against a bootstrap null

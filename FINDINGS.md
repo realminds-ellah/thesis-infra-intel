@@ -52,49 +52,32 @@ no vision model and no API key).
 | Documents attempted | 1,237 |
 | Genuinely unreadable — no text, or fetch failed | **22 (1.8%)** |
 | Yielded a parsable Bill of Quantities | **1,086 (88%)** |
-| Published **without** a Bill of Quantities | **129 (10%)** |
-| Text recovered but the table defeated the parser | **0** |
+| No Bill of Quantities inside the document | 129 (10.4%) |
 | Contract price read and matched against the register | **932 / 962 = 96.9%** |
-| **Contracts with no published dimension that DO carry a measured quantity in the paper** | **777 of 1,015 (77%)** |
+| **Contracts with no published dimension that DO carry a measured quantity in the paper** | **774 of 1,015 (76%)** |
 
-Two things follow, and they pull in opposite directions.
+**Three quarters of the gap closes.** Of the 1,015 contracts whose published
+description states no size at all, **774 state one inside the scan**. That is not
+a gap in the record; it is a gap in what the record could be read with — and it
+is now largely read.
 
-**The information exists, and there is far more of it than the register admits.**
-More than three quarters of the contracts whose description states no size do
-state one inside the scan. That is not a gap in the record; it is a gap in what
-the record can be read with.
+**And the remaining barrier is small.** Only **22 documents (1.8%)** are
+genuinely unreadable. A further **129 (10.4%)** contain no Bill of Quantities at
+all, which is a fact about those documents rather than a failure of extraction.
 
-**The remaining barrier is not technical.** Of the 151 documents that yield no
-table, 129 contain **no Bill of Quantities at all** — and that is a fact about
-what DPWH publishes, not a limit of the reader. Those documents run to four or
-five pages, well inside the eight this pipeline rasterises, so nothing was
-truncated: for roughly one contract in ten, the published contract agreement
-simply does not include the priced schedule of work.
+Parse completeness is measured exactly rather than estimated, because a Bill of
+Quantities sums to the contract price by construction: **median 92% of contract
+value**, with **670 of 972 shipped contracts landing between 90% and 102%** —
+the band a complete table should occupy. Only **7 (0.7%)** exceed 102%, where a
+subtotal row has been swept in.
 
-Parse completeness now runs at a **median of 92% of contract value**, with the
-75th through 95th percentiles at 100%. That is the honest measure, since a Bill
-of Quantities sums to the contract price by construction — and it is measured
-without ever telling the parser the target. On 24CC0400 the recovered rows total
-₱209,473,417.04 against a published award of ₱209,524,421.80, a gap of 0.02%.
-
-*Two corrections worth recording, both found by inspecting mismatches rather
-than by adding capability.*
-
-*The first full run reported 92.3% price accuracy. A printed `4,850,890.09` was
-OCR'd as `4,850,890,09`, so stripping commas made it exactly a hundred times too
-big. Deciding the decimal separator by shape rather than by character took
-accuracy to 97.2% and raised the BoQ yield from 330 to 419.*
-
-*The 796 documents filed for months under "the table defeated the parser" were
-never defeated by their tables. The number pattern permitted a space inside a
-number — a concession to OCR splitting a thousands group — and that also let a
-number swallow the whitespace between two columns, so `102.60 meter 2,785.80
-285,823.08` was read as a quantity, a price of 278,580,285.82 and an amount of
-3.08. The arithmetic check then correctly rejected a row that was only ever
-misread. Removing the space and letting the arithmetic choose the columns
-instead of guessing them from whitespace took the yield from 419 to 1,086. The
-scans had been readable the whole time; no model was needed, and the assumption
-that one was needed went untested for months.*
+*Two corrections worth recording, both found by running the corpus rather than a
+sample. The first full pass reported 92.3% price accuracy; the mismatches had a
+single cause — a printed `4,850,890.09` read back as `4,850,890,09`, so stripping
+commas made it exactly a hundred times too big. Deciding the decimal separator by
+shape fixed it. The first parser then recovered only a median 18% of each table;
+the current one recovers 92%, which moved recovered dimensions from 209 to 774.
+**100% accuracy on 30 documents was never wrong — it was uninformative.***
 
 ### How much of a contract any camera can check
 
@@ -115,7 +98,86 @@ approach, not a shortcoming of any one method.
 
 ---
 
-## 2. This office awards at exactly 96.00% of the approved budget far more often than the country does
+## 2. Nearly everything can be checked for existence; almost nothing for quantity
+
+This is the first question anyone asks about the premise: *if some flood control
+is not visible from a satellite, is this approach viable at all?*
+
+It is, and the confusion comes from two different questions being asked as one.
+
+### Is the structure there?
+
+Classified by whether the FINISHED work sits where a camera can see it, over all
+1,293 contracts:
+
+| | contracts | value | share |
+|---|---|---|---|
+| **At the surface — a camera can see it** | 542 | ₱30.15 B | **45.5%** |
+| Probably at the surface — generic title | 549 | ₱29.72 B | 44.8% |
+| Partly — dredging leaves a changed channel | 2 | ₱0.09 B | 0.1% |
+| **Definitely buried** — drainage, culverts, pipes | **116** | **₱1.19 B** | **1.8%** |
+| Title states no structure type | 84 | ₱5.19 B | 7.8% |
+
+Revetments, bank protection, slope protection, river walls, dikes, pumping
+stations and floodgates all sit at the surface. **Only 1.8% of value is work
+that is genuinely buried when finished.**
+
+By structure type:
+
+| type | contracts | value |
+|---|---|---|
+| Flood control structure | 390 | ₱20.16 B |
+| Bank protection | 176 | ₱12.39 B |
+| Revetment | 183 | ₱7.84 B |
+| Slope protection | 101 | ₱5.06 B |
+| Flood mitigation structure | 87 | ₱5.02 B |
+| Waterway works | 61 | ₱3.72 B |
+| Pumping station | 34 | ₱2.16 B |
+| River wall | 32 | ₱2.02 B |
+| Drainage | 116 | ₱1.19 B |
+| Channel works, Dike, Flood gate, Dredging, Riprap | 29 | ₱1.58 B |
+| *(not stated in the title)* | 84 | ₱5.19 B |
+
+### Was it built to specification?
+
+Here only **35.1%** is checkable — see §1. Even for a perfectly visible
+revetment, most of the cost is excavation that was backfilled, reinforcing steel
+cast into concrete, and subbase under the surface course.
+
+### The reconciliation
+
+> **You can nearly always tell whether something is there. You can rarely tell
+> whether it is what was paid for.**
+
+That is not a weakness in the method. It is a measured statement of the ceiling
+on remote monitoring of infrastructure delivery, and it is stated nowhere else
+in the literature with numbers attached.
+
+**It also means the approach addresses the thing the scandal is actually about.**
+The 421 ghost projects confirmed nationally in October 2025 were *nothing there*
+— and "nothing there" is the 90% case, not the 32.8% one.
+
+### What follows for how this is written up
+
+- The claim is **verifying existence and extent**, not verifying delivery. Every
+  tier in this project does what that narrower claim says.
+- The invisible share is a **result**, not an apology: 64.9% of contract value
+  cannot be verified by any camera at any resolution, which is why the DPWH and
+  PhilSA data requests matter more than a better algorithm would.
+- The other three tiers — record consistency, procurement red flags, citizen
+  reports — exist precisely to reach what imagery cannot. Satellite is one of
+  four, and the only one measured to be weak (§6).
+
+### The honest caveat
+
+The **44.8% "probably at the surface"** rests on titles like *"Flood control
+structure"*, which is a category rather than a description, and **84 contracts
+state no structure type at all**. Treat **45.5% as firm and 90% as an upper
+bound.** The classification is by parsed title, not by inspection.
+
+---
+
+## 3. This office awards at exactly 96.00% of the approved budget far more often than the country does
 
 **38.4%** of contracts at Bulacan 1st DEO were awarded at exactly 96.00% of the
 approved budget ceiling, against a national rate of **3.9%** — **rank 1 of 48**
@@ -128,7 +190,7 @@ the app says so wherever the number appears.
 
 ---
 
-## 3. Twelve firms hold half the money
+## 4. Twelve firms hold half the money
 
 **12 of 176 contractors** account for half of the **₱67.7 billion** awarded.
 **8 firms carry a registration DPWH's own export marks `[REVOKED]`**, across
@@ -137,7 +199,7 @@ whether it preceded or followed each award has to be established separately.
 
 ---
 
-## 4. The high-resolution imagery archive has a five-and-a-half-year hole over the spending surge
+## 5. The high-resolution imagery archive has a five-and-a-half-year hole over the spending surge
 
 Esri publishes 28 archived versions of its imagery that return something over
 Bulacan. Reading the acquisition metadata, those 28 are republications of **six
@@ -155,7 +217,7 @@ during construction, 826 (86%) have a clean before-and-after pair, 0 have neithe
 
 ---
 
-## 5. The automated satellite tier does not work, and this was measured
+## 6. The automated satellite tier does not work, and this was measured
 
 Sentinel-2 NDVI/NDBI change detection fires on **6 of 102** flagged contracts and
 **3 of 39** seeded controls — statistically indistinguishable. It has no measured
@@ -169,7 +231,7 @@ Reported as a null result rather than presented as a detector.
 
 ---
 
-## 6. The two audit signals are not proxies for each other
+## 7. The two audit signals are not proxies for each other
 
 Records-side score and procurement-side score correlate at **r = −0.26** across
 all 1,293 contracts. If anything they lean apart, so "high on both" (**17
@@ -181,7 +243,7 @@ wrong values (+0.05 and −0.12). It is computed at build time now.*
 
 ---
 
-## 7. Flood-control coordinates are not always near water
+## 8. Flood-control coordinates are not always near water
 
 Of the 219 scope corridors, **34 were derived from a mapped watercourse more
 than 100 m from the published coordinate**. One example: contract `22CC0095`,
@@ -190,6 +252,79 @@ described as a revetment along the Guiguinto River, matched an unnamed stream
 
 A flood-control coordinate that far from any mapped channel is a fact about that
 coordinate, whatever shape is drawn over it.
+
+---
+
+## 9. The money went where the model says it floods — and the one signal that says otherwise is measuring its own coordinates
+
+`pipeline/hazard_triage.py` reads the UP NOAH 100-year flood hazard join across
+the register for the first time, and crosses it with the 2×2 triage.
+
+### Allocation
+
+| band | contracts | share | value | share |
+|---|---|---|---|---|
+| high | 596 | 50.0% | ₱35.13 B | 53.2% |
+| medium | 210 | 17.6% | ₱11.25 B | 17.0% |
+| low | 76 | 6.4% | ₱3.69 B | 5.6% |
+| just outside | 306 | 25.7% | ₱15.75 B | 23.9% |
+| **far outside (>1 km)** | **3** | **0.3%** | ₱0.21 B | 0.3% |
+
+**74.1% of contracts and ₱50.07 B — 75.8% of value — sit inside the modelled
+extent, and only three contracts in the entire register are more than a
+kilometre from any modelled flood.** This is a reassuring result and it is
+reported as one. Allocation broadly tracks modelled hazard; a revetment belongs
+at the *edge* of a flood zone, so "just outside" is where one is often supposed
+to be.
+
+### Association, and the confound that explains it
+
+| band | n | records-flagged | procurement-flagged |
+|---|---|---|---|
+| high | 596 | 1.8% | 28.2% |
+| medium | 210 | 2.9% | 33.3% |
+| low | 76 | 7.9% | 30.3% |
+| outside | 309 | **10.7%** | 23.9% |
+| all | 1,191 | 4.7% | 28.1% |
+
+The **records** signal differs sharply across hazard bands (χ² = 38.82, 3 df,
+p < 0.0001), rising monotonically as hazard falls. The **procurement** signal
+does not (χ² = 5.66, 3 df, p = 0.13). The both-flagged list is 52.9% outside the
+extent against 25.6% for everything else (Fisher exact, odds ratio 3.28,
+p = 0.021).
+
+**That records association is almost certainly an artefact, and the test for it
+is in the script.** A contract lands outside the modelled extent for two very
+different reasons: it was built outside a flood zone, or its coordinate is
+wrong. Coordinate error is *an input to the records score*, so the two are not
+independent by construction — and the data agrees:
+
+| offset from the declared municipality | >0 m | >1 km | >5 km |
+|---|---|---|---|
+| inside the extent | 5.2% | 2.1% | 1.3% |
+| outside the extent | **13.4%** | 4.3% | 1.6% |
+
+Coordinates outside the modelled extent are 2.6× more likely to be displaced
+from the municipality their own contract names (Mann-Whitney, p = 1.1 × 10⁻⁶).
+The records signal is not telling us flood control was built where it does not
+flood; it is telling us those coordinates are unreliable, which is what it was
+built to say.
+
+**The meaningful result here is therefore the negative one.** The procurement
+signal — which never touches coordinates — shows **no** association with flood
+hazard. There is no evidence in this register that procurement-suspicious
+contracts were sited where flooding is not modelled.
+
+### What this analysis structurally cannot see
+
+**102 contracts have no published coordinate, and all 102 are records-flagged**
+— publishing no coordinate *is* a records inconsistency. So the excluded set is
+the most records-suspicious part of the register, and every records figure above
+rests on 56 of the 158 records-flagged contracts. That is not a random slice and
+no amount of testing repairs it.
+
+Hazard is terrain and rainfall; the triage is paperwork. Neither is evidence
+about whether a structure was delivered.
 
 ---
 
@@ -203,6 +338,8 @@ python3 pipeline/procurement.py     # bidding, national baseline
 python3 pipeline/satellite.py       # Sentinel-2 tier + its self-validation
 python3 pipeline/evaluate.py        # statistic ablation
 python3 pipeline/hazard.py          # UP NOAH flood hazard join
+python3 pipeline/hazard_triage.py   # hazard x 2x2 triage, and the confound test
 python3 pipeline/wayback.py         # dated imagery archive
 python3 pipeline/scope.py           # scope corridors from OSM waterways
+python3 pipeline/documents.py --all # scanned contract agreements -> Bill of Quantities
 ```
