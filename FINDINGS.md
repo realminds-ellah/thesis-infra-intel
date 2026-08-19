@@ -262,6 +262,10 @@ the register for the first time, and crosses it with the 2×2 triage.
 
 ### Allocation
 
+Over the **1,191 contracts that publish a coordinate**; every share below is of
+that subset, not of the full 1,293. The other 102 are unplaceable and are
+accounted for at the end of this section.
+
 | band | contracts | share | value | share |
 |---|---|---|---|---|
 | high | 596 | 50.0% | ₱35.13 B | 53.2% |
@@ -270,12 +274,12 @@ the register for the first time, and crosses it with the 2×2 triage.
 | just outside | 306 | 25.7% | ₱15.75 B | 23.9% |
 | **far outside (>1 km)** | **3** | **0.3%** | ₱0.21 B | 0.3% |
 
-**74.1% of contracts and ₱50.07 B — 75.8% of value — sit inside the modelled
-extent, and only three contracts in the entire register are more than a
-kilometre from any modelled flood.** This is a reassuring result and it is
-reported as one. Allocation broadly tracks modelled hazard; a revetment belongs
-at the *edge* of a flood zone, so "just outside" is where one is often supposed
-to be.
+**882 of the 1,191 placed contracts — 74.1%, and ₱50.07 B or 75.8% of their
+value — sit inside the modelled extent, and only three placed contracts are
+more than a kilometre from any modelled flood.** This is a reassuring result
+and it is reported as one. Allocation broadly tracks modelled hazard; a
+revetment belongs at the *edge* of a flood zone, so "just outside" is where one
+is often supposed to be.
 
 ### Association, and the confound that explains it
 
