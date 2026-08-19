@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-04T13:48:35Z",
+  "generated": "2026-08-19T14:33:27Z",
   "areaOfInterest": "Bulacan 1st DEO",
   "coverage": {
     "projects": 1293,
@@ -11,9 +11,8 @@
     "overdue": 256,
     "stalled": 125,
     "atRebuiltSites": 142,
-    "flagged": 310,
+    "flagged": 309,
     "municipalitiesServed": [
-      "Angat",
       "Balagtas",
       "Baliuag",
       "Bocaue",
@@ -33,7 +32,7 @@
     "CONTRACTOR_REVOKED": 110,
     "MISSING_COORDS": 102,
     "COORD_DUPLICATE": 41,
-    "MUNI_MISMATCH": 37,
+    "MUNI_MISMATCH": 36,
     "BOUNDARY_ADJACENT": 33,
     "UNLOCATABLE_COORD": 9,
     "OUTSIDE_PROVINCE": 7

@@ -25,7 +25,7 @@ import {
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
   PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY, YEAR_STATS,
 } from "./data";
-import type { Project, Contractor, ProjectStatus } from "./data";
+import type { Project, Contractor, ProjectStatus, AuditFlag } from "./data";
 import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
 import { ProjectMap } from "./ProjectMap";
@@ -209,13 +209,15 @@ function usePagination(total:number, pageSize=10) {
  */
 function AuditFlags({project,compact=false}:{project:Project;compact?:boolean}) {
   if(!project.auditFlags.length) return null;
-  return (
+  const inconsistent=project.auditFlags.filter(f=>f.kind!=="unverifiable");
+  const unverifiable=project.auditFlags.filter(f=>f.kind==="unverifiable");
+  const group=(title:string,flags:AuditFlag[],note:string)=>flags.length?(
     <div className={compact?"space-y-1.5":"space-y-2"}>
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-        <Flag size={11}/>Consistency checks tripped
-        <span className="font-mono bg-gray-100 text-gray-500 px-1.5 rounded normal-case tracking-normal">{project.auditFlags.length}</span>
+        <Flag size={11}/>{title}
+        <span className="font-mono bg-gray-100 text-gray-500 px-1.5 rounded normal-case tracking-normal">{flags.length}</span>
       </div>
-      {project.auditFlags.map(f=>{
+      {flags.map(f=>{
         const s=SEVERITY_CFG[f.severity];
         return (
           <div key={f.code} className="rounded border p-2.5 text-[11px]" style={{background:s.bg,borderColor:s.color+"33",color:s.color}}>
@@ -228,10 +230,15 @@ function AuditFlags({project,compact=false}:{project:Project;compact?:boolean}) 
           </div>
         );
       })}
-      <p className="text-[10px] text-gray-400 leading-relaxed">
-        A flag means the published record disagrees with itself or with official
-        boundary data. It is a reason to look, not a finding.
-      </p>
+      <p className="text-[10px] text-gray-400 leading-relaxed">{note}</p>
+    </div>
+  ):null;
+  return (
+    <div className="space-y-4">
+      {group("Consistency checks tripped",inconsistent,
+        "The published record disagrees with itself or with official boundary data. It is a reason to look, not a finding.")}
+      {group("Cannot be checked",unverifiable,
+        "Nothing here disagrees with anything — the register simply does not publish enough to verify the site. Kept separate from the consistency checks, and not counted towards the suspicion score, because an absence is not a contradiction.")}
     </div>
   );
 }
@@ -852,7 +859,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
   const withCoords=META.coverage.withCoordinates;
   const avgCompletion=PROJECTS.reduce((s,p)=>s+p.completion,0)/PROJECTS.length;
   const pct=(n:number)=>`${Math.round(n/PROJECTS.length*100)}%`;
-  // 310 flagged records used to render as 310 table rows, which is most of why
+  // 309 flagged records used to render as 309 table rows, which is most of why
   // this page was 23 screens tall. Ten at a time, newest concern first.
   const pg=usePagination(atRisk.length,10);
 

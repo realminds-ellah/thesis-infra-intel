@@ -19,9 +19,24 @@ import metaRaw from "./meta.json";
 export type ProjectStatus = "completed" | "ongoing" | "proposed" | "terminated";
 export type FlagSeverity = "high" | "medium" | "low";
 
+/**
+ * Two different claims, kept apart because summing them made one number mean
+ * both. "inconsistency" is the record contradicting itself — a coordinate
+ * 4.8 km outside the municipality the description names. "unverifiable" is the
+ * record saying nothing — no coordinate published at all, so the site cannot be
+ * checked by imagery or by anyone standing in front of it.
+ *
+ * Only inconsistency is scored into auditScore. Unverifiable is reported as its
+ * own fact: on the shipped data it was 93 of 158 records-flagged contracts,
+ * 59%, every one described as "the published record disagrees with itself"
+ * when nothing disagreed with anything.
+ */
+export type FlagKind = "inconsistency" | "unverifiable";
+
 export interface AuditFlag {
   code: string;
   severity: FlagSeverity;
+  kind: FlagKind;
   detail: string;
 }
 
@@ -49,7 +64,10 @@ export interface Project {
   hasSatelliteImage: boolean;
   reportCount: number;
   auditFlags: AuditFlag[];
+  /** Severity-weighted, over inconsistency flags only. */
   auditScore: number;
+  /** No coordinate published — an absence, deliberately not scored above. */
+  unverifiable: boolean;
 }
 
 export interface Contractor {
@@ -381,7 +399,7 @@ export const DOC_LABELS: Record<keyof ContractDocuments, string> = {
 
 // ─── Fusion ───────────────────────────────────────────────────────────────────
 
-const RECORDS_SUSPICIOUS = 3;      // one high-severity consistency check
+const RECORDS_SUSPICIOUS = 3;      // one high-severity INCONSISTENCY; absence does not count
 const PROC_SUSPICIOUS = 3;         // e.g. a round-percentage bid plus thin competition
 
 export type Quadrant = "both" | "records-only" | "procurement-only" | "neither";

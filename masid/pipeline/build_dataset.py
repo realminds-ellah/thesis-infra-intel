@@ -243,6 +243,19 @@ DECLARED_VOCAB = sorted(VOCAB_TO_LGU, key=len, reverse=True)
 # safe direction for a tool that accuses public officials of nothing.
 PROVINCE_TOKEN = re.compile(r"\b(BULACAN|BULACA)\b")
 
+# A municipality name immediately followed by RIVER, CREEK or CHANNEL is the name
+# of a WATERCOURSE, not a claim about where the site is. The Angat River runs
+# through most of the province, so "ALONG ANGAT RIVER, BULACAN" declares no
+# municipality at all — and reading it as one produced a spurious high-severity
+# MUNI_MISMATCH on 24CC0423, whose coordinate is in Plaridel and correctly so.
+#
+# Found by pipeline/audit_municipality.py, which re-parses the same prose with an
+# independent method: exactly one contract in 1,293 was affected, and this is it.
+# The watercourse-qualified occurrence is removed before the vocabulary sweep, so
+# a description that ALSO names the municipality elsewhere still matches.
+WATERCOURSE_NAME = re.compile(
+    r"\b([A-Z][A-Z .'-]*?)\s+(RIVER|CREEK|CHANNEL|WATERWAY|DIVERSION)\b")
+
 
 def structure_type(description: str) -> str | None:
     """What an inspector is looking for when they arrive."""
@@ -288,6 +301,9 @@ def declared_municipality(description: str) -> str | None:
     a barangay of Guiguinto; 'San Miguel' is a barangay of Calumpit).
     """
     d = PROVINCE_TOKEN.sub(" ", norm(description))
+    # Drop "<NAME> RIVER" style watercourse names before looking for a
+    # municipality; see WATERCOURSE_NAME above.
+    d = WATERCOURSE_NAME.sub(r" \2 ", d)
 
     best = None  # (end position, length, lgu)
     for token in DECLARED_VOCAB:
@@ -514,11 +530,33 @@ def main() -> int:
                 "detail": f"Completion date ({end}) precedes start date ({start}).",
             })
 
+        # ── two different facts, and summing them made one number mean both ──
+        #
+        # "The coordinate falls 4.8 km outside the municipality this contract's
+        # own description names" is the record CONTRADICTING ITSELF. "No
+        # coordinate was published" is the record SAYING NOTHING. Both deserve
+        # attention and they are not the same claim, but MISSING_COORDS carried
+        # severity high, the suspicion threshold is 3, and so a silence scored
+        # exactly what a contradiction scored and tripped the flag on its own.
+        #
+        # Measured on the shipped data, 93 of the 158 records-flagged contracts
+        # — 59% — were flagged for nothing but a missing coordinate, while only
+        # 53 carried an actual self-contradiction. Every sentence describing the
+        # signal said "the published record disagrees with itself", and for the
+        # majority of the contracts it counted, nothing disagreed with anything.
+        #
+        # So the flags are labelled and scored separately. auditScore now means
+        # what it always claimed to mean, and unverifiable is reported as its
+        # own fact — a real and serious failure of the register, which is why it
+        # keeps its place in auditFlags and in the app rather than being demoted.
+        UNVERIFIABLE = {"MISSING_COORDS"}
         for f in flags:
+            f["kind"] = "unverifiable" if f["code"] in UNVERIFIABLE else "inconsistency"
             flag_tally[f["code"]] += 1
 
         weight = {"high": 3, "medium": 2, "low": 1}
-        score = sum(weight[f["severity"]] for f in flags)
+        score = sum(weight[f["severity"]] for f in flags if f["kind"] == "inconsistency")
+        unverifiable = any(f["kind"] == "unverifiable" for f in flags)
 
         st_from, st_to, st_len = station_limits(r["description"])
         municipality = decl or geoc or "Unspecified"
@@ -571,6 +609,8 @@ def main() -> int:
             "lengthMetres": st_len,
             "auditFlags": flags,
             "auditScore": score,
+            # Not scored into auditScore: it is an absence, not a disagreement.
+            "unverifiable": unverifiable,
         })
 
     projects.sort(key=lambda p: (-p["auditScore"], -p["budget"]))
