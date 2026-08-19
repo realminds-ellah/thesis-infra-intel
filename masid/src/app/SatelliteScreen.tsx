@@ -65,7 +65,6 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
   const [reviews, setReviews] = useState<Record<string, Review>>(() => loadReviews());
   useEffect(() => { saveReviews(reviews); }, [reviews]);
   const [note, setNote] = useState("");
-  const [helpFor, setHelpFor] = useState<EyeVerdict | null>(null);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -374,64 +373,141 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                   The detector cannot separate flagged contracts from ordinary
                   ones. A person looking at sub-metre imagery can at least say
                   what is visible, and that answer — attributed, dated and
-                  exportable — is the ground-truth set this project never had. */}
+                  exportable — is the ground-truth set this project never had.
+
+                  REBUILT, because the first version asked an unanswerable
+                  question. It said "what do you see?" without ever saying what
+                  SHOULD be there, put five terse labels in a row whose meanings
+                  only appeared on hover — invisible on a touch screen and
+                  undiscoverable on a laptop — and opened a free-text box before
+                  the multiple choice above it had been answered.
+
+                  Now: the contract's own words first, so the question can be
+                  answered; every option's meaning always visible; the note
+                  appears only after a choice and asks something specific to it;
+                  and recording one says plainly what it is for. ────────── */}
               <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
                   <Eye size={13} className="text-[#1e3a7b]" />
                   <span className="text-[12px] font-bold text-gray-700">What do you see at this coordinate?</span>
                   <span className="text-[11px] text-gray-400">an observation of the imagery, not a finding about the contract</span>
+                  <span className="ml-auto text-[11px] font-mono text-gray-400">{reviewed}/{assessed.length} reviewed</span>
                 </div>
+
+                {/* What the paperwork says should be here. Without this the
+                    reviewer is guessing at what counts as "the structure". */}
+                <div className="px-4 py-2.5 border-b border-gray-100 flex items-start gap-2 flex-wrap"
+                  style={{ background: tint("#1e3a7b", 7) }}>
+                  <span className="text-[11px] font-semibold shrink-0" style={{ color: accent("#1e3a7b") }}>
+                    The contract says:
+                  </span>
+                  <span className="text-[11px] text-gray-700 flex-1 leading-relaxed">
+                    {(sel.p as unknown as { structureType?: string | null }).structureType
+                      ?? sel.p.description.slice(0, 60) + "…"}
+                    {(sel.p as unknown as { lengthMetres?: number | null }).lengthMetres != null && (
+                      <> · <strong>{(sel.p as unknown as { lengthMetres: number }).lengthMetres.toLocaleString()} m</strong></>
+                    )}
+                    {(sel.p as unknown as { stationFrom?: string | null }).stationFrom && (
+                      <> · STA {(sel.p as unknown as { stationFrom: string }).stationFrom} → {(sel.p as unknown as { stationTo: string }).stationTo}</>
+                    )}
+                    {(sel.p as unknown as { barangay?: string | null }).barangay && (
+                      <> · Brgy. {(sel.p as unknown as { barangay: string }).barangay}</>
+                    )}
+                    {(sel.p as unknown as { lengthMetres?: number | null }).lengthMetres == null && (
+                      <span className="text-gray-400"> · no dimension published — you cannot check a size that was never stated</span>
+                    )}
+                  </span>
+                </div>
+
                 <div className="p-4">
-                  <div className="grid grid-cols-5 gap-2">
+                  {/* One per row, meaning always visible. A five-across grid of
+                      bare labels made "Structure visible" and "Built,
+                      unidentified" look interchangeable. */}
+                  <div className="space-y-1.5">
                     {EYE_ORDER.map(v => {
                       const c = EYE_CFG[v], on = mine?.verdict === v;
                       return (
                         <button key={v} onClick={() => record(v)}
-                          onMouseEnter={() => setHelpFor(v)} onMouseLeave={() => setHelpFor(null)}
-                          className={`text-left p-2.5 rounded border transition-colors ${on ? "" : "border-gray-200 hover:border-gray-300 bg-white"}`}
+                          className={`w-full text-left px-3 py-2 rounded border flex items-start gap-2.5 transition-colors ${
+                            on ? "" : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 bg-white"}`}
                           style={on ? { background: tint(c.color), borderColor: accent(c.color) } : undefined}>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent(c.color) }} />
-                            {on && <Check size={11} style={{ color: c.color }} />}
-                          </div>
-                          <div className="text-[11px] font-semibold mt-1.5 leading-tight"
-                            style={{ color: on ? accent(c.color) : "var(--color-gray-700)" }}>{c.short}</div>
+                          <span className="w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 flex items-center justify-center"
+                            style={on ? { background: accent(c.color), borderColor: accent(c.color) }
+                                      : { borderColor: accent(c.color) }}>
+                            {on && <Check size={10} color="#fff" />}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="text-[12px] font-semibold block leading-tight"
+                              style={{ color: on ? accent(c.color) : "var(--color-gray-800)" }}>
+                              {c.label}
+                            </span>
+                            <span className="text-[11px] text-gray-500 block leading-snug mt-0.5">{c.help}</span>
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-relaxed mt-2.5 min-h-[32px]">
-                    {helpFor ? EYE_CFG[helpFor].help
-                      : mine ? EYE_CFG[mine.verdict].help
-                      : "Hover an option to see what it means. Every one of them describes the picture — none of them describes whether the contract was delivered."}
-                  </p>
-                  <textarea value={note} onChange={e => setNote(e.target.value)}
-                    placeholder="What exactly did you see? Landmarks, the state of the bank, anything that would help someone going to site."
-                    rows={2}
-                    className="w-full mt-1 px-2.5 py-2 text-[12px] border border-gray-200 rounded resize-none focus:outline-none focus:border-[#1e3a7b]" />
-                  <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                    {mine ? (
-                      <>
-                        <span className="text-[11px] text-gray-500">
-                          Recorded by <strong className="text-gray-700">{mine.by}</strong> ·{" "}
-                          {new Date(mine.at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+
+                  {/* The note only after a choice, and asking something specific
+                      to that choice rather than the same generic prompt. */}
+                  {mine && (
+                    <div className="mt-3">
+                      <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                        {mine.verdict === "nothing" ? "What is there instead?"
+                          : mine.verdict === "wrong-place" ? "What is at this point?"
+                          : mine.verdict === "cannot-tell" ? "What is in the way?"
+                          : "Anything useful for someone going to site?"}
+                      </label>
+                      <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                        placeholder={
+                          mine.verdict === "nothing" ? "Bare ground, open water, farmland, houses, an existing road…"
+                          : mine.verdict === "wrong-place" ? "Mid-subdivision, far from any waterway, inside a building…"
+                          : mine.verdict === "cannot-tell" ? "Cloud, tree canopy over the channel, imagery predating the contract…"
+                          : "Landmarks, the state of the bank, how much of the stated length looks covered…"}
+                        className="w-full px-2.5 py-2 text-[12px] border border-gray-200 rounded resize-none focus:outline-none focus:border-[#1e3a7b]" />
+                    </div>
+                  )}
+
+                  {/* What recording it is FOR. Without this the reviewer does
+                      work and watches nothing happen. */}
+                  {mine ? (
+                    <div className="mt-3 rounded border px-3 py-2.5"
+                      style={{ background: tint("#046b04", 9), borderColor: tint("#046b04", 30) }}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Check size={12} style={{ color: accent("#046b04") }} />
+                        <span className="text-[11px]" style={{ color: accent("#046b04") }}>
+                          Recorded by <strong>{mine.by}</strong> ·{" "}
+                          {new Date(mine.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <button onClick={() => record(mine.verdict)}
-                          className="text-[11px] px-2.5 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">Save note</button>
+                          className="ml-auto text-[11px] px-2.5 py-1 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50">
+                          Save note
+                        </button>
                         <button onClick={clearReview}
-                          className="text-[11px] px-2.5 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">Clear</button>
-                      </>
-                    ) : (
-                      <span className="text-[11px] text-gray-400">Not yet looked at. Pick one above to record it.</span>
-                    )}
-                    <button onClick={nextUnreviewed} disabled={queue.length === 0}
-                      title={queue.length ? `${queue.length} left in the current list` : "Nothing left unreviewed in the current list"}
-                      className="ml-auto text-[11px] px-3 py-1.5 rounded text-white flex items-center gap-1 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{ background: "var(--masid-navy)" }}>
-                      {queue.length ? <>Next site to review<span className="font-mono opacity-70">{queue.length}</span><ChevronRight size={12} /></>
-                        : "All reviewed"}
-                    </button>
-                  </div>
+                          className="text-[11px] px-2.5 py-1 rounded border border-gray-200 bg-white text-gray-500 hover:bg-gray-50">
+                          Clear
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-500 leading-relaxed mt-1.5">
+                        This is the ground truth the detector never had. Export the set from the
+                        sidebar — it is what any future model would have to be measured against.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 mt-3">
+                      Not looked at yet. Every option above describes the <strong>picture</strong> —
+                      none of them says whether the contract was delivered.
+                    </p>
+                  )}
+
+                  <button onClick={nextUnreviewed} disabled={queue.length === 0}
+                    title={queue.length ? `${queue.length} left in the current list` : "Nothing left unreviewed in the current list"}
+                    className="w-full mt-3 py-2 rounded text-[12px] font-semibold text-white flex items-center justify-center gap-1.5 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ background: "var(--masid-navy)" }}>
+                    {queue.length
+                      ? <>Next site to review<span className="font-mono opacity-70">{queue.length} left</span><ChevronRight size={13} /></>
+                      : "All reviewed"}
+                  </button>
                 </div>
               </div>
 
