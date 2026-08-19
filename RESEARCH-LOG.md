@@ -142,7 +142,7 @@ reaching the vulnerable?*
 `README` · `SIGNIFICANCE` (Topic 1) · `FUSION` (Topic 1 upgrade) · `IDEAS` (first pass) ·
 `TOPIC-BANK` (emerging-tech top 10) · `RESEARCH-LOG` (this file) · `criteria.yaml` ·
 `audit.py` · `power/` (de-risking) · **`FINDINGS`** (what the built system measured) ·
-`DEMO-SCRIPT` (5-minute walkthrough) · **`AI-LAYER`** (AI architecture and its limits) · `masid/` (the app) · `masid/SOURCES` (every dataset and its limits).
+`DEMO-SCRIPT` (5-minute walkthrough) · related work is at the end of this file · **`AI-LAYER`** (AI architecture and its limits) · `masid/` (the app) · `masid/SOURCES` (every dataset and its limits).
 
 ---
 
@@ -163,3 +163,118 @@ repair from a major work at the same price. Together with the 102 contracts that
 publish no coordinate, most of this register cannot be checked against the ground
 even in principle — which is a direct answer to *why* delivery monitoring needs
 the DPWH and PhilSA data requests rather than a cleverer method.
+
+---
+
+## Related work — who else is doing this, and what is left over
+
+Searched August 2026. Ordered by closeness to what MASID actually does.
+**The short version: everyone here does one of the three tiers. Nobody found
+does all three over the same contracts, and nobody publishes a tier that
+failed.**
+
+### 1. Same data, same country — the one to distinguish ourselves from
+
+- **BetterGov.ph — Flood Control Projects**
+  <https://bettergov.ph/flood-control-projects> ·
+  [map](https://bettergov.ph/flood-control-projects/map) ·
+  [table](https://bettergov.ph/flood-control-projects/table) ·
+  [contractors](https://bettergov.ph/flood-control-projects/contractors)
+  12,870+ projects, ₱740B+ nationwide. **We take our data from them**, so the
+  distinction has to be stated plainly and early: *they publish a REGISTER, we
+  publish an AUDIT LAYER.* They show what DPWH says; we check where what DPWH
+  says contradicts itself, and we add three things they do not have — coordinate
+  integrity against boundary geometry, bidding red flags against a national
+  baseline, and imagery.
+- BetterGovPH Research <https://research.bettergov.ph/>
+- Visualisations and their source list
+  <https://visualizations.bettergov.ph/> · <https://visualizations.bettergov.ph/sources>
+- GitHub org <https://github.com/bettergovph> · OpenBayan
+  <https://www.openbayan.org/projects/bettergov>
+
+### 2. Procurement red flags — the closest thing to a standard for our bidding tier
+
+- **Cardinal (Open Contracting Partnership)** — open-source library computing
+  corruption and collusion indicators over OCDS data; deployed in Ecuador and
+  the Dominican Republic.
+  <https://www.open-contracting.org/2024/06/12/cardinal-an-open-source-library-to-calculate-public-procurement-red-flags/>
+- **Red Flags in Public Procurement** — 73 indicators with formulas, mapped to
+  OCDS.
+  <https://www.open-contracting.org/resources/red-flags-in-public-procurement-a-guide-to-using-data-to-detect-and-mitigate-risks/> ·
+  [PDF](https://www.open-contracting.org/wp-content/uploads/2024/12/OCP2024-RedFlagProcurement-1.pdf)
+- Development Gateway on detecting corruption risk through open contracting
+  <https://developmentgateway.org/blog/detecting-corruption-risk-through-open-contracting/>
+
+  **Read before the defence.** A panel may reasonably ask why we hand-rolled six
+  checks instead of adopting an existing 73-indicator standard. The answer needs
+  to be a fact about the data — whether PhilGEPS is published in OCDS at all —
+  not a preference.
+
+### 3. Imagery for verifying delivery — our satellite tier
+
+- World Bank IEG, *Leveraging Imagery Data in Evaluations*
+  <https://ieg.worldbankgroup.org/sites/default/files/Data/Evaluation/files/Methods_paper-Leveraging_Imagery_Data.pdf>
+- World Bank, *Remote Sensing: A Guide to Practitioners*
+  <https://documents1.worldbank.org/curated/en/099255007072211554/pdf/P1704410d9fa370fd0b689008a8c0ee03d8.pdf>
+- abyrint, satellite imagery for project oversight
+  <https://abyrint.com/perspectives/satellite-imagery-remote-sensing-project-oversight/>
+- Commercial construction monitoring: UP42
+  <https://up42.com/blog/satellite-imagery-helps-with-construction-monitoring> ·
+  LiveEO <https://www.live-eo.com/> · SkyWatch
+  <https://skywatch.com/satellite-imagery-for-infrastructure-monitoring/>
+
+  These vendors sell exactly the capability our satellite tier attempted, at
+  30 cm. **None of them publishes a null result.** That is worth saying out
+  loud: the measured finding that a 10 m tier does not discriminate is a
+  contribution precisely because the commercial literature has no incentive to
+  produce it.
+
+### 4. Academic framing — and the gap it leaves open
+
+- **Third World Quarterly special issue, "Ghost Projects — Ruined Futures and
+  the Unfulfilled Promises of Infrastructure Development"** (guest eds.
+  Müller-Mahn, Kioko, Aalders; announced Feb 2026, launch June 2026)
+  <https://globalsouth.org/2026/02/new-twq-si-ghost-projects-ruined-futures-and-the-promises-of-infrastructure-development/>
+- Lead article, *Ghost projects and the ambiguity of infrastructure development*
+  <https://www.tandfonline.com/doi/full/10.1080/01436597.2025.2610335>
+
+  **This is an opening, not competition.** Twelve contributions on what ghost
+  projects MEAN socially and politically, and not one on how to DETECT them.
+  The literature has the theory and no method; we have a method and a measured
+  account of where it fails.
+
+### 5. Citizen reporting analogues — our Reports feed
+
+- **GeoFix** (India) <https://www.geofix.in/> — the closest match. Reports are
+  shown to nearby users who confirm with a tap, and a **confirmation threshold**
+  triggers notification of the responsible department. That is our "masid" votes
+  with a routing rule attached, and it is the obvious next step for ours.
+- SmartCivic (India) — multilingual, GPS + photo + voice note
+  <https://blink.new/p/smartcivic-india-issue-reporting-platform-4dqzmqoz>
+- Community-based monitoring, general background
+  <https://en.wikipedia.org/wiki/Community-based_monitoring>
+
+### 6. Two pieces that argue for our own design decisions
+
+- **"Ghost projects or mapping failure? Contractors push back over glitches"**
+  <https://opinion.inquirer.net/188105/ghost-projects-or-mapping-failure-contractors-push-back-over-glitches>
+  Contractors arguing the ghost-project findings are *mapping failures* rather
+  than missing structures. This is the single best external justification for
+  why every flag in MASID is worded as *the record disagrees with itself*, and
+  for building a right-of-reply route. Cite it in the methodology.
+- **"Philippines now turns to technology after flood control projects vanish"**
+  <https://bworldonline.com/top-stories/2025/11/17/712461/philippines-now-turns-to-technology-after-flood-control-projects-vanish/>
+  Government reaching for blockchain, livestreamed bidding and **satellite
+  mapping**. The thesis arrives as the state adopts the method — a significance
+  argument that writes itself.
+
+Scandal context: [Wikipedia](https://en.wikipedia.org/wiki/Flood_control_projects_scandal_in_the_Philippines) ·
+[421 ghost projects confirmed](https://www.philstar.com/headlines/2025/10/09/2478643/421-flood-control-projects-found-be-ghosts)
+
+### What is left over — the contribution
+
+Nobody found combines **contract-record checks + imagery + citizen reports over
+the same set of projects, and reports which tier failed.** BetterGov is a
+register. OCP is procurement-only. The World Bank material is imagery-only. TWQ
+is theory. The fusion is the contribution, and the null result is what makes it
+credible rather than promotional.
