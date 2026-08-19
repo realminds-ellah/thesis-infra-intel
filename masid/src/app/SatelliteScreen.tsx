@@ -23,25 +23,21 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, Circle, CircleMarker, LayersControl, ScaleControl } from "react-leaflet";
 import {
   AlertTriangle, Search, Satellite as SatIcon, ExternalLink, Check, Eye,
   Download, ChevronRight, X,
 } from "lucide-react";
-import "leaflet/dist/leaflet.css";
 
 import {
   SATELLITE, SAT_BY_ID, VERDICT_CFG, VALIDATION, PROJECTS, PROC_BY_ID,
   type Verdict, type Project,
 } from "./data";
 import {
-  EYE_CFG, EYE_ORDER, loadReviews, saveReviews, reviewsToCsv, imageryLinks,
+  EYE_CFG, EYE_ORDER, loadReviews, saveReviews, reviewsToCsv,
   type EyeVerdict, type Review,
 } from "./satReview";
 import { tint, accent } from "./theme";
-import { WaybackStrip } from "./WaybackStrip";
-import { StreetLevel } from "./StreetLevel";
-import { GoogleView } from "./GoogleView";
+import { ImageryViewer } from "./ImageryViewer";
 
 const VERDICT_ORDER: Verdict[] = ["change-at-point", "change-offset", "no-change-signal", "not-assessable"];
 type Sort = "value" | "verdict" | "id" | "clear";
@@ -355,97 +351,23 @@ export function SatelliteScreen({ initialId, onOpenRecord, reviewerLabel = "Revi
                 <p className="text-[11px] text-gray-500 leading-relaxed mt-2">{cfg.note}</p>
               </div>
 
-              {/* ── the imagery, at the size it deserves ──────────────────
-                  This panel used to be 200px wide in the last of three columns,
-                  smaller than the two 10 m NDVI thumbnails beside it. That had it
-                  backwards. The NDVI pair is what a detector with no measured
-                  discriminative power looked at; this is sub-metre imagery a
-                  person can actually read a structure off, and reading it is the
-                  only thing on this screen that currently works. ─────────── */}
-              <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-bold text-gray-700">What is there now</span>
-                  <span className="text-[11px] text-gray-400">
-                    high-resolution imagery at the published coordinate — zoom and pan it
-                  </span>
-                  {sel.p.lat != null && sel.p.lng != null && (
-                    <span className="ml-auto text-[10px] font-mono text-gray-400">
-                      {sel.p.lat.toFixed(5)}, {sel.p.lng.toFixed(5)}
-                    </span>
-                  )}
-                </div>
-                {sel.p.lat != null && sel.p.lng != null ? (
-                  <>
-                    <div style={{ height: 420 }}>
-                      <MapContainer key={sel.p.id} center={[sel.p.lat, sel.p.lng]} zoom={18}
-                        style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-                        <LayersControl position="topright">
-                          <LayersControl.BaseLayer checked name="Satellite">
-                            <TileLayer attribution="Imagery &copy; Esri, Maxar, Earthstar Geographics"
-                              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                              maxZoom={19} maxNativeZoom={19} />
-                          </LayersControl.BaseLayer>
-                          {/* Place names answer "is this coordinate anywhere near
-                              the barangay the contract names" without leaving. */}
-                          <LayersControl.BaseLayer name="Street map">
-                            <TileLayer attribution="&copy; OpenStreetMap contributors"
-                              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
-                          </LayersControl.BaseLayer>
-                        </LayersControl>
-                        {/* The radii the detector sampled, so what it looked at is
-                            visible on the ground rather than only in the table. */}
-                        {[30, 90, 150].map(m => (
-                          <Circle key={m} center={[sel.p.lat!, sel.p.lng!]} radius={m}
-                            pathOptions={{ color: "#fff", weight: 1.2, opacity: 0.75, fill: false, dashArray: "4 4" }} />
-                        ))}
-                        <CircleMarker center={[sel.p.lat, sel.p.lng]} radius={6}
-                          pathOptions={{ color: "#fff", weight: 2, fillColor: cfg.color, fillOpacity: 1 }} />
-                        <ScaleControl position="bottomleft" imperial={false} />
-                      </MapContainer>
-                    </div>
-                    <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-3 flex-wrap">
-                      <span className="text-[10px] text-gray-400">dashed rings 30 / 90 / 150 m · more dates:</span>
-                      {imageryLinks(sel.p.lat, sel.p.lng).map(l => (
-                        <a key={l.label} href={l.href} target="_blank" rel="noreferrer" title={l.note}
-                          className="text-[11px] text-[#1e3a7b] hover:underline flex items-center gap-1">
-                          {l.label}<ExternalLink size={9} />
-                        </a>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="h-[240px] flex items-center justify-center text-[12px] text-gray-400">
-                    No coordinate published — there is nothing to point a camera at
-                  </div>
-                )}
-              </div>
-
-              {sel.p.lat != null && sel.p.lng != null && (
-                <WaybackStrip lat={sel.p.lat} lng={sel.p.lng}
+              {/* ── the imagery, in one frame ────────────────────────────
+                  Four panels used to stand here — a Leaflet map of current Esri
+                  imagery, the dated Wayback strip, a Google embed and the
+                  Mapillary ground viewer — carrying four basemaps behind two
+                  different layer controls. Two pairs of them repeated each
+                  other, and a reader who wanted to compare two views had to
+                  scroll between panels rather than see them together. One
+                  frame, one list of views, and a split mode that opens on this
+                  contract's own before-and-after pair. ─────────────────── */}
+              {sel.p.lat != null && sel.p.lng != null ? (
+                <ImageryViewer lat={sel.p.lat} lng={sel.p.lng} id={sel.p.id}
                   startDate={sel.p.startDate} endDate={sel.p.endDate}
                   verdictColor={cfg.color} />
-              )}
-
-              {/* Google's map and pegman, keyless. A second independent source
-                  over the same coordinate, and the fastest route to standing on
-                  the road beside the site. */}
-              {sel.p.lat != null && sel.p.lng != null && (
-                <GoogleView lat={sel.p.lat} lng={sel.p.lng} label={sel.p.id} />
-              )}
-
-              {/*
-                Ground level, directly under the sky-level strip.
-
-                Deliberately adjacent, because they answer different halves of
-                the same question and neither is sufficient. The strip above
-                shows six flights in sixteen years and can say whether something
-                appeared. This shows the structure from beside it, which is the
-                only view that can say whether it is cracked, undermined or half
-                the height it was meant to be — and it is dated too, so the two
-                time series can be read against each other.
-              */}
-              {sel.p.lat != null && sel.p.lng != null && (
-                <StreetLevel lat={sel.p.lat} lng={sel.p.lng} />
+              ) : (
+                <div className="bg-white rounded border border-gray-200 px-4 py-8 text-center text-[12px] text-gray-400">
+                  No coordinate published — there is nothing to point a camera at
+                </div>
               )}
 
               {/* ── what a person makes of it ────────────────────────────
