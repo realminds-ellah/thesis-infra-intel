@@ -38,19 +38,176 @@ with the location the contract description itself states.
 for what each check tests, why the thresholds are conservative, and what the
 public record does not contain.
 
+## Architecture
+
+Every box below is public data or code in this repo. Nothing is bought, nothing
+needs a key, and nothing needs permission — which is the point: a reader can
+re-run the whole thing and get the same answer.
+
+```mermaid
+flowchart LR
+    subgraph SRC["PUBLIC SOURCES"]
+        direction TB
+        DPWH["DPWH transparency export<br/>248,220 records · CC0"]
+        GEPS["PhilGEPS detail export<br/>bidders · ABC · award"]
+        PDFS["1,237 scanned contract<br/>agreements · no text layer"]
+        S2["Sentinel-2 L2A<br/>10 m · ~5-day · AWS Open Data"]
+        ESRI["Esri World Imagery<br/>+ Wayback archive · 0.3 m"]
+        GEOB["geoBoundaries PHL ADM3<br/>24 municipalities · CC BY"]
+        NOAH["UP NOAH 100-yr flood<br/>261,710 polygons"]
+        OSM["OpenStreetMap waterways<br/>5,062 channels · ODbL"]
+    end
+
+    GATE{{"verify_data.py<br/>GATE — must pass first<br/>cross-export · structural<br/>NOA checked to the centavo"}}
+
+    subgraph PIPE["PIPELINES · Python"]
+        direction TB
+        BUILD["build_dataset.py<br/>1,293 contracts · 10 record checks"]
+        PROC["procurement.py<br/>6 bidding red flags"]
+        NAT["national.py<br/>34,080 contracts · 216 offices"]
+        SAT["satellite.py + evaluate.py<br/>change detection + its null result"]
+        HAZ["hazard.py<br/>flood-hazard join"]
+        WAY["wayback.py<br/>6 distinct flights, dated"]
+        SCOPE["scope.py<br/>219 corridors along channels"]
+        DOCS["documents.py<br/>OCR → Bill of Quantities"]
+    end
+
+    JSON[("src/app/data/*.json<br/>generated · typed in index.ts")]
+
+    subgraph APP["STATIC WEB APP"]
+        direction TB
+        DASH["Dashboard · Nationwide"]
+        MAP["Map · pins, corridors, hazard"]
+        SATS["Satellite · sky + ground, dated"]
+        REP["Reports · live capture only"]
+        BRIEF["Field brief · printable"]
+    end
+
+    subgraph WHO["WHO IT IS FOR"]
+        direction TB
+        CIT(["Citizen — what is near me?"])
+        INSP(["Inspector — what should be here?"])
+        ANA(["Analyst — is this unusual?"])
+    end
+
+    DPWH --> GATE
+    GEPS --> GATE
+    GATE --> BUILD & PROC & NAT
+    PDFS --> DOCS
+    S2 --> SAT
+    ESRI --> WAY
+    GEOB --> BUILD
+    NOAH --> HAZ
+    OSM --> SCOPE
+
+    BUILD & PROC & NAT & SAT & HAZ & WAY & SCOPE & DOCS --> JSON
+    JSON --> APP
+    ESRI -. "live tiles" .-> MAP & SATS
+
+    MAP --> CIT
+    REP --> CIT
+    BRIEF --> INSP
+    SATS --> INSP
+    DASH --> ANA
+
+    classDef src fill:#eef2f9,stroke:#1e3a7b,color:#0f1e42
+    classDef gate fill:#fdf0e8,stroke:#e8722c,color:#7a3b12,font-weight:bold
+    classDef pipe fill:#f3f6f3,stroke:#046b04,color:#123d12
+    classDef store fill:#fff,stroke:#6b6b64,color:#333
+    classDef ui fill:#f7f4ea,stroke:#b45309,color:#5b3407
+    classDef who fill:#f0eef7,stroke:#6a3d9a,color:#33194d
+    class CIT,INSP,ANA who
+    class DPWH,GEPS,PDFS,S2,ESRI,GEOB,NOAH,OSM src
+    class GATE gate
+    class BUILD,PROC,NAT,SAT,HAZ,WAY,SCOPE,DOCS pipe
+    class JSON store
+    class DASH,MAP,SATS,REP,BRIEF ui
+```
+
+**Read it left to right and the design argument falls out.** Everything enters
+through one gate, because this project once shipped a tier built on an unchecked
+assumption. The pipelines never talk to each other — each emits JSON, and the
+fusion happens once, in `index.ts`, where the records score and the procurement
+score are crossed. And there is no back end: the app is static files, so it
+cannot quietly acquire a server-side judgement nobody can audit.
+
+## How a contract gets checked
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant REC as The published record
+    participant CHK as Consistency + bidding checks
+    participant SKY as Imagery from above
+    participant GND as Imagery from the ground
+    actor HUM as A person
+    actor FIRM as The named contractor
+
+    Note over REC, CHK: Nothing here is an accusation
+    REC->>CHK: coordinate · description · dates · bidders
+    CHK-->>REC: "the record disagrees with itself" — a reason to look
+    Note right of CHK: 309 of 1,293 trip a check<br/>17 trip both signals
+
+    Note over SKY, GND: Can anyone see it?
+    CHK->>SKY: 6 dated flights, 2010 → 2025
+    SKY-->>CHK: 826 of 962 get a clean before/after pair
+    Note right of SKY: but a 5½-year gap covers<br/>the entire spending surge
+    CHK->>GND: street level, where it exists
+    GND-->>HUM: condition — cracked, undermined, missing
+
+    alt A person looks and records it
+        HUM->>SKY: "structure visible" / "nothing visible" / "cannot tell"
+        Note right of HUM: an observation of the picture,<br/>never a verdict on the contract
+    else A citizen is standing there
+        HUM->>REC: live photo + GPS + what they are reporting
+        Note right of HUM: "Taken in Hagonoy —<br/>contract says Calumpit"
+    end
+
+    CHK->>HUM: field brief — what the paper says should be here
+    Note right of HUM: 67% of contract value is buried<br/>or cast in: nobody can check it
+    FIRM->>REC: right of reply — "that coordinate is wrong"
+```
+
+The loop never closes on a verdict, and that is deliberate. Each tier hands the
+next a **reason to look**, and the only step that can establish whether something
+was built is a person standing at the coordinate. The tool's job is to decide
+where that person should go first.
+
 ## Layout
 
 ```
+pipeline/verify_data.py     cross-export + structural + primary-source checks — runs first
 pipeline/build_dataset.py   fetch → filter → geocode → flag → emit JSON
-pipeline/verify_data.py     cross-export + structural + primary-source checks
 pipeline/procurement.py     bidders, ABC, timeline, documents, national benchmark
+pipeline/national.py        the same indicators for all 216 district offices
 pipeline/satellite.py       STAC search → windowed COG reads → composite → z-score
 pipeline/evaluate.py        statistic ablation for the imagery tier
-src/app/data/               generated: projects, contractors, boundaries, satellite, meta
-src/app/data/index.ts       typed accessors and derived chart series
-src/app/App.tsx             the dashboard
-data/                       source cache (untracked)
+pipeline/hazard.py          UP NOAH 100-year flood extent join
+pipeline/hazard_triage.py   hazard x 2x2 triage, allocation, and the confound test
+pipeline/superres_eval.py   does super-resolution recover structures or invent them
+pipeline/wayback.py         Esri archive → distinct flights, dated by acquisition
+pipeline/scope.py           OSM waterways → per-contract scope corridors
+pipeline/documents.py       fetch → rasterise → OCR → Bill of Quantities
+
+src/app/data/               generated JSON, typed by index.ts
+src/app/App.tsx             nav + Dashboard, Map, Detail, Documents, Contractors, Admin, Public
+src/app/NationwideScreen    216 offices on the same indicators
+src/app/SatelliteScreen     imagery review station
+src/app/WaybackStrip        the six dated flights
+src/app/StreetLevel         ground level, dated (Mapillary)
+src/app/GoogleView          keyless Google map + Street View embed
+src/app/WhatThePaperSays    Bill of Quantities, split by what can be seen
+src/app/ReportsFeed         citizen reports, live capture only
+src/app/RightOfReply        a route for a named party to answer
+src/app/theme.ts + styles/dark.css   the theme engine
+src/app/i18n.ts             English / Filipino
+src/app/geo.ts              on-device reverse geocoding
+
+data/                       source cache, untracked (~700 MB with OCR cache)
 SOURCES.md                  provenance, licences, gaps, flag definitions
+data-docs/                  the data contract, dictionary, methods, limits, quality
+data-docs/validate.py       enforces the contract — fails on drift
+../FINDINGS.md              what the data said · ../AI-LAYER.md · ../DEMO-SCRIPT.md
 ```
 
 ## Three tiers
@@ -58,7 +215,7 @@ SOURCES.md                  provenance, licences, gaps, flag definitions
 **Records tier** — every published coordinate is reverse-geocoded against
 official municipal boundaries and compared with the location the contract
 description itself states, and every contractor is checked against the
-registration marker DPWH publishes in its own records. 310 of 1,293 records
+registration marker DPWH publishes in its own records. 309 of 1,293 records
 disagree with themselves or with the contractor register in some way.
 
 **Procurement tier** — bidder counts with PCAB ids, the approved budget, the full
@@ -69,11 +226,21 @@ national flood-control rate — **rank 1 of 43 district offices**, more than dou
 second place. 57.8% of its bids land on some whole percentage (national 27.0%).
 A benchmarked statistical anomaly, not proof of collusion.
 
-**Fusion** — the two signals correlate at **r = +0.05**, so they are genuinely
-independent and "high on both" is narrower than either alone. 2×2 triage over all
-1,293 contracts: **49 flagged by both**, 109 records-only, 286 procurement-only,
-849 neither. An ordering, not a prediction — the ICI never published an itemised
-ghost list, so there is no public ground truth to validate a ranking against.
+**Fusion** — the two signals correlate at **r = −0.26**, so they do not merely
+fail to be proxies for each other, they lean apart. 2×2 triage over all 1,293
+contracts: **17 flagged by both**, 141 records-only, 318 procurement-only, 817
+neither. Under independence the overlap would be 41, so "high on both" is a
+narrower list than either alone by some margin. An ordering, not a prediction —
+the ICI never published an itemised ghost list, so there is no public ground
+truth to validate a ranking against.
+
+*This paragraph previously read r = +0.05 with 49 / 109 / 286 / 849. The
+correlation was hand-written into two files as +0.05 and −0.12, contradicting
+each other; `SIGNAL_CORRELATION` in `src/app/data/index.ts` now derives it, and
+`pipeline/hazard_triage.py` reproduces −0.2570 independently in Python. The
+quadrant counts were never revisited when the correlation was corrected. The
+marginals were never wrong — 158 records-flagged and 335 procurement-flagged in
+both readings — only the overlap.*
 
 **Imagery tier** — Sentinel-2 L2A change detection over the pre-construction and
 post-completion periods, sampled at 30 m, 90 m and 150 m against a bootstrap null
@@ -113,3 +280,37 @@ worth more than a detector that looks like it works.
 
 **Neither tier establishes that a project was not built.** A flag means the
 paperwork disagrees with itself. See [SOURCES.md](SOURCES.md).
+
+
+## Optional: the dated ground-level viewer
+
+The contract panel can show **street-level captures with a year-by-year
+stepper** — the same spot photographed from the road on known dates, which is
+the one view that shows whether a structure is cracked or undermined rather
+than merely present.
+
+It is off by default and needs a free **Mapillary** client token. **No billing
+account is involved.**
+
+```bash
+cp .env.example .env.local
+# paste your MLY|... token into VITE_MAPILLARY_TOKEN
+npm run dev
+```
+
+Get the token at <https://www.mapillary.com> → Dashboard → Developers →
+Register an application → **Client token**. It is read-only, intended for public
+bundles, and cannot spend anything.
+
+**Why not Google Street View?** Two reasons, both fatal on their own. Every
+Google Maps Platform key — including the Embed API, whose basic usage is *not*
+charged — must sit on a project with **billing enabled**. And Google's "see more
+dates" time slider is a feature of the Maps *interface*, exposed by **no API**,
+so even a billed key could not rebuild the year-by-year comparison inside this
+app. Google Street View is therefore offered as an out-link, where its own
+slider does work.
+
+**Coverage will be patchy and that is reported, not hidden.** These sites are
+riverbanks; street-level imagery follows roads. Where nothing exists the panel
+says so plainly — "no ground photographs of this site" is a finding, and one
+that anyone with a phone can fix, since Mapillary accepts contributions.

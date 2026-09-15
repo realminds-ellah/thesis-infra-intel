@@ -49,7 +49,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ["where", "finished", "problems", "cost", "flood", "documents", "awarded", "mappable", "year"],
     openCount: 3,
     presets: ["problems", "attention", "rebuilt", "nodocs", "at96", "offhazard"],
-    defaultEncoding: "priority",
+    defaultEncoding: "site",
     blurb: "Look up the projects near you and what, if anything, looks wrong with them.",
   },
 
@@ -59,7 +59,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ["where", "finished", "flood", "problems", "cost", "documents", "awarded", "mappable", "year"],
     openCount: 3,
     presets: ["attention", "rebuilt", "offhazard", "problems", "nodocs"],
-    defaultEncoding: "delivery",
+    defaultEncoding: "site",
     blurb: "Track delivery across your municipalities, including flood exposure.",
   },
 
@@ -69,7 +69,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ["mappable", "finished", "where", "problems", "documents", "flood", "imagery", "cost", "year"],
     openCount: 3,
     presets: ["badcoord", "rebuilt", "attention", "problems", "nodocs"],
-    defaultEncoding: "delivery",
+    defaultEncoding: "site",
     blurb: "Build a site-visit list. Start with what can actually be located on the ground.",
   },
 
@@ -78,7 +78,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ["finished", "where", "cost", "documents", "problems", "awarded", "mappable", "flood", "year"],
     openCount: 3,
     presets: ["attention", "nodocs", "rebuilt", "problems"],
-    defaultEncoding: "delivery",
+    defaultEncoding: "site",
     blurb: "Contract delivery: schedule, progress and documentation.",
   },
 
@@ -87,7 +87,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ALL,
     openCount: 3,
     presets: ["problems", "at96", "nocomp", "attention", "rebuilt", "badcoord", "nodocs", "offhazard"],
-    defaultEncoding: "priority",
+    defaultEncoding: "site",
     blurb: "Full register, including how contracts were awarded.",
   },
 
@@ -97,7 +97,7 @@ export const ROLE_VIEWS: Record<Role, RoleView> = {
     groups: ["imagery", "mappable", "where", "flood", "finished", "problems", "cost", "awarded", "documents", "year"],
     openCount: 3,
     presets: ["badcoord", "problems", "rebuilt", "offhazard"],
-    defaultEncoding: "hazard",
+    defaultEncoding: "site",
     blurb: "Imagery coverage and coordinate quality across the register.",
   },
 };

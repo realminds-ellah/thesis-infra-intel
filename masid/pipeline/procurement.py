@@ -245,6 +245,14 @@ def main() -> int:
         results.append({
             "id": row.contractId,
             "bidders": nb,
+            # Who actually bid, not just how many. A reader wants to know who
+            # else was in the room, and DPWH publishes it.
+            "bidderList": [
+                {"name": re.sub(r"\s*\(\d+\)\s*$", "", str(b.get("name") or "")).strip(),
+                 "pcab": (b.get("pcabId") or "") or None,
+                 "won": bool(b.get("isWinner"))}
+                for b in as_list(row.bidders)
+            ],
             "winnerPcab": ident[5:] if ident.startswith("pcab:") else None,
             "abc": None if pd.isna(row.abcN) else float(row.abcN),
             "awardAmount": None if pd.isna(row.awN) else float(row.awN),

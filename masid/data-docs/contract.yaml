@@ -1,0 +1,309 @@
+# MASID data contract
+#
+# THE SOURCE OF TRUTH for every field this project emits. `validate.py` checks
+# the generated JSON against this file and fails on drift, so a field cannot be
+# added, retyped or quietly nulled without the contract being updated first.
+# `DICTIONARY.md` is generated from here and is never hand-edited.
+#
+# ORIGIN is the field a reviewer should read first. It is a closed set:
+#
+#   published  the value as DPWH or PhilGEPS published it, passed through
+#              unchanged. If this is wrong, the government's record is wrong.
+#   derived    computed by this project from published values. If this is wrong,
+#              WE are wrong, and the derivation is named so it can be checked.
+#   joined     brought in from a third-party dataset — boundaries, flood hazard,
+#              waterways, imagery metadata — and attributable to that source.
+#
+# That distinction is the one a panel will press on, which is why it is a
+# required key on every field rather than a note.
+#
+# Provenance, licences and the reasoning behind each source live in
+# ../SOURCES.md. This file describes SHAPE and MEANING, not where data came from.
+
+meta:
+  contract_version: 1
+  generated_by: pipeline/*.py
+  data_dir: src/app/data
+
+datasets:
+
+  # ── the register ────────────────────────────────────────────────────────────
+  projects.json:
+    record_path: "(root array)"
+    expect_rows: 1293
+    emitted_by: pipeline/build_dataset.py
+    description: >
+      One row per flood-control contract at Bulacan 1st DEO, 2016-2025. The
+      spine of the project: every other dataset joins to this on `id`.
+    fields:
+      id:                   {type: str, nullable: false, origin: published, note: "DPWH contractId, e.g. 23CC0269. The join key everywhere."}
+      name:                 {type: str, nullable: false, origin: derived,   note: "Title-cased description, for display only."}
+      description:          {type: str, nullable: false, origin: published, note: "DPWH's own contract description, verbatim and uppercase."}
+      contractor:           {type: str, nullable: false, origin: published, note: "As published, including DPWH's own [REVOKED] marker where present."}
+      districtOffice:       {type: str, nullable: false, origin: published}
+      municipality:         {type: str, nullable: false, origin: derived,   note: "declaredMunicipality, falling back to geocodedMunicipality, then 'Unspecified'."}
+      declaredMunicipality: {type: str, nullable: true,  nulls: 14,   origin: derived, note: "Parsed out of the description text. Null when the description names no municipality."}
+      geocodedMunicipality: {type: str, nullable: true,  nulls: 111,  origin: joined,  source: "geoBoundaries PHL ADM3", note: "Point-in-polygon on the published coordinate. Null when there is no coordinate, or it falls outside every boundary."}
+      barangay:             {type: str, nullable: true,  nulls: 529,  origin: derived, note: "Parsed from the description. Not a validated administrative code."}
+      lat:                  {type: float, nullable: true,  nulls: 102,  origin: published, unit: "degrees WGS84"}
+      lng:                  {type: float, nullable: true,  nulls: 102,  origin: published, unit: "degrees WGS84"}
+      offsetMetres:         {type: int, nullable: true,  nulls: 116,  origin: derived, unit: m, note: "Distance from the published coordinate to the boundary of the municipality the description names. Drives BOUNDARY_ADJACENT vs MUNI_MISMATCH."}
+      budget:               {type: float, nullable: false, origin: published, unit: PHP, note: "AMBIGUOUS UPSTREAM. Matches abc on 52.7% of rows and awardAmount on 45.3% — reliably neither. Prefer abc or awardAmount; see QUALITY.md."}
+      abc:                  {type: float, nullable: false, origin: published, unit: PHP, note: "Approved Budget for the Contract — the ceiling."}
+      awardAmount:          {type: float, nullable: true,  nulls: 19,  origin: published, unit: PHP, note: "What it was awarded for. Null where PhilGEPS published no award."}
+      amountPaid:           {type: float, nullable: false, origin: published, unit: PHP, note: "Disbursement is NOT published; this is what the export carries and is frequently zero."}
+      completion:           {type: float, nullable: false, origin: published, unit: percent, note: "DPWH-REPORTED progress. Never an observation of the site."}
+      dpwhStatus:           {type: str, nullable: false, origin: published, note: "Completed | On-Going | For Procurement | Not Yet Started."}
+      status:               {type: str, nullable: false, origin: derived,  note: "Lifecycle stage only: completed | ongoing | proposed | terminated. Deliberately excludes 'flagged', which is a condition, not a stage."}
+      startDate:            {type: str, nullable: true,  nulls: 68,  origin: published, note: "ISO date. Notice to Proceed."}
+      endDate:              {type: str, nullable: true,  nulls: 331, origin: published, note: "ISO date. Contractual completion, not actual."}
+      infraYear:            {type: int, nullable: false, origin: published, note: "Funding year."}
+      fundingSource:        {type: str, nullable: false, origin: published}
+      auditFlags:           {type: list, nullable: false, origin: derived,  note: "Objects of {code, severity, detail}. Ten checks; see METHODS.md."}
+      auditScore:           {type: int, nullable: false, origin: derived,  note: "Severity-weighted sum of auditFlags: high=3, medium=2, low=1."}
+      overdue:              {type: bool, nullable: false, origin: derived,  note: "Past endDate and not reported complete."}
+      stalled:              {type: bool, nullable: false, origin: derived,  note: "Started, but reported progress has not moved off a low value."}
+      siteRebuilds:         {type: int, nullable: false, origin: derived,  note: "Other contracts sharing this exact coordinate. Not proof of duplication."}
+      structureType:        {type: str, nullable: true,  nulls: 84,  origin: derived, note: "Parsed from the description — Revetment, Slope protection, Drainage, and so on."}
+      lengthMetres:         {type: int, nullable: true,  nulls: 1069, origin: derived, unit: m, note: "From chainage in the description. NULL FOR 83% — the central finding; see FINDINGS.md §1."}
+      stationFrom:          {type: str, nullable: true,  nulls: 1069, origin: derived, note: "Chainage, e.g. 3+480."}
+      stationTo:            {type: str, nullable: true,  nulls: 1069, origin: derived}
+      bidderCount:          {type: int, nullable: false, origin: joined, source: PhilGEPS}
+      docCount:             {type: int, nullable: false, origin: joined, source: PhilGEPS, note: "Published documents attached to this contract."}
+      hasPhotos:            {type: bool, nullable: false, origin: published}
+      photoCount:           {type: int, nullable: false, origin: published}
+      hasSatelliteImage:    {type: bool, nullable: false, origin: published, note: "DPWH's own flag. Unrelated to this project's satellite tier."}
+      reportCount:          {type: int, nullable: false, origin: published, note: "DPWH's count, not MASID citizen reports."}
+
+  # ── bidding ─────────────────────────────────────────────────────────────────
+  procurement.json:
+    record_path: results
+    expect_rows: 1293
+    emitted_by: pipeline/procurement.py
+    description: >
+      Bidding record per contract, with red flags benchmarked against a national
+      baseline computed BEFORE narrowing to this office.
+    fields:
+      id:                {type: str, nullable: false, origin: published}
+      abc:               {type: float, nullable: false, origin: published, unit: PHP}
+      awardAmount:       {type: float, nullable: true,  nulls: 19,  origin: published, unit: PHP}
+      bidRatio:          {type: float, nullable: true,  nulls: 19,  origin: derived, note: "awardAmount / abc. The 96.00% finding is this field."}
+      bidders:           {type: int, nullable: false, origin: published}
+      bidderList:        {type: list, nullable: false, origin: published, note: "Names and PCAB ids where published."}
+      winnerPcab:        {type: str, nullable: true,  nulls: 128, origin: published, note: "PCAB registration number. 9.2% of bidder entries lack one."}
+      advertisementDate: {type: str, nullable: false, origin: published}
+      dateOfAward:       {type: str, nullable: true,  nulls: 187, origin: published}
+      bidWindowDays:     {type: int, nullable: false, origin: derived, unit: days, note: "Advertisement to bid deadline. SHORT_BID_WINDOW fires below this office's 5th percentile."}
+      documents:         {type: obj, nullable: false, origin: published, note: "URLs by type. programOfWork and engineeringDesign are null for ALL 1,293."}
+      procurementFlags:  {type: list, nullable: false, origin: derived, note: "Six checks; see METHODS.md."}
+      procurementScore:  {type: int, nullable: false, origin: derived, note: "Severity-weighted, same weights as auditScore."}
+      valueShare:        {type: float, nullable: true,  nulls: 26,  origin: derived, note: "This contractor's share of all award value at this office."}
+
+  # ── national comparison ─────────────────────────────────────────────────────
+  national.json:
+    record_path: offices
+    expect_rows: 216
+    emitted_by: pipeline/national.py
+    description: >
+      Every district engineering office in the country on the same procurement
+      indicators, so "rank 1 of 197" is a table rather than a claim.
+      PROCUREMENT ONLY — the records-side checks need municipal geometry this
+      project ships for Bulacan alone.
+    fields:
+      office:           {type: str, nullable: false, origin: published}
+      region:           {type: str, nullable: false, origin: published}
+      contracts:        {type: int, nullable: false, origin: derived}
+      value:            {type: float, nullable: false, origin: derived, unit: PHP}
+      contractors:      {type: int, nullable: false, origin: derived, note: "Distinct contractor names. Names, not entities — see LIMITATIONS.md."}
+      withRatio:        {type: int, nullable: false, origin: derived, note: "Contracts with both abc and awardAmount, so a ratio exists."}
+      at96:             {type: int, nullable: false, origin: derived}
+      at96Rate:         {type: float, nullable: false, origin: derived, note: "at96 / withRatio."}
+      wholePctRate:     {type: float, nullable: false, origin: derived, note: "Any whole percentage, not only 96."}
+      singleBidderRate: {type: float, nullable: false, origin: derived}
+      coordRate:        {type: float, nullable: false, origin: derived}
+      rankable:         {type: bool, nullable: false, origin: derived, note: "withRatio >= 30. Below that a rate is noise; such offices are listed and labelled, never dropped."}
+      rankAt96:         {type: int, nullable: true,  nulls: 19, origin: derived, note: "Null for offices that are not rankable."}
+
+  # ── contractors ─────────────────────────────────────────────────────────────
+  contractors.json:
+    record_path: "(root array)"
+    expect_rows: 176
+    emitted_by: pipeline/build_dataset.py
+    description: Aggregates per contractor name at this office.
+    fields:
+      id:                  {type: str, nullable: false, origin: derived, note: "Synthetic C-prefixed key. Not a PCAB number."}
+      name:                {type: str, nullable: false, origin: published}
+      totalProjects:       {type: int, nullable: false, origin: derived}
+      activeProjects:      {type: int, nullable: false, origin: derived}
+      completedProjects:   {type: int, nullable: false, origin: derived}
+      flaggedProjects:     {type: int, nullable: false, origin: derived}
+      flagRate:            {type: float, nullable: false, origin: derived}
+      totalValue:          {type: float, nullable: false, origin: derived, unit: PHP}
+      municipalities:      {type: list, nullable: false, origin: derived}
+      years:               {type: list, nullable: false, origin: derived}
+      registrationRevoked: {type: bool, nullable: false, origin: published, note: "From DPWH's own [REVOKED] marker in the contractor field. The portal does not publish the revocation DATE, so whether it preceded the award is unknown."}
+
+  # ── geography and hazard ────────────────────────────────────────────────────
+  boundaries.json:
+    record_path: "(root array)"
+    expect_rows: 24
+    emitted_by: pipeline/build_dataset.py
+    description: Municipal polygons, simplified for the browser.
+    fields:
+      name:  {type: str, nullable: false, origin: joined, source: "geoBoundaries PHL ADM3 (CC BY 3.0 IGO)"}
+      rings: {type: list, nullable: false, origin: joined, note: "[[lng, lat], ...] per ring. GeoJSON order, not spoken order."}
+
+  hazard.json:
+    record_path: results
+    expect_rows: 1293
+    emitted_by: pipeline/hazard.py
+    description: Each coordinate against the UP NOAH 100-year modelled flood extent.
+    fields:
+      id:             {type: str, nullable: false, origin: published}
+      hazard:         {type: str, nullable: true,  nulls: 102, origin: joined, source: "UP NOAH", note: "high | medium | low. Null where no coordinate is published."}
+      level:          {type: int, nullable: true,  nulls: 102, origin: joined, note: "NOAH's Var: 1 low, 2 medium, 3 high."}
+      metresToHazard: {type: int, nullable: true,  nulls: 984, origin: derived, unit: m, note: "Only for points OUTSIDE the modelled extent. Read it with the distance: 306 sit within a kilometre, which is where a revetment belongs."}
+
+  scope.json:
+    record_path: corridors
+    expect_rows: 219
+    emitted_by: pipeline/scope.py
+    description: >
+      The ground a contract claims to cover, as a corridor along the nearest
+      watercourse. AN INFERENCE — the register publishes a point and a length
+      but no direction; the direction comes from OpenStreetMap.
+    fields:
+      id:               {type: str, nullable: false, origin: published}
+      lengthMetres:     {type: int, nullable: false, origin: derived, unit: m, note: "The contract's stated length."}
+      coveredMetres:    {type: int, nullable: false, origin: derived, unit: m, note: "What was actually drawn. Less than lengthMetres where the mapped channel ran out (16 contracts)."}
+      metresToWaterway: {type: int, nullable: false, origin: derived, unit: m, note: "THE STRENGTH OF THE CLAIM. 34 corridors were derived from a channel more than 100 m away and are flagged in the interface."}
+      waterwayName:     {type: str, nullable: true,  nulls: 82, origin: joined, source: "OpenStreetMap (ODbL)"}
+      waterwayClass:    {type: str, nullable: false, origin: joined, note: "river | stream | canal | drain."}
+      ring:             {type: list, nullable: false, origin: derived, note: "[[lng, lat], ...] polygon exterior."}
+
+  # ── imagery ─────────────────────────────────────────────────────────────────
+  satellite.json:
+    record_path: results
+    expect_rows: 200
+    emitted_by: pipeline/satellite.py
+    description: >
+      Sentinel-2 change detection. THIS TIER DOES NOT DISCRIMINATE — it fires on
+      flagged records and seeded controls at statistically indistinguishable
+      rates, and every consumer must present its verdicts as context, never as
+      evidence. See METHODS.md.
+    fields:
+      id:                {type: str, nullable: false, origin: published}
+      verdict:           {type: str, nullable: false, origin: derived, note: "change-at-point | change-offset | no-change-signal | not-assessable. CARRIES NO EVIDENTIAL WEIGHT."}
+      detail:            {type: str, nullable: false, origin: derived, note: "Prose written to prevent a verdict being read as a finding."}
+      confidence:        {type: str, nullable: false, origin: derived}
+      flagged:           {type: bool, nullable: false, origin: derived, note: "Whether this site was in the flagged group for the validation split."}
+      cloudFreeFraction: {type: float, nullable: false, origin: derived}
+      rings:             {type: obj, nullable: false, origin: derived, note: "Per-radius 30/90/150 m stats: dNdvi, zNdvi, dNdbi, zNdbi, nullDiscs."}
+      control:           {type: obj, nullable: false, origin: derived, note: "Bootstrap null: 160 same-radius discs from the site's own 300-600 m annulus."}
+      chips:             {type: obj, nullable: false, origin: derived, note: "before/after NDVI composites as data URIs. False-colour science images — never re-tinted by the theme."}
+      scenesBefore:      {type: list, nullable: false, origin: joined, source: "Sentinel-2 L2A"}
+      scenesAfter:       {type: list, nullable: false, origin: joined, source: "Sentinel-2 L2A"}
+
+  wayback.json:
+    record_path: frames
+    expect_rows: 6
+    emitted_by: pipeline/wayback.py
+    description: >
+      Distinct high-resolution flights over Bulacan. Esri publishes 28 archived
+      versions that return imagery here; reading the acquisition metadata
+      collapses them to SIX actual photographs.
+    fields:
+      release:          {type: int, nullable: false, origin: joined, source: "Esri Wayback"}
+      published:        {type: str, nullable: false, origin: joined, note: "When Esri published the version. NOT when the photograph was taken."}
+      flown:            {type: str, nullable: false, origin: joined, note: "SRC_DATE — the actual acquisition date. This is the one to caption with."}
+      resolutionMetres: {type: float, nullable: false, origin: joined, unit: m, note: "SRC_RES. Esri returns this as a STRING; coerced to float at the pipeline boundary."}
+      accuracyMetres:   {type: float, nullable: false, origin: joined, unit: m, note: "SRC_ACC positional accuracy. Also string-typed upstream."}
+      provider:         {type: str, nullable: false, origin: joined, note: "e.g. Vivid Advanced."}
+      republishedAs:    {type: int, nullable: false, origin: derived, note: "How many Esri releases carry this same flight. The 2019-10-05 flight appears in twelve."}
+      tileUrl:          {type: str, nullable: false, origin: joined, note: "Template. Tiles are served live and never redistributed by this project."}
+
+  # ── documents ───────────────────────────────────────────────────────────────
+  documents.json:
+    record_path: contracts
+    expect_rows: 972
+    emitted_by: pipeline/documents.py
+    description: >
+      Bills of Quantities read by OCR out of scanned contract agreements.
+      Only contracts at or above 35% parse coverage are shipped — the corpus
+      figures for all 1,237 documents are in the `corpus` block, not here.
+      1,086 of 1,237 documents yielded a table; 972 clear the coverage gate.
+    fields:
+      id:                  {type: str, nullable: false, origin: published}
+      items:               {type: list, nullable: false, origin: derived, note: "Pay items: {code, description, quantity, unit, unitPrice, amount, visibility}."}
+      boqTotal:            {type: float, nullable: false, origin: derived, unit: PHP, note: "Sum of PARSED rows only — not the contract total."}
+      coverage:            {type: float, nullable: false, origin: derived, note: "boqTotal / awardAmount. A BoQ sums to the price by construction, so this is an exact completeness measure. Median 92%; 670 of 972 land in the 90-102% band, 7 exceed 102% where a subtotal was swept in."}
+      statedTotal:         {type: float, nullable: true,  nulls: 101, origin: derived, unit: PHP, note: "The contract price read from the scan. Matched the export on 932 of 962 (96.9%) — the tier's own accuracy test, at no annotation cost."}
+      awardAmount:         {type: float, nullable: false, origin: published, unit: PHP, note: "Carried through for that comparison."}
+      byVisibility:        {type: obj, nullable: false, origin: derived, note: "Value by whether an item survives to be photographed: surface | ground | footprint | buried | inside | gone | none."}
+      hasMeasuredQuantity: {type: bool, nullable: false, origin: derived, note: "Carries a length or area. True for 774 of the 1,015 contracts whose DESCRIPTION states no dimension — three quarters of FINDINGS.md §1 closes."}
+
+  # ── provenance and self-report ──────────────────────────────────────────────
+  meta.json:
+    record_path: sources
+    expect_rows: 2
+    emitted_by: pipeline/build_dataset.py
+    description: Coverage counters and source attribution shown in the interface.
+    fields:
+      name:         {type: str, nullable: false, origin: derived}
+      publisher:    {type: str, nullable: false, origin: derived}
+      url:          {type: str, nullable: false, origin: derived}
+      license:      {type: str, nullable: false, origin: derived}
+      provides:     {type: str, nullable: false, origin: derived}
+      rowsUpstream: {type: int, nullable: true,  optional: true, origin: derived}
+
+  data-quality.json:
+    record_path: checks
+    expect_rows: 36
+    emitted_by: pipeline/verify_data.py
+    description: >
+      The gate's own results, machine-readable. Rendered for humans in
+      QUALITY.md. 19 PASS, 4 WARN, 13 INFO at the current build.
+    fields:
+      check:      {type: str, nullable: false, origin: derived}
+      level:      {type: str, nullable: false, origin: derived, note: "PASS | WARN | INFO. A FAIL stops the build."}
+      note:       {type: str, nullable: false, origin: derived}
+      value:      {type: str, nullable: false, optional: true, origin: derived}
+      total:      {type: int, nullable: false, optional: true, origin: derived}
+      violations: {type: int, nullable: false, optional: true, origin: derived}
+      rate:       {type: float, nullable: false, optional: true, origin: derived}
+
+  municipality-audit.json:
+    record_path: null
+    emitted_by: pipeline/audit_municipality.py
+    description: >
+      Audit of declared_municipality(), the regex-over-prose that supplies the
+      text half of MUNI_MISMATCH and BOUNDARY_ADJACENT. A second, independent
+      parser re-reads the same descriptions by sentence shape rather than by
+      token sweep; the two fail in different directions, so agreement is
+      evidence. Summary object with no record array. At the current build:
+      100% agreement on the 69 flag-raising contracts, 0 conflicts, 99.5%
+      across the register. It found and fixed one false positive (24CC0423,
+      where "ANGAT RIVER" was read as a location claim).
+    fields: {}
+
+  stat-comparison.json:
+    record_path: null
+    emitted_by: pipeline/evaluate.py
+    description: >
+      Statistic ablation for the imagery tier — disc-mean/tail/core/patch across
+      1.0-2.5 sigma. Summary object with no record array. Recall never exceeds
+      26%, which is what closed the question of whether a different statistic
+      would have rescued the tier.
+    fields: {}
+
+# ── referential integrity ─────────────────────────────────────────────────────
+# Every id in these datasets must exist in projects.json. Checked, not assumed.
+joins:
+  projects.json:
+    key: id
+    referenced_by:
+      - procurement.json
+      - hazard.json
+      - scope.json
+      - satellite.json
+      - documents.json

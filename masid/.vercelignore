@@ -1,0 +1,18 @@
+# The deploy root is this directory, which also holds the pipeline and its
+# inputs. Vercel does not read .gitignore, so without this it uploads the
+# 1.2 GB of raw rasters and exports that live in data/ and fails on the
+# 100 MB per-file limit.
+#
+# Nothing here is needed to serve the site: the app imports its generated
+# JSON from src/app/data/, which IS deployed.
+
+/data
+/node_modules
+/dist
+/pipeline
+__pycache__
+*.pyc
+.venv
+*.tif
+*.tif.gz
+*.parquet

@@ -1,0 +1,197 @@
+{
+  "note": "COA fraud-audit findings on DPWH Bulacan 1st DEO flood-control projects, joined to the contract register. THIS IS THE ONLY EXTERNAL VALIDATION SET THIS PROJECT HAS. Every earlier document in this repo states that no itemised public ghost list exists and that the triage can therefore only be an ordering; that claim is now only partly true and SOURCES.md, README.md and FINDINGS.md must be updated together.",
+  "status": "ALLEGATIONS, NOT ADJUDICATED. COA referred these to the Independent Commission for Infrastructure and the Ombudsman. They are audit findings, not convictions, and must never be presented in this project as proof of fraud. The project's standing wording rule applies unchanged.",
+  "provenance": {
+    "primary": "COA Fraud Audit Reports on DPWH Bulacan 1st DEO, filed with the ICI/Ombudsman. The reports themselves are NOT published; coa.gov.ph returns 403 to automated requests.",
+    "secondary": "Philippine press reporting, Dec 2025 - Feb 2026. Project titles and amounts are quoted in the reporting and were matched against the register.",
+    "sources": [
+      "https://www.philstar.com/headlines/2025/12/18/2495198/coa-files-4-fraud-audit-reports-ici-bulacan-flood-project-awarded-wawao-builders",
+      "https://www.gmanetwork.com/news/topstories/nation/973514/coa-finds-fraud-in-over-p325-m-flood-control-projects-in-bulacan/story/",
+      "https://www.gmanetwork.com/news/topstories/nation/960440/coa-submits-fraud-audit-report-on-p360-million-flood-control-projects-in-bulacan/story/"
+    ],
+    "audit_period": "1 July 2022 to 30 May 2025, per COA Chairperson directive of 12 August 2025",
+    "caveat": "Secondary sourcing. Before any thesis claim rests on these labels, obtain the primary Fraud Audit Reports via COA records request. Press figures have been verified to match the register to the centavo, which is strong corroboration but is not the primary document.",
+    "batches": "At least three separate COA filings are reported (totals of ~P330.5M, ~P325M and ~P360.4M). Press totals also appear as P351M, P297M and P275M across outlets, which may be the same filings reported at different stages. The true number of audited contracts is unknown from public sources."
+  },
+  "join_method": {
+    "key": "contract amount matched to DPWH 'budget' (7 of 8) or 'awardAmount' (1 of 8), corroborated by barangay name appearing in the contract description and by contractor name",
+    "note": "The amounts COA quotes correspond to DPWH's 'budget' column, not the awarded amount. verify_data.py established that 'budget' has mixed semantics (matching abc on 52.7% and awardAmount on 45.3%); it is nonetheless the column COA's figures agree with, exact to the centavo.",
+    "matched": 8,
+    "of": 8
+  },
+  "headline_result": {
+    "coa_findings_matched": 9,
+    "inside_first_district": 6,
+    "flagged_by_masid_records_tier": 0,
+    "flagged_by_masid_procurement_tier": 0,
+    "interpretation": "MASID's paper-consistency tiers have zero recall on this set. Every one of the eight publishes a coordinate that geocodes to the municipality its own description names, at zero offset, and reports completed or near-complete. A fabricated delivery produces a clean paper record, which is what one would expect if the paperwork is produced by the same process as the fabrication. This is a measured negative result of the same class as the Sentinel-2 null and should be reported as prominently.",
+    "sampling_caveat": "These are COA's selected audit targets, not a random sample. They skew to large contracts and to one contractor. An unbiased recall cannot be computed from them. What they do establish is sufficient: internal consistency alone does not catch this failure mode.",
+    "unresolved_candidates": 3
+  },
+  "findings": [
+    {
+      "contractId": "24CC0034",
+      "municipality": "City of Malolos",
+      "inFirstDistrict": true,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 77197885.27,
+      "matchedField": "budget",
+      "barangay": "Calero",
+      "coaFinding": "no structure found at the approved site",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0055",
+      "municipality": "Guiguinto",
+      "inFirstDistrict": false,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 98999939.04,
+      "matchedField": "budget",
+      "barangay": "Malis (Phase III)",
+      "coaFinding": "undocumented relocation to an unauthorised location",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "23CC0156",
+      "municipality": "Calumpit",
+      "inFirstDistrict": true,
+      "infraYear": 2023,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 77199991.76,
+      "matchedField": "budget",
+      "barangay": "Bulusan",
+      "coaFinding": "ghost project",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0033",
+      "municipality": "City of Malolos",
+      "inFirstDistrict": true,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 77115140.9,
+      "matchedField": "budget",
+      "barangay": "Namayan",
+      "coaFinding": "fraud indicators",
+      "dpwhStatus": "ongoing",
+      "dpwhCompletion": 86.37,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0052",
+      "municipality": "Guiguinto",
+      "inFirstDistrict": false,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 96499302.69,
+      "matchedField": "budget",
+      "barangay": "Santa Cruz",
+      "coaFinding": "ghost project; unauthorised relocation; payment for pre-existing structures",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0014",
+      "municipality": "Hagonoy",
+      "inFirstDistrict": true,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 77197558.67,
+      "matchedField": "budget",
+      "barangay": "Iba-Ibayo",
+      "coaFinding": "satellite imagery showed the structure predated the contract",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0017",
+      "municipality": "Calumpit",
+      "inFirstDistrict": true,
+      "infraYear": 2024,
+      "contractor": "WAWAO BUILDERS",
+      "coaAmount": 77199226.37,
+      "matchedField": "budget",
+      "barangay": "San Jose",
+      "coaFinding": "missing as-built plans and cost breakdowns",
+      "dpwhStatus": "ongoing",
+      "dpwhCompletion": 35.26,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0087",
+      "municipality": "City of Malolos",
+      "inFirstDistrict": true,
+      "infraYear": 2024,
+      "contractor": "DARCY & ANNA BUILDERS & TRADING",
+      "coaAmount": 74120639.56,
+      "matchedField": "awardAmount",
+      "barangay": "Babatnin",
+      "coaFinding": "widespread absence of required documents including as-built plans and detailed cost breakdowns",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    },
+    {
+      "contractId": "24CC0401",
+      "municipality": "Bocaue",
+      "inFirstDistrict": false,
+      "infraYear": 2024,
+      "contractor": "TOPNOTCH CATALYST BUILDERS INC. / BEAM TEAM DEVELOPER SPECIALIST INC. (JV)",
+      "coaAmount": 98994958.26,
+      "matchedField": "budget",
+      "barangay": "Turo (Sitio Hangga)",
+      "coaFinding": "pre-existing flood control structure; discrepancies between plans and actual construction",
+      "dpwhStatus": "completed",
+      "dpwhCompletion": 100.0,
+      "masidFlags": []
+    }
+  ],
+  "method_note": "COA reached these findings using physical inspection, geotagged photographs and HISTORICAL SATELLITE IMAGERY. That is MASID's imagery tier. Two of the eight findings - relocation, and payment for a structure that predates the contract - are invisible to any single-date check and require exactly the dated before/after comparison this project already fetches at 0.34-0.5 m.",
+  "candidates_unresolved": {
+    "why": "A third COA filing (P360.4 M, DPWH Bulacan 1st DEO) was reported with ROUNDED amounts (P92.9M, P69.5M, P99M) rather than exact figures. Rounded amounts do not identify a contract uniquely in a register where dozens of contracts share an ABC ceiling. These are recorded as candidates and are NOT counted as labels. Resolving them requires the primary COA Fraud Audit Report.",
+    "rule": "Never promote a candidate to a label on a rounded amount. The project's standing rule against inventing a value the record lacks applies to labels as much as to figures.",
+    "items": [
+      {
+        "coaDescription": "Flood control structure along Angat River, Brgy Santo Cristo/Taal, Pulilan, ~P92.9M, Syms Construction Trading",
+        "coaFinding": "project site different from the approved location; slope protection already present",
+        "inFirstDistrict": true,
+        "candidates": [
+          "24CC0592",
+          "25CC0196",
+          "25CC0195"
+        ]
+      },
+      {
+        "coaDescription": "Riverbank protection structure (Package A), Brgy Bulihan (Sitio Dulo), Plaridel, ~P69.5M, Topnotch Catalyst Builders",
+        "coaFinding": "mismatched project site; structure failed specifications",
+        "inFirstDistrict": false,
+        "candidates": [
+          "25CC0151",
+          "25CC0132"
+        ]
+      },
+      {
+        "coaDescription": "Slope protection and waterways, Brgy Bambang, Bocaue, ~P99M, Topnotch/Beam Team JV",
+        "coaFinding": "satellite imagery showed the structure existing as early as 29 February 2024",
+        "inFirstDistrict": false,
+        "candidates": [
+          "24CC0151",
+          "24CC0402",
+          "24CC0403",
+          "24CC0149"
+        ],
+        "note": "24CC0151 carries MUNI_MISMATCH. If it is the contract COA named, records-tier recall on the full set would be 1 of 10 rather than 0 of 10. This cannot be decided from press reporting and must not be assumed either way."
+      }
+    ]
+  }
+}

@@ -1,0 +1,91 @@
+{
+ "generated": "2026-08-19T14:31:05Z",
+ "contract_version": 1,
+ "note": "Row counts and checksums for the build these figures came from. A number quoted anywhere in this project can be tied to a sha256 here.",
+ "datasets": {
+  "boundaries.json": {
+   "rows": 24,
+   "bytes": 56219,
+   "sha256": "1c6993593d11b761ba82d63d6d84867014e32baf33e32c88e977af4e409baa24",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "contractors.json": {
+   "rows": 176,
+   "bytes": 64134,
+   "sha256": "5bc0b99304007c663003ed80207debdbc1e6e8412fefd93b4016edd354edfa14",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "data-quality.json": {
+   "rows": 36,
+   "bytes": 5407,
+   "sha256": "1c82704826cfc5d3e4b160693e544f022335262458809af35a9a6425a2c11677",
+   "emitted_by": "pipeline/verify_data.py"
+  },
+  "documents.json": {
+   "rows": 972,
+   "bytes": 2646760,
+   "sha256": "22875477a9ccf76ec2e4d2b89e3751eef7c1c7be8e59d11a3b67fd62e36f8bd1",
+   "emitted_by": "pipeline/documents.py"
+  },
+  "hazard.json": {
+   "rows": 1293,
+   "bytes": 119439,
+   "sha256": "1a53089d02725ac82646cd41b3508397156e431bedd1333db4b633d88f5dc70e",
+   "emitted_by": "pipeline/hazard.py"
+  },
+  "meta.json": {
+   "rows": 2,
+   "bytes": 2266,
+   "sha256": "cfce22e4d93e2148bd5558494df3425fe246e8f9d5efa05dfaf05e3c6e78bb27",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "municipality-audit.json": {
+   "rows": 0,
+   "bytes": 638,
+   "sha256": "58a7ddf7b302cf3bd7123e045276499996a8141ca3008a78d7df668bc1320893",
+   "emitted_by": "pipeline/audit_municipality.py"
+  },
+  "national.json": {
+   "rows": 216,
+   "bytes": 69389,
+   "sha256": "caa0362a66cfba26cb4a8d709a53da5dc34428b692596947fe649280656c5da8",
+   "emitted_by": "pipeline/national.py"
+  },
+  "procurement.json": {
+   "rows": 1293,
+   "bytes": 2133298,
+   "sha256": "454703340dd2d5aaebca9b5fb6a3008605d1b00a47738b19d795ea36ebf61c9e",
+   "emitted_by": "pipeline/procurement.py"
+  },
+  "projects.json": {
+   "rows": 1293,
+   "bytes": 1603125,
+   "sha256": "73de0cfb62916a257552bb3e5583db7bb92c628e1699ff806fce5facd0387054",
+   "emitted_by": "pipeline/build_dataset.py"
+  },
+  "satellite.json": {
+   "rows": 200,
+   "bytes": 224748,
+   "sha256": "d9eedbe6678ff3384f323be789550ab5572bc19d8761a2a8092d3c876892aca5",
+   "emitted_by": "pipeline/satellite.py"
+  },
+  "scope.json": {
+   "rows": 219,
+   "bytes": 217771,
+   "sha256": "7e3cd2f537c501ed214c5c8c4f7e7cbf684e7617e3c70b248c1cd48f84098137",
+   "emitted_by": "pipeline/scope.py"
+  },
+  "stat-comparison.json": {
+   "rows": 0,
+   "bytes": 2464,
+   "sha256": "dcc5a0cabe1782490d8c69d14089a4c844f2907fdbb7ac21f27c185f712a30a3",
+   "emitted_by": "pipeline/evaluate.py"
+  },
+  "wayback.json": {
+   "rows": 6,
+   "bytes": 2636,
+   "sha256": "454ac886b117d0780134c3f904db1f4e4b7c65a45c4e7557b3a30795175c8ea4",
+   "emitted_by": "pipeline/wayback.py"
+  }
+ }
+}

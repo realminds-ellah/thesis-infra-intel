@@ -1,0 +1,343 @@
+# -*- coding: utf-8 -*-
+import csv, html, json
+from pathlib import Path
+
+TODO = "TO COMPLETE from full text"
+
+# (title, author, objective, methodology, results, recommendation, apa, group, flag)
+# flag: "" = supported from abstract/known content; "partial" = some cells unverified;
+#       "cite" = citation detail itself unconfirmed
+R = []
+def add(*a): R.append(a)
+
+# ---------------- Theoretical framework (carried over from Ellah's own matrix)
+add("General System Theory: Foundations, Development, Applications",
+ "Bertalanffy, L. von (1968)",
+ "To establish Systems Theory as a framework for understanding how interrelated components function together as a unified system.",
+ "Theoretical/conceptual development of General Systems Theory.",
+ "Systems composed of interrelated parts must be understood holistically, since a change in one component affects the performance of the whole system.",
+ "Apply systems thinking when studying complex, multi-component processes such as infrastructure planning and monitoring.",
+ "Bertalanffy, L. von. (1968). General system theory: Foundations, development, applications. George Braziller. https://tomek.org/files/general_system_theory_foundations_development_applications.pdf",
+ "Theoretical framework", "")
+
+# ---------------- 1. Measuring missing delivery
+add("Monitoring Corruption: Evidence from a Field Experiment in Indonesia",
+ "Olken, B. A. (2007)",
+ "To measure corruption in village road projects directly, and to test whether top-down government audits or bottom-up community monitoring more effectively reduce it.",
+ "Randomised field experiment over 600+ Indonesian village road projects. Engineers took core samples from completed roads and independently estimated the prices and quantities of all inputs actually used; this estimate was differenced against the village's official expenditure report to yield a measure of \"missing expenditures.\" Audit probability and community-monitoring treatments were randomly assigned.",
+ "Raising the probability of a government audit from 4% to 100% reduced missing expenditures by about eight percentage points. Increasing grassroots participation in monitoring had little average effect, reducing missing expenditures only where free-rider problems and elite capture were limited.",
+ "Verify delivery by independently measuring the physical work and reporting the discrepancy against the paper record as a quantity rather than an allegation. Retain top-down audit, since community monitoring alone is not sufficient.",
+ "Olken, B. A. (2007). Monitoring corruption: Evidence from a field experiment in Indonesia. Journal of Political Economy, 115(2), 200-249. https://doi.org/10.1086/517935",
+ "Measuring missing delivery", "")
+
+# ---------------- 2. Procurement red flags
+add("An Objective Corruption Risk Index Using Public Procurement Data",
+ "Fazekas, M., Toth, I. J., & King, L. P. (2016)",
+ "To construct an objective, contract-level indicator of institutionalised corruption in public procurement using administrative data alone, rather than perception surveys.",
+ "Big-data analysis of electronic public procurement records in Hungary. Individual \"red flags\" associated with restricted competition and recurrent award to the same firm were identified and composed into a Corruption Risk Index (CRI) at contract level, aggregable to organisation, sector, region and country. Validated indirectly against firm-level correlates.",
+ "Firms with higher CRI scores showed higher profitability, higher ratios of contract value to initial estimated price, greater likelihood of being managed or owned by politicians, and greater likelihood of registration in tax havens. Single bidding emerged as the strongest individual red flag.",
+ "Build corruption-risk measures from objective administrative data, and where confirmed cases are unavailable, validate the risk score against observable correlates of corruption rather than against a ground-truth list.",
+ "Fazekas, M., Toth, I. J., & King, L. P. (2016). An objective corruption risk index using public procurement data. European Journal on Criminal Policy and Research, 22(3), 369-397. https://doi.org/10.1007/s10610-016-9308-z",
+ "Procurement red flags", "")
+
+add("Uncovering High-Level Corruption: Cross-National Objective Corruption Risk Indicators Using Public Procurement Data",
+ "Fazekas, M., & Kocsis, G.",
+ "To extend objective procurement-based corruption risk indicators to cross-national comparison.",
+ TODO, TODO,
+ "Use cross-nationally comparable procurement indicators where national ground truth is absent.",
+ "Fazekas, M., & Kocsis, G. Uncovering high-level corruption: Cross-national objective corruption risk indicators using public procurement data. British Journal of Political Science. [volume, issue, pages and year to be confirmed]",
+ "Procurement red flags", "cite")
+
+add("From Corruption to State Capture: A New Analytical Framework with Empirical Applications from Hungary",
+ "Fazekas, M., & Toth, I. J. (2016)",
+ "To distinguish ordinary corruption from state capture and provide an empirical framework for measuring the latter.",
+ TODO, TODO,
+ "Distinguish isolated corrupt transactions from systemic capture when interpreting concentration of awards among a small set of firms.",
+ "Fazekas, M., & Toth, I. J. (2016). From corruption to state capture: A new analytical framework with empirical applications from Hungary. Political Research Quarterly. https://doi.org/10.1177/1065912916639137",
+ "Procurement red flags", "partial")
+
+add("A Method to Assess Corruption Risks in Public Procurement",
+ "International Monetary Fund (2022)",
+ "To provide a replicable method for assessing corruption risk in public procurement systems using available transaction data.",
+ TODO, TODO,
+ "Apply standardised corruption-risk assessment to national procurement data as part of fiscal governance review.",
+ "International Monetary Fund. (2022). A method to assess corruption risks in public procurement. IMF Working Paper. https://www.elibrary.imf.org/downloadpdf/view/journals/001/2022/094/article-A001-en.pdf",
+ "Procurement red flags", "partial")
+
+add("Red Flags in Public Procurement: A Guide to Using Data to Detect and Mitigate Risks",
+ "Open Contracting Partnership (2024)",
+ "To codify a practical, formula-level set of procurement corruption and collusion indicators mapped to the Open Contracting Data Standard.",
+ "Practitioner synthesis: 73 red-flag indicators are defined with explicit formulas and mapped to OCDS fields; accompanied by Cardinal, an open-source library that computes them over OCDS data, deployed in Ecuador and the Dominican Republic.",
+ "Provides a reusable indicator standard, but each indicator depends on specific published fields. Where a procurement portal does not publish bidder counts or approved budget ceilings, the indicators carrying most diagnostic weight cannot be computed at all.",
+ "Adopt the standard where the data supports it, and state explicitly which indicators are not derivable from the national portal rather than substituting weaker proxies silently.",
+ "Open Contracting Partnership. (2024). Red flags in public procurement: A guide to using data to detect and mitigate risks. https://www.open-contracting.org/wp-content/uploads/2024/12/OCP2024-RedFlagProcurement-1.pdf",
+ "Procurement red flags", "")
+
+# ---------------- 3. Satellite evidence on public resources
+add("Regional Favoritism",
+ "Hodler, R., & Raschky, P. A. (2014)",
+ "To test whether political leaders direct public resources disproportionately toward their birth regions.",
+ "Panel analysis of 38,427 subnational administrative regions across 126 countries with annual observations from 1992 to 2009, using satellite-observed nighttime light intensity as a proxy for regional economic activity and public investment, keyed to the birthplaces of national political leaders.",
+ "Regions emit significantly more nighttime light while serving as the birth region of the incumbent leader (approximately 4% more light and 1% higher regional GDP). The effect is strongest in countries with weak political institutions and poorly educated citizens; foreign aid inflows and oil rents amplify it in weakly institutionalised countries.",
+ "Use satellite-derived measures as independent evidence on the allocation of public money, since remotely sensed data is not reported by the actor being scrutinised and is therefore resistant to strategic manipulation.",
+ "Hodler, R., & Raschky, P. A. (2014). Regional favoritism. The Quarterly Journal of Economics, 129(2), 995-1033. https://doi.org/10.1093/qje/qju004",
+ "Satellite evidence on public resources", "")
+
+add("A Primer on Geospatial Impact Evaluation Methods, Tools and Applications",
+ "AidData / BenYishay, A., et al. (2017)",
+ "To document methods for evaluating development project impacts remotely and retrospectively using georeferenced intervention data fused with remotely sensed outcomes.",
+ "Methodological primer synthesising quasi-experimental causal inference applied to geocoded aid projects combined with satellite observations (nighttime lights, 10 m optical imagery), geo-referenced surveys and cloud computing platforms.",
+ "Where precisely georeferenced intervention data are fused with remotely sensed outcome data, quasi-experimental methods can control for confounders at fine geographic resolution and be implemented without field access.",
+ "Where field inspection is infeasible, use georeferenced project records with remotely sensed outcomes, and treat location precision as an explicit parameter of the design.",
+ "BenYishay, A., Runfola, D., Trichler, R., Dolan, C., Goodman, S., Parks, B., Tanner, J., Heuser, S., Batra, G., & Anand, A. (2017). A primer on geospatial impact evaluation methods, tools, and applications (AidData Working Paper No. 44). AidData at William & Mary. https://docs.aiddata.org/ad4/files/wps44_a_primer_on_geospatial_impact_evaluation_methods_tools_and_applications.pdf",
+ "Satellite evidence on public resources", "partial")
+
+add("Geocoding Methodology, Version 2.0.2",
+ "AidData (2017)",
+ "To standardise how development project locations are coded, including how confidently each project can be located.",
+ "Documentation of a double-blind geocoding procedure in which project locations are extracted from project documents and assigned an explicit precision code recording the geographic confidence of each coded point; adopted into the IATI Standard.",
+ "Project-record coordinates are systematically unreliable across countries and donors, which is why an explicit precision code is required rather than treating any published coordinate as exact.",
+ "Treat unreliable or missing coordinates in project records as a documented, general data-quality problem with an established coding vocabulary, rather than as evidence about any single implementing agency.",
+ "AidData. (2017). Geocoding methodology, version 2.0.2. AidData at William & Mary. https://docs.aiddata.org/ad4/files/geocoding-methodology-updated-2017-06.pdf",
+ "Satellite evidence on public resources", "")
+
+add("Leveraging Imagery Data in Evaluations",
+ "World Bank Independent Evaluation Group",
+ "To guide evaluators on when and how satellite imagery can serve as evidence in the evaluation of development operations.",
+ TODO, TODO,
+ "Incorporate imagery as one evidence stream in project evaluation, with explicit statements of what it can and cannot establish.",
+ "World Bank Independent Evaluation Group. Leveraging imagery data in evaluations (Methods paper). World Bank Group. https://ieg.worldbankgroup.org/sites/default/files/Data/Evaluation/files/Methods_paper-Leveraging_Imagery_Data.pdf",
+ "Satellite evidence on public resources", "partial")
+
+add("Remote Sensing: A Guide to Practitioners",
+ "World Bank",
+ "To provide operational guidance on applying remote sensing within development practice.",
+ TODO, TODO,
+ "Match sensor and revisit cadence to the operational question before selecting an analysis method.",
+ "World Bank. Remote sensing: A guide to practitioners. World Bank Group. https://documents1.worldbank.org/curated/en/099255007072211554/pdf/P1704410d9fa370fd0b689008a8c0ee03d8.pdf",
+ "Satellite evidence on public resources", "partial")
+
+# ---------------- 4. Verification of built projects from imagery
+add("Verification of Post-Tsunami Housing Reconstruction Projects by Object-Oriented Building Extraction from High Resolution Satellite Imagery",
+ "Authors to be confirmed",
+ "To verify whether donor-funded post-disaster housing reconstruction was actually built, in support of financial accountability rather than disaster science.",
+ "Object-oriented building extraction applied to high-resolution satellite imagery over reconstruction sites following the 2004 Indian Ocean tsunami.",
+ TODO,
+ "Use high-resolution imagery to independently verify the existence of donor-funded built assets where auditing and coordination were weak.",
+ "Verification of post-tsunami housing reconstruction projects by object-oriented building extraction from high resolution satellite imagery. [Authors, year and venue to be confirmed — ResearchGate blocks automated retrieval.] https://www.researchgate.net/publication/264003028",
+ "Verification of built projects", "cite")
+
+# ---------------- 5. Change detection methods
+add("Detection of New Construction Activities with Sentinel-1 and Landsat Time Series",
+ "Gu, H., Tang, X., Cho, K., Acord, A. J., Rasmussen, P. G., Bosch, M., & Woodcock, C. E. (2026)",
+ "To detect the construction of new buildings using freely available radar and optical satellite time series.",
+ "Time-series analysis of Sentinel-1 SAR backscatter, exploiting the increase in radar return produced by corner reflectors on new structures, integrated with the output of a previously developed Landsat-based change detection algorithm.",
+ "The Sentinel-1 result achieved an F1 score of 0.83 (recall 0.87, precision 0.79). Integrating the Sentinel-1 and Landsat results raised performance to F1 = 0.84 (recall 0.86, precision 0.81).",
+ "Where target structures are small relative to optical pixel size, use SAR backscatter time series rather than optical spectral indices, and fuse sensors rather than relying on a single one.",
+ "Gu, H., Tang, X., Cho, K., Acord, A. J., Rasmussen, P. G., Bosch, M., & Woodcock, C. E. (2026). Detection of new construction activities with Sentinel-1 and Landsat time series. Remote Sensing Applications: Society and Environment. https://www.sciencedirect.com/science/article/abs/pii/S2352938526000261",
+ "Change detection methods", "partial")
+
+add("S2Looking: A Satellite Side-Looking Dataset for Building Change Detection",
+ "Shen, L., et al. (2021)",
+ "To provide a building change detection benchmark that reflects realistic satellite acquisition conditions, including off-nadir viewing angles, rural scenes and large illumination variance.",
+ "Construction and annotation of 5,000 bitemporal satellite image pairs of rural areas worldwide, captured at varying off-nadir angles, containing more than 65,920 annotated change instances; benchmarking of existing deep-learning change detection models against the dataset.",
+ "Deep-learning algorithms found S2Looking significantly more challenging than the closest-competing near-nadir dataset, LEVIR-CD+, demonstrating that side-looking geometry, illumination variance and rural context materially degrade change detection performance.",
+ "Evaluate change detection models on off-nadir, rural benchmarks before assuming they transfer to operational settings outside dense urban areas.",
+ "Shen, L., Lu, Y., Chen, H., Wei, H., Xie, D., Yue, J., Chen, R., Lv, S., & Jiang, B. (2021). S2Looking: A satellite side-looking dataset for building change detection. Remote Sensing, 13(24), 5094. https://doi.org/10.3390/rs13245094",
+ "Change detection methods", "partial")
+
+add("A Spatial-Temporal Attention-Based Method and a New Dataset for Remote Sensing Image Change Detection (LEVIR-CD)",
+ "Chen, H., & Shi, Z. (2020)",
+ "To provide a large-scale very-high-resolution building change detection benchmark and a model robust to irrelevant changes such as illumination and seasonal variation.",
+ "Assembly of LEVIR-CD: 637 very-high-resolution (0.5 m) bitemporal image patch pairs of 1024x1024 pixels from 20 regions, annotated with 31,333 individual building change instances; proposal and evaluation of a spatial-temporal attention neural network.",
+ "The attention-based network improved discrimination between genuine building change and irrelevant change relative to baseline methods, and LEVIR-CD became a standard benchmark for the task.",
+ "Model irrelevant change explicitly, and benchmark on very-high-resolution bitemporal data where the structures of interest are resolvable.",
+ "Chen, H., & Shi, Z. (2020). A spatial-temporal attention-based method and a new dataset for remote sensing image change detection. Remote Sensing, 12(10), 1662. https://doi.org/10.3390/rs12101662",
+ "Change detection methods", "")
+
+add("Broad-Area Search of New Construction Using Time Series Analysis of Landsat and Sentinel-2 Data",
+ "Authors to be confirmed (2024)",
+ "To identify new construction over large areas using freely available optical satellite time series.",
+ TODO, TODO,
+ "Use dense optical time series for broad-area construction search where high-resolution tasking is unavailable.",
+ "Broad-area search of new construction using time series analysis of Landsat and Sentinel-2 data. (2024). Science of Remote Sensing. [Authors to be confirmed.] https://www.sciencedirect.com/science/article/pii/S2666017224000221",
+ "Change detection methods", "cite")
+
+add("Monitoring Construction Changes Using Dense Satellite Time Series and Deep Learning",
+ "Authors to be confirmed (2024)",
+ "To monitor construction progress using dense satellite time series combined with deep learning.",
+ TODO, TODO,
+ "Combine temporal density with learned representations where single-date imagery is insufficient to establish change.",
+ "Monitoring construction changes using dense satellite time series and deep learning. (2024). Remote Sensing of Environment. [Authors, volume and pages to be confirmed.] https://www.sciencedirect.com/science/article/abs/pii/S0034425724002256",
+ "Change detection methods", "cite")
+
+# ---------------- 6. SAR
+add("SAR Coherence Change Detection of Urban Areas Affected by Disasters Using Sentinel-1 Imagery",
+ "Authors to be confirmed (2018)",
+ "To detect disaster-related change in urban areas using interferometric coherence from Sentinel-1 rather than optical imagery.",
+ "Interferometric coherence computed from Sentinel-1 image pairs before and after events; coherence images classified into change and no-change; statistical analysis performed by aggregating to street blocks and computing the standard deviation of coherence across the whole image stack.",
+ "Calculating the standard deviation of coherence over time and aggregating it into street blocks improved overall accuracy and reduced false positives compared with differencing a single image pair.",
+ "Aggregate coherence spatially and characterise its variability across a stack, rather than relying on a single before-and-after coherence difference.",
+ "SAR coherence change detection of urban areas affected by disasters using Sentinel-1 imagery. (2018). The International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences, XLII-3, 1857-1861. [Authors to be confirmed.] https://isprs-archives.copernicus.org/articles/XLII-3/1857/2018/isprs-archives-XLII-3-1857-2018.pdf",
+ "SAR methods", "cite")
+
+add("Coherence Change-Detection with Sentinel-1 for Natural and Anthropogenic Disaster Monitoring in Urban Areas",
+ "Authors to be confirmed (2018)",
+ "To apply Sentinel-1 coherence change detection to both natural and human-caused disturbance in urban areas.",
+ TODO, TODO,
+ "Use coherence loss as an indicator of surface disturbance where cloud cover prevents optical observation.",
+ "Coherence change-detection with Sentinel-1 for natural and anthropogenic disaster monitoring in urban areas. (2018). [Authors and venue to be confirmed.] https://www.researchgate.net/publication/326040372",
+ "SAR methods", "cite")
+
+add("Monitoring of Construction-Induced Urban Ground Deformations Using Sentinel-1 PS-InSAR: The Case Study of Tunneling in Dangjin, Korea",
+ "Authors to be confirmed (2022)",
+ "To monitor ground deformation caused by underground construction using persistent scatterer interferometry.",
+ "PS-InSAR analysis of Sentinel-1 data over a tunnelling site, tracking spatial and temporal progression of ground motion against construction phases.",
+ "Sentinel-1 PS-InSAR successfully tracked ground subsidence induced by underground construction and resolved its progression across construction phases.",
+ "Use PS-InSAR where the quantity of interest is ground deformation rather than the appearance of a surface structure.",
+ "Monitoring of construction-induced urban ground deformations using Sentinel-1 PS-InSAR: The case study of tunneling in Dangjin, Korea. (2022). International Journal of Applied Earth Observation and Geoinformation. [Authors, volume and pages to be confirmed.] https://www.sciencedirect.com/science/article/pii/S0303243422000472",
+ "SAR methods", "cite")
+
+# ---------------- 7. Super-resolution
+add("AI Super-Resolution of Satellite Imagery",
+ "European Commission Joint Research Centre",
+ "To assess the reliability and operational limits of AI-based super-resolution applied to satellite imagery.",
+ "Technical review of AI super-resolution methods applied to Earth observation data, with attention to validation practice and failure modes.",
+ "Scaling factors above approximately 4x are generally avoided in operational Earth observation because the risk of generating hallucinated, non-existent detail increases with magnification.",
+ "Do not treat super-resolved imagery as evidence of physical structure; constrain magnification and validate against the downstream task rather than against spectral fidelity alone.",
+ "European Commission Joint Research Centre. AI super-resolution of satellite imagery (JRC143067). Publications Office of the European Union. https://publications.jrc.ec.europa.eu/repository/bitstream/JRC143067/JRC143067_01.pdf",
+ "Super-resolution reliability", "partial")
+
+add("Hallucination Score: Towards Mitigating Hallucinations in Generative Image Super-Resolution",
+ "Authors to be confirmed (2025)",
+ "To define and measure hallucination in generative image super-resolution, where models synthesise plausible detail absent from the input.",
+ "Proposal of a hallucination-specific evaluation score for generative super-resolution outputs, distinguished from conventional fidelity metrics.",
+ "Conventional fidelity metrics do not detect hallucination, because a model that invents detail and remains consistent under downsampling satisfies them; a dedicated measure is required.",
+ "Validate super-resolution outputs with task-aware and hallucination-aware measures, since spectral or downsampling consistency checks are passed by hallucinating models.",
+ "Hallucination score: Towards mitigating hallucinations in generative image super-resolution. (2025). arXiv:2507.14367. [Authors to be confirmed.] https://arxiv.org/abs/2507.14367",
+ "Super-resolution reliability", "cite")
+
+add("Multi-Image Super-Resolution in Remote Sensing: A Review of Artificial Intelligence Techniques and Challenges",
+ "Authors to be confirmed (2026)",
+ "To review AI techniques for multi-image super-resolution in remote sensing and identify obstacles to operational use.",
+ "Literature review of multi-image super-resolution methods and their validation practices in remote sensing.",
+ "Hallucination hinders operational satellite application of super-resolution; no single best evaluation metric exists, validation must be tied to the downstream task, and physical constraints must be integrated for reliability.",
+ "Tie super-resolution validation to the specific downstream task and incorporate physical constraints rather than relying on generic image-quality metrics.",
+ "Multi-image super-resolution in remote sensing: A review of artificial intelligence techniques and challenges. (2026). Advances in Space Research. [Authors, volume and pages to be confirmed.] https://www.sciencedirect.com/science/article/abs/pii/S0094576526002766",
+ "Super-resolution reliability", "cite")
+
+# ---------------- 8. Citizen reporting
+add("Citizen Engagement in Public Services in Low- and Middle-Income Countries: A Mixed-Methods Systematic Review of Participation, Inclusion, Transparency and Accountability (PITA) Initiatives",
+ "Authors to be confirmed",
+ "To synthesise evidence on whether citizen engagement initiatives improve public service delivery in low- and middle-income countries.",
+ "Mixed-methods systematic review covering participation, inclusion, transparency and accountability initiatives, including community report cards on infrastructure in Afghanistan, Indonesia and Colombia and citizen feedback loops in Guinea, Kenya and Uganda.",
+ "Citizen engagement improves service delivery conditionally rather than universally; effects depend on the institutional response mechanism rather than on the act of reporting alone.",
+ "Design citizen reporting around an explicit routing or escalation rule to a responsible authority, since feedback without a response mechanism does not reliably change outcomes.",
+ "Citizen engagement in public services in low- and middle-income countries: A mixed-methods systematic review of participation, inclusion, transparency and accountability (PITA) initiatives. Campbell Systematic Reviews. [Authors, year, volume to be confirmed.] https://pmc.ncbi.nlm.nih.gov/articles/PMC8356537/",
+ "Citizen reporting", "cite")
+
+add("CommuniSense: Crowdsourcing Road Hazards in Nairobi",
+ "Authors to be confirmed (2015)",
+ "To evaluate crowdsourcing as a means of collecting urban infrastructure condition data in a developing-city context lacking monitoring technology.",
+ "Design and field deployment of a mobile crowdsourcing application for reporting road hazards in Nairobi, with evaluation of participation and data quality.",
+ TODO,
+ "Leverage locally available resources such as mobile reporting where formal monitoring infrastructure is absent.",
+ "CommuniSense: Crowdsourcing road hazards in Nairobi. (2015). arXiv:1506.07327. [Authors to be confirmed.] https://arxiv.org/abs/1506.07327",
+ "Citizen reporting", "cite")
+
+add("Crowdsourced Monitoring, Citizen Empowerment and Data Credibility",
+ "Authors to be confirmed (2014)",
+ "To examine the credibility of data produced through crowdsourced environmental and infrastructure monitoring.",
+ TODO,
+ "Data credibility is identified as the critical issue capable of undermining citizen-generated monitoring relative to expert and institutional data.",
+ "Build explicit credibility mechanisms, such as corroboration thresholds, into citizen reporting systems.",
+ "Crowdsourced monitoring, citizen empowerment and data credibility. (2014). In Springer [volume title to be confirmed]. https://doi.org/10.1007/978-3-319-09129-7_35",
+ "Citizen reporting", "cite")
+
+# ---------------- 9. Philippine context
+add("Hydrological Response of the Pampanga River Basin to Intense Tropical Cyclones",
+ "Authors to be confirmed (2021)",
+ "To characterise how the Pampanga River Basin responds hydrologically to intense tropical cyclones, in support of disaster risk management.",
+ TODO,
+ "The Pampanga River Basin is the fourth largest in the Philippines, sits within the country's longest contiguous lowland plain, and experiences on average at least one flood event per year. Detailed modelling results to be completed from the full text.",
+ "Use basin-scale hydrological modelling to inform flood risk management, recognising that fluvial models do not cover every drainage or coastal flooding mechanism.",
+ "Hydrological response of the Pampanga River basin to intense tropical cyclones. (2021). Journal of Hydrometeorology, 22(4). [Authors and pages to be confirmed.] https://journals.ametsoc.org/view/journals/hydr/22/4/JHM-D-20-0184.1.pdf",
+ "Philippine context", "cite")
+
+add("Phil-LiDAR 1: Hazard Mapping of the Philippines Using LiDAR (DREAM Program)",
+ "University of the Philippines Training Center for Applied Geodesy and Photogrammetry (UP TCAGP)",
+ "To produce high-resolution three-dimensional flood hazard maps for Philippine river systems using airborne LiDAR.",
+ "Nationwide airborne LiDAR acquisition and hydrological modelling under the DOST-funded DREAM and Phil-LiDAR 1 programmes, executed by UP TCAGP with fifteen partner higher education institutions; outputs distributed through the LiDAR Portal for Archiving and Distribution (LiPAD).",
+ "Flood hazard maps were produced for over 300 river basins, with technical reports covering data acquisition, methodology, pre-processing, validation and flood modelling for 262 basins, approaching nationwide coverage.",
+ "Consult LiPAD for basin coverage and, critically, for acquisition dates: a single LiDAR epoch establishes terrain at one moment and cannot by itself support before-and-after change detection over a later construction period.",
+ "University of the Philippines Training Center for Applied Geodesy and Photogrammetry. Phil-LiDAR 1: Hazard mapping of the Philippines using LiDAR. Department of Science and Technology. https://dream.upd.edu.ph/about/phil-lidar-1/",
+ "Philippine context", "partial")
+
+add("Reforming Public Procurement in the Philippines: Progress and Constraints",
+ "Authors to be confirmed",
+ "To assess progress and remaining constraints in Philippine public procurement reform.",
+ TODO, TODO,
+ "Address data-availability constraints in PhilGEPS before expecting standard procurement risk indicators to be computable nationally.",
+ "Reforming public procurement in the Philippines: Progress and constraints. International Public Procurement Conference (IPPC4) Proceedings. [Authors and year to be confirmed.] https://www.ippa.org/IPPC4/Proceedings/01ComparativeProcurement/Paper1-14.pdf",
+ "Philippine context", "cite")
+
+add("Fraud Audit Reports on Flood Control Projects, DPWH Bulacan 1st District Engineering Office",
+ "Commission on Audit, Republic of the Philippines (2025-2026)",
+ "To determine, through fraud audit, whether flood control projects implemented by DPWH Bulacan 1st DEO between July 2022 and May 2025 were actually delivered as contracted and paid for.",
+ "Fraud audit procedures including site inspection by COA audit teams, review of supporting project documents and payment records, and corroboration using satellite imagery, covering flood control projects in the specified district and period.",
+ "Four Fraud Audit Reports were filed with the Office of the Ombudsman covering flood control projects reported in press coverage at values between approximately P275 million and P351 million. Recurring findings were non-existent structures at approved locations despite full payment, unauthorised relocation of projects to undocumented sites, payment for river walls constructed before the contracts began, and material deficiencies in supporting documents. Contractors named include SYMS Construction Trading and Wawao Builders.",
+ "Obtain the Fraud Audit Reports themselves rather than press summaries. They provide a partial, non-random validation set that can bound the precision of an audit-priority ranking, though not its recall, because the audited set was selected rather than sampled.",
+ "Commission on Audit. (2025-2026). Fraud audit reports on flood control projects of the DPWH Bulacan 1st District Engineering Office. Republic of the Philippines. [Primary documents to be obtained; see press coverage, e.g. https://www.bworldonline.com/spotlight/2026/02/16/730771/]",
+ "Philippine context", "partial")
+
+add("Flood Control Projects Register",
+ "BetterGov.ph",
+ "To publish a public, machine-readable register of Philippine flood control projects and their contractors.",
+ "Scraping and republication of DPWH infrastructure project records into an openly licensed dataset with map, table and contractor views; released publicly under CC0.",
+ "Over 12,870 projects worth more than P740 billion are published nationwide, forming the base register on which independent audit analysis can be built.",
+ "Treat the register as a data source rather than an analysis: it publishes what DPWH states, and does not check those statements for internal contradiction.",
+ "BetterGov.ph. Flood control projects. https://bettergov.ph/flood-control-projects",
+ "Philippine context", "")
+
+# ---------------- 10. Framing and near neighbour
+add("GIST: Ghost Infrastructure Spectral Tracker",
+ "Frago, T. D. (2026)",
+ "To detect ghost or mislocated flood control infrastructure in Bulacan, Philippines, from freely available satellite imagery.",
+ "Sentinel-2 optical imagery processed in Google Earth Engine over DPWH flood control project coordinates from the BetterGov dataset, validated against Commission on Audit findings for Bulacan.",
+ "The dominant detected signal was construction located approximately 150 metres from the contracted coordinate, indicating site displacement rather than absence of construction.",
+ "Distinguish site displacement from non-construction when interpreting imagery signals. Note for this thesis: a displacement result computed at 10 m resolution should be checked against whether the sensor can resolve the structure at all, rather than only the area around it.",
+ "Frago, T. D. (2026). GIST: Ghost infrastructure spectral tracker [Capstone project, Yale University Environmental Data Science]. https://github.com/tdfrago/yale-environmental-data-science-capstone",
+ "Framing and near neighbour", "partial")
+
+add("Ghost Projects and the Ambiguity of Infrastructure Development",
+ "Muller-Mahn, D., Kioko, E., & Aalders, J. T. (2026)",
+ "To theorise what ghost projects mean socially and politically, as unfulfilled promises of infrastructure development.",
+ "Conceptual and ethnographic scholarship; lead article of a Third World Quarterly special issue comprising twelve contributions.",
+ "Ghost projects are analysed as a social and political phenomenon involving ruined futures and unfulfilled developmental promises. The collection addresses meaning and consequence, and does not propose a detection method.",
+ "Situate technical detection work within this theoretical framing, which supplies the concept but leaves the empirical detection problem open.",
+ "Muller-Mahn, D., Kioko, E., & Aalders, J. T. (2026). Ghost projects and the ambiguity of infrastructure development. Third World Quarterly. https://doi.org/10.1080/01436597.2025.2610335",
+ "Framing and near neighbour", "partial")
+
+add("Ghost Projects or Mapping Failure? Contractors Push Back Over Glitches",
+ "Philippine Daily Inquirer (2025)",
+ "To report contractors' contention that ghost-project findings arise from mapping and geolocation errors rather than from missing structures.",
+ "Opinion and news reporting on contractor responses to flood control project findings.",
+ "Contractors argue publicly that discrepancies between recorded coordinates and observed structures reflect mapping failure rather than non-delivery, an alternative explanation that any coordinate-based flag must accommodate.",
+ "Word every finding as a documented inconsistency within the record rather than as an allegation of fraud, and provide an explicit right-of-reply mechanism.",
+ "Philippine Daily Inquirer. (2025). Ghost projects or mapping failure? Contractors push back over glitches. https://opinion.inquirer.net/188105/ghost-projects-or-mapping-failure-contractors-push-back-over-glitches",
+ "Framing and near neighbour", "")
+
+# ---------------- write CSV
+VMAP = {"":"OK","partial":"CHECK CELLS / CITATION DETAIL","cite":"CHECK CITATION + CELLS"}
+cols = ["Title","Author","Objective","Methodology","Results","Recommendation","APA"]
+out = Path("RRL-MATRIX.csv")
+with out.open("w", newline="", encoding="utf-8-sig") as f:
+    w = csv.writer(f)
+    w.writerow(cols + ["Section","Verified?"])
+    for row in R:
+        w.writerow(list(row[:7]) + [row[7], VMAP[row[8]]])
+print("rows:", len(R))
+Path("/private/tmp/claude-504/-Users-ellah/9ab36f23-68f1-4466-bc97-7358e8537994/scratchpad/rrl.json").write_text(
+    json.dumps([list(r) for r in R], ensure_ascii=False), encoding="utf-8")
+flagged = [r[0] for r in R if r[8] in ("cite","partial")]
+print("needs verification:", len(flagged))

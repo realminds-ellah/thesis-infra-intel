@@ -51,6 +51,9 @@ export interface Filters {
   coords: Set<CoordState>;
   docs: Set<DocState>;
   hazard: Set<HazardState>;
+  concerns: Set<ConcernKey>;
+  /** One switch standing in for the whole condition list. */
+  onlyProblems: boolean;
 }
 
 export const emptyFilters = (): Filters => ({
@@ -59,7 +62,8 @@ export const emptyFilters = (): Filters => ({
   years: null, amount: null,
   bidders: new Set(), ratio: new Set(), recordFlags: new Set(),
   procFlags: new Set(), quadrant: new Set(), satellite: new Set(),
-  coords: new Set(), docs: new Set(), hazard: new Set(),
+  coords: new Set(), docs: new Set(), hazard: new Set(), concerns: new Set(),
+  onlyProblems: false,
 });
 
 // ─── derived per-project attributes ───────────────────────────────────────────
@@ -123,7 +127,22 @@ const deliveryStates = (p: Project): DeliveryState[] => {
 type Pred = (p: Project) => boolean;
 
 const preds = (f: Filters): Record<keyof Filters, Pred> => ({
-  q: p => !f.q || `${p.id} ${p.description} ${p.municipality}`.toLowerCase().includes(f.q.toLowerCase()),
+  /**
+   * One box that searches everything a person might type.
+   *
+   * There used to be two: a general one and a separate "Contractor" field, which
+   * asked the reader to know in advance which category their words belonged to.
+   * Nobody thinks "I am about to type a contractor name" — they type WAWAO, or
+   * Hagonoy, or revetment, and expect results. Contractor and barangay are in
+   * the haystack now, so all three work from the same box.
+   */
+  q: p => {
+    if (!f.q) return true;
+    const x = p as unknown as { barangay?: string | null; structureType?: string | null };
+    const hay = `${p.id} ${p.description} ${p.municipality} ${p.contractor} ${x.barangay ?? ""} ${x.structureType ?? ""}`.toLowerCase();
+    // Every word must appear somewhere, so "wawao hagonoy" narrows rather than widens.
+    return f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+  },
   contractor: p => !f.contractor || p.contractor.toLowerCase().includes(f.contractor.toLowerCase()),
   status: p => f.status.size === 0 || f.status.has(p.status),
   delivery: p => f.delivery.size === 0 || deliveryStates(p).some(s => f.delivery.has(s)),
@@ -149,6 +168,21 @@ const preds = (f: Filters): Record<keyof Filters, Pred> => ({
   coords: p => f.coords.size === 0 || f.coords.has(coordState(p)),
   docs: p => f.docs.size === 0 || f.docs.has(docState(p)),
   hazard: p => f.hazard.size === 0 || f.hazard.has(hazardState(p)),
+  // Chips are OR'd with each other: ticking two concerns widens the result,
+  // which is what "show me late OR rebuilt projects" means to a reader.
+  concerns: p => f.concerns.size === 0 ||
+    CONCERNS.some(c => f.concerns.has(c.key) && c.test(p)),
+  // The condition list collapsed to one switch.
+  //
+  // Deliberately the RECORDS checks only, not the bidding ones. Including
+  // procurement flags takes this from 309 contracts to 1,122 — 87% of the
+  // register — because round-number bids alone are 709 and contractor
+  // concentration another 366. A switch that selects seven contracts in eight
+  // is not a filter, and "has a problem" would stop meaning anything.
+  //
+  // Bidding patterns are still shown on every contract's detail panel; they are
+  // a property of how it was bought, not of the structure.
+  onlyProblems: p => !f.onlyProblems || p.auditFlags.length > 0,
 });
 
 export function applyFilters(f: Filters, source: Project[] = PROJECTS): Project[] {
@@ -192,6 +226,8 @@ export const countBy = {
   coords: (f: Filters) => facetCounts(f, "coords", p => [coordState(p)]),
   docs: (f: Filters) => facetCounts(f, "docs", p => [docState(p)]),
   hazard: (f: Filters) => facetCounts(f, "hazard", p => [hazardState(p)]),
+  concerns: (f: Filters) => facetCounts(f, "concerns",
+    p => CONCERNS.filter(c => c.test(p)).map(c => c.key)),
 };
 
 // ─── bounds, taken from the data rather than hard-coded ───────────────────────
@@ -272,6 +308,68 @@ export const PRESETS: Preset[] = [
   },
 ];
 
+/**
+ * Concern bundles — six chips that stand in for eighteen tickboxes.
+ *
+ * The individual flags are still there and still filterable; this is the layer
+ * above them. Nobody arrives at a public register wanting to tick
+ * "UNLOCATABLE_COORD" — they want to know whether the thing is late, whether it
+ * has been built twice, or whether it can be found at all.
+ *
+ * Deliberately split into what is wrong with the STRUCTURE and what is odd about
+ * the DEAL, because those are different questions with different audiences and
+ * a citizen mostly wants the first.
+ */
+const at96 = (p: Project) => {
+  const r = PROC_BY_ID.get(p.id)?.bidRatio;
+  return r != null && Math.abs(r * 100 - 96) < 0.01;
+};
+const allCodes = (p: Project) => new Set([
+  ...p.auditFlags.map(f => f.code),
+  ...(PROC_BY_ID.get(p.id)?.procurementFlags ?? []).map(f => f.code),
+]);
+const anyOf = (p: Project, codes: string[]) => {
+  const s = allCodes(p);
+  return codes.some(c => s.has(c));
+};
+
+export type ConcernKey = "late" | "rebuilt" | "lost" | "nopaper" | "deal" | "dryland";
+
+export interface Concern {
+  key: ConcernKey;
+  label: string;
+  group: "structure" | "deal";
+  hint: string;
+  test: (p: Project) => boolean;
+}
+
+export const CONCERNS: Concern[] = [
+  { key: "late", label: "Running late", group: "structure",
+    hint: "Past its finish date and still unfinished",
+    test: p => Boolean((p as never as { overdue?: boolean }).overdue) },
+  { key: "rebuilt", label: "Built more than once", group: "structure",
+    hint: "The same spot was built again in a later year. A structure that had to be redone is one that failed, washed away, or was never there — this is inferred from repeat contracts, not recorded anywhere",
+    test: p => ((p as never as { siteRebuilds?: number }).siteRebuilds ?? 0) > 0 },
+  { key: "lost", label: "Can't be found on a map", group: "structure",
+    hint: "No location published, or one that contradicts the written description",
+    test: p => anyOf(p, ["MISSING_COORDS", "MUNI_MISMATCH", "UNLOCATABLE_COORD",
+                         "OUTSIDE_PROVINCE", "COORD_DUPLICATE"]) },
+  { key: "nopaper", label: "No paperwork published", group: "structure",
+    hint: "Not one contract document was published, against roughly 95% coverage",
+    test: p => anyOf(p, ["NO_DOCUMENTS_PUBLISHED"]) },
+  { key: "dryland", label: "Nowhere near flooding", group: "structure",
+    hint: "Over a kilometre from any area the government's own flood model covers",
+    test: p => {
+      const h = HAZARD_BY_ID.get(p.id);
+      return Boolean(h && h.level === 0 && (h.metresToHazard ?? 0) > 1000);
+    } },
+  { key: "deal", label: "Something odd about the deal", group: "deal",
+    hint: "Won at exactly 96% of the budget, or only one bidder, or a very short bid window, or a contractor whose registration was revoked",
+    test: p => at96(p) || anyOf(p, ["SINGLE_BIDDER", "SHORT_BID_WINDOW", "CONTRACTOR_REVOKED"]) },
+];
+
+export const CONCERN_BY_KEY = new Map(CONCERNS.map(c => [c.key, c]));
+
 /** All problems, records and procurement alike, as one list a citizen can scan. */
 export function problemCounts(f: Filters): Map<string, number> {
   const a = facetCounts(f, "recordFlags", p => p.auditFlags.map(x => x.code));
@@ -289,10 +387,11 @@ export const PROC_CODES = new Set(["SINGLE_BIDDER", "TWO_BIDDERS", "BID_AT_ROUND
 // ─── URL state ────────────────────────────────────────────────────────────────
 
 const SETS: (keyof Filters)[] = ["status", "delivery", "municipality", "bidders",
-  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs", "hazard"];
+  "ratio", "recordFlags", "procFlags", "quadrant", "satellite", "coords", "docs", "hazard", "concerns"];
 
 export function toQuery(f: Filters): string {
   const p = new URLSearchParams();
+  if (f.onlyProblems) p.set("problems", "1");
   if (f.q) p.set("q", f.q);
   if (f.contractor) p.set("c", f.contractor);
   for (const k of SETS) {
@@ -307,6 +406,7 @@ export function toQuery(f: Filters): string {
 export function fromQuery(qs: string): Filters {
   const p = new URLSearchParams(qs);
   const f = emptyFilters();
+  f.onlyProblems = p.get("problems") === "1";
   f.q = p.get("q") ?? "";
   f.contractor = p.get("c") ?? "";
   for (const k of SETS) {
@@ -326,6 +426,7 @@ export function activeCount(f: Filters): number {
   if (f.contractor) n++;
   if (f.years) n++;
   if (f.amount) n++;
+  if (f.onlyProblems) n++;
   for (const k of SETS) n += (f[k] as Set<string>).size ? 1 : 0;
   return n;
 }
@@ -389,7 +490,7 @@ export const LABELS = {
     far: "Far from any flood-risk area", unknown: "No location published",
   } as Record<HazardState, string>,
   status: {
-    completed: "Finished", ongoing: "Being built", flagged: "Something flagged",
+    completed: "Finished", ongoing: "Being built",
     proposed: "Not started yet", terminated: "Cancelled",
   } as Record<string, string>,
   flags: FLAG_LABELS,

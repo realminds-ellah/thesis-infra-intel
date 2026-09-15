@@ -7,17 +7,36 @@
 import projectsRaw from "./projects.json";
 import contractorsRaw from "./contractors.json";
 import boundariesRaw from "./boundaries.json";
+import scopeRaw from "./scope.json";
 import satelliteRaw from "./satellite.json";
 import procurementRaw from "./procurement.json";
 import hazardRaw from "./hazard.json";
 import metaRaw from "./meta.json";
 
-export type ProjectStatus = "completed" | "ongoing" | "flagged" | "proposed" | "terminated";
+/** Lifecycle stage only. "Flagged" is deliberately absent: it is a condition a
+ *  contract can carry at any stage, and putting it here hid 245 completed
+ *  contracts from the completed count. Use `auditFlags.length` for that. */
+export type ProjectStatus = "completed" | "ongoing" | "proposed" | "terminated";
 export type FlagSeverity = "high" | "medium" | "low";
+
+/**
+ * Two different claims, kept apart because summing them made one number mean
+ * both. "inconsistency" is the record contradicting itself — a coordinate
+ * 4.8 km outside the municipality the description names. "unverifiable" is the
+ * record saying nothing — no coordinate published at all, so the site cannot be
+ * checked by imagery or by anyone standing in front of it.
+ *
+ * Only inconsistency is scored into auditScore. Unverifiable is reported as its
+ * own fact: on the shipped data it was 93 of 158 records-flagged contracts,
+ * 59%, every one described as "the published record disagrees with itself"
+ * when nothing disagreed with anything.
+ */
+export type FlagKind = "inconsistency" | "unverifiable";
 
 export interface AuditFlag {
   code: string;
   severity: FlagSeverity;
+  kind: FlagKind;
   detail: string;
 }
 
@@ -45,7 +64,10 @@ export interface Project {
   hasSatelliteImage: boolean;
   reportCount: number;
   auditFlags: AuditFlag[];
+  /** Severity-weighted, over inconsistency flags only. */
   auditScore: number;
+  /** No coordinate published — an absence, deliberately not scored above. */
+  unverifiable: boolean;
 }
 
 export interface Contractor {
@@ -114,7 +136,7 @@ export const SEVERITY_CFG: Record<FlagSeverity, { label: string; color: string; 
 
 // ─── Derived aggregates ───────────────────────────────────────────────────────
 
-const STATUS_KEYS: ProjectStatus[] = ["completed", "ongoing", "flagged", "proposed", "terminated"];
+const STATUS_KEYS: ProjectStatus[] = ["completed", "ongoing", "proposed", "terminated"];
 
 /** Per-municipality status counts, busiest first. */
 export const MUNI_BREAKDOWN = (() => {
@@ -137,7 +159,6 @@ export const STATUS_PIE = (
   [
     { name: "Completed", key: "completed", color: "#16a34a" },
     { name: "Ongoing", key: "ongoing", color: "#2563eb" },
-    { name: "Flagged", key: "flagged", color: "#f59e0b" },
     { name: "Proposed", key: "proposed", color: "#94a3b8" },
     { name: "Terminated", key: "terminated", color: "#dc2626" },
   ] as const
@@ -319,9 +340,12 @@ export interface ContractDocuments {
   engineeringDesign: string | null;
 }
 
+export interface Bidder { name: string; pcab: string | null; won: boolean }
+
 export interface ProcurementResult {
   id: string;
   bidders: number;
+  bidderList: Bidder[];
   winnerPcab: string | null;
   abc: number | null;
   awardAmount: number | null;
@@ -375,7 +399,7 @@ export const DOC_LABELS: Record<keyof ContractDocuments, string> = {
 
 // ─── Fusion ───────────────────────────────────────────────────────────────────
 
-const RECORDS_SUSPICIOUS = 3;      // one high-severity consistency check
+const RECORDS_SUSPICIOUS = 3;      // one high-severity INCONSISTENCY; absence does not count
 const PROC_SUSPICIOUS = 3;         // e.g. a round-percentage bid plus thin competition
 
 export type Quadrant = "both" | "records-only" | "procurement-only" | "neither";
@@ -391,10 +415,12 @@ export interface Fused {
 /**
  * The 2x2 triage FUSION.md asks for, over every contract.
  *
- * Fusing is only worth doing if the two signals are independent, and they
- * measurably are: across all 1,293 contracts the records score and the
- * procurement score correlate at r = +0.05. Neither is a proxy for the other,
- * so "high on both" is genuinely narrower than either list alone.
+ * Fusing is only worth doing if the two signals are not proxies for each
+ * other, and measurably they are not: across all 1,293 contracts the records
+ * score and the procurement score correlate at r = -0.26 (see
+ * SIGNAL_CORRELATION below, which computes it rather than asserting it). If
+ * anything they lean apart, so "high on both" is genuinely narrower than either
+ * list alone rather than the same contracts counted twice.
  *
  * This is an ORDERING, not a prediction. There is no public itemised list of
  * confirmed ghost projects to validate against — the ICI turned its findings
@@ -443,6 +469,31 @@ export const QUADRANT_CFG: Record<Quadrant, { label: string; short: string; colo
   },
 };
 
+/**
+ * How independent the two signals actually are — COMPUTED, not asserted.
+ *
+ * This number was previously written into two comments by hand, as +0.05 in
+ * this file and as -0.12 in App.tsx. Both were wrong and they contradicted each
+ * other, which is the worst possible state for a figure that justifies the
+ * whole fusion. It is derived here so it cannot drift from the data again.
+ *
+ * Pearson r over all 1,293 contracts, between the severity-weighted records
+ * score and the severity-weighted procurement score.
+ */
+export const SIGNAL_CORRELATION = (() => {
+  const xs = FUSED.map(f => f.recordsScore);
+  const ys = FUSED.map(f => f.procurementScore);
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const mx = mean(xs), my = mean(ys);
+  let num = 0, dx = 0, dy = 0;
+  for (let i = 0; i < xs.length; i++) {
+    const a = xs[i] - mx, b = ys[i] - my;
+    num += a * b; dx += a * a; dy += b * b;
+  }
+  const r = dx && dy ? num / Math.sqrt(dx * dy) : 0;
+  return { r, n: xs.length };
+})();
+
 export const TRIAGE = (() => {
   const counts: Record<Quadrant, number> = { both: 0, "records-only": 0, "procurement-only": 0, neither: 0 };
   const value: Record<Quadrant, number> = { both: 0, "records-only": 0, "procurement-only": 0, neither: 0 };
@@ -481,3 +532,120 @@ export interface HazardRun {
 }
 export const HAZARD = hazardRaw as unknown as HazardRun;
 export const HAZARD_BY_ID = new Map(HAZARD.results.map(r => [r.id, r]));
+
+/**
+ * Year-by-year comparison.
+ *
+ * BetterGov's flood-control map (CC0, bettergovph/bettergov) has a "Projects by
+ * Year" chart, and it is the right idea — this adopts it and adds the columns
+ * their data cannot produce, because they plot the register rather than audit it.
+ *
+ * The reason it is worth showing: the round-number bidding pattern has a start
+ * date. It is absent through 2018, appears at 3% in 2019, and jumps to 51% in
+ * 2020 — where it stays. A yearly view is the only place that shows up.
+ *
+ * Reported as TWO series on two charts rather than one chart with two axes.
+ * Value and percentage do not share a scale, and a dual-axis chart can be made
+ * to show any relationship the author wants.
+ */
+export interface YearStat {
+  year: number;
+  projects: number;
+  value: number;
+  valueM: number;
+  flagged: number;
+  flaggedRate: number;
+  at96: number;
+  at96Rate: number;
+  singleBidder: number;
+  withRatio: number;
+}
+
+export const YEAR_STATS: YearStat[] = (() => {
+  const years = [...new Set(PROJECTS.map(p => p.infraYear).filter((y): y is number => y != null))].sort();
+  return years.map(year => {
+    const g = PROJECTS.filter(p => p.infraYear === year);
+    const ratios = g.map(p => PROC_BY_ID.get(p.id)?.bidRatio).filter((r): r is number => r != null);
+    const at96 = ratios.filter(r => Math.abs(r * 100 - 96) < 0.01).length;
+    const flagged = g.filter(p => p.auditFlags.length > 0).length;
+    const value = g.reduce((s, p) => s + p.budget, 0);
+    return {
+      year, projects: g.length, value, valueM: Math.round(value / 1e6),
+      flagged, flaggedRate: g.length ? flagged / g.length : 0,
+      at96, at96Rate: ratios.length ? at96 / ratios.length : 0,
+      singleBidder: g.filter(p => PROC_BY_ID.get(p.id)?.bidders === 1).length,
+      withRatio: ratios.length,
+    };
+  });
+})();
+
+
+/**
+ * A sentence about the contract, in the words a person would use.
+ *
+ * The panel was all tiles and tables: correct, and impossible to read aloud.
+ * Everything here comes from fields already on screen — the point is not new
+ * information but a form someone can actually take in.
+ */
+export function plainSummary(p: Project): string {
+  const pr = PROC_BY_ID.get(p.id);
+  const money = pr?.awardAmount
+    ? `₱${(pr.awardAmount / 1e6).toFixed(1)} million`
+    : "an unpublished amount";
+  const who = p.contractor.replace(/\s*\(.*$/, "").trim() || "an unnamed contractor";
+  const year = p.infraYear ? ` under the ${p.infraYear} programme` : "";
+  const where = p.municipality && p.municipality !== "Unspecified" ? ` in ${p.municipality}` : "";
+
+  const stage =
+    p.dpwhStatus === "Completed"
+      ? p.endDate ? `DPWH reports it finished on ${fmtDate(p.endDate)}.` : "DPWH reports it finished."
+      : p.dpwhStatus === "On-Going"
+        ? `DPWH reports it ${p.completion}% built${p.endDate ? `, due to finish ${fmtDate(p.endDate)}` : ""}.`
+        : p.dpwhStatus === "For Procurement"
+          ? "It is still out for bidding."
+          : "Work has not started.";
+
+  const comp = pr?.bidders === 1
+    ? " Only one company bid for it."
+    : pr?.bidders ? ` ${pr.bidders} companies bid for it.` : "";
+
+  return `A flood-control contract worth ${money}${where}, awarded to ${who}${year}. ${stage}${comp}`;
+}
+
+function fmtDate(d: string): string {
+  const t = new Date(d);
+  return Number.isNaN(t.getTime()) ? d
+    : t.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+
+// ─── Contract scope corridors ─────────────────────────────────────────────────
+/**
+ * The ground each contract claims to cover, as a polygon following the
+ * watercourse it runs along. Built by pipeline/scope.py.
+ *
+ * An INFERENCE, and every consumer must present it as one: the register gives a
+ * point and a length but no direction and no bank, so the direction comes from
+ * OpenStreetMap channel geometry rather than from DPWH. `metresToWaterway` is
+ * the check on it — a corridor derived from a channel 300 m away is a much
+ * weaker claim than one derived from a channel the point sits on, and a
+ * flood-control coordinate that far from water is worth noticing on its own.
+ */
+export interface ScopeCorridor {
+  id: string;
+  lengthMetres: number;
+  coveredMetres: number;
+  metresToWaterway: number;
+  waterwayName: string | null;
+  waterwayClass: string | null;
+  ring: [number, number][];
+}
+
+export const SCOPE = scopeRaw as unknown as {
+  generated: string; source: string; licence: string; method: string;
+  searchRadiusMetres: number;
+  counts: { corridors: number; noChannel: number; truncated: number; over100mFromWater: number };
+  corridors: ScopeCorridor[];
+};
+
+export const SCOPE_BY_ID = new Map(SCOPE.corridors.map(c => [c.id, c]));

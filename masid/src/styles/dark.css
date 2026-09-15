@@ -1,0 +1,206 @@
+/*
+ * The dark palette.
+ *
+ * Tailwind v4 compiles colour utilities to custom properties, so redefining the
+ * ramp under `.dark` moves the whole application — every card, hairline, table
+ * stripe and muted label — without a single component being edited. This file
+ * is the entire colour decision for dark mode; src/app/theme.ts is only the
+ * machinery that turns it on.
+ *
+ * HOW THIS APP USES GREY, which is what makes the remap possible:
+ *   bg-gray-50/100   page and recessed surfaces      → get darker
+ *   bg-white         cards                           → gets a lifted surface
+ *   border-gray-*    hairlines                       → get quieter, not brighter
+ *   text-gray-900…300  ink from strongest to faintest → get lighter
+ *
+ * So the surface end of the ramp goes down and the ink end goes up. It is close
+ * to an inversion in effect but it is not one in construction: every step below
+ * was picked against the surface it sits on, because a true inversion produces
+ * borders that glare and disabled text that shouts.
+ */
+
+/* The two knobs the tint()/accent() helpers in src/app/theme.ts turn. Every
+   status palette in the app derives its background and its ink from these, so a
+   chip is correct on either surface without a second palette existing. */
+:root {
+  --masid-surface: #ffffff;   /* what a tint is mixed into */
+  --masid-accent-mix: #000000;
+  --masid-accent-amt: 0%;     /* light mode: accent ink is used unchanged */
+  --masid-navy: #1e3a7b;      /* readable as an SVG fill, unlike a Tailwind class */
+  --masid-blue: #2a78d6;
+}
+
+.dark {
+  --masid-surface: #171c24;
+  --masid-accent-mix: #ffffff;
+  --masid-accent-amt: 42%;    /* dark mode: lift the ink until it reads */
+  --masid-navy: #4a7fd4;
+  --masid-blue: #4d95e8;
+
+  /* ── surfaces ──────────────────────────────────────────────────────────
+     Three levels, each a real step apart. A dark UI whose card and page are
+     within a few percent of each other reads as one undifferentiated slab. */
+  --color-gray-50:  #0f1319;   /* page — the deepest thing on screen */
+  --color-gray-100: #1e242e;   /* recessed: table heads, progress tracks */
+  --color-gray-200: #2b333f;   /* hairlines, chips, disabled fills */
+  --color-gray-300: #55606e;   /* faintest ink; also the placeholder colour */
+
+  /* ── ink ───────────────────────────────────────────────────────────────
+     Never pure white. #fff on a dark surface haloes at small sizes, and this
+     interface is built almost entirely from 10-12px text. */
+  --color-gray-400: #6f7b8a;
+  --color-gray-500: #8e99a8;
+  --color-gray-600: #aab4c0;
+  --color-gray-700: #cbd3dd;
+  --color-gray-800: #dde3ea;
+  --color-gray-900: #e8ecf1;
+
+  /* Slate is used interchangeably with gray in the Leaflet popups. */
+  --color-slate-50:  #0f1319;
+  --color-slate-100: #1e242e;
+  --color-slate-200: #2b333f;
+  --color-slate-400: #6f7b8a;
+  --color-slate-500: #8e99a8;
+  --color-slate-600: #aab4c0;
+  --color-slate-700: #cbd3dd;
+  --color-slate-800: #dde3ea;
+  --color-slate-900: #e8ecf1;
+
+  /* ── tints ─────────────────────────────────────────────────────────────
+     bg-blue-50, bg-red-50 and bg-amber-50 mark selected rows and warning
+     strips. At their light values they become the brightest blocks on a dark
+     page and pull the eye off the data. Re-picked as dark washes of the same
+     hue, they keep the signal and lose the glare. */
+  --color-blue-50:   #16233a;
+  --color-blue-100:  #1d2f4d;
+  --color-blue-200:  #26405f;
+  --color-blue-500:  #5b9bf5;
+  --color-blue-600:  #7ab0f8;
+  --color-blue-700:  #9cc4fa;
+
+  --color-red-50:    #2a1618;
+  --color-red-100:   #3a1d21;
+  --color-red-400:   #f08a8f;
+  --color-red-500:   #ef7b81;
+  --color-red-600:   #f28f94;
+  --color-red-700:   #f5a5a9;
+
+  --color-amber-50:  #2a2010;
+  --color-amber-100: #3a2c15;
+  --color-amber-200: #4a3a1d;
+  --color-amber-500:  #f0b429;
+  --color-amber-600:  #f3c04d;
+  --color-amber-700:  #f6cd72;
+  --color-amber-800:  #f9daa0;
+
+  --color-green-50:  #12241a;
+  --color-green-400: #58c47a;
+  --color-green-600: #5cc47e;
+  --color-green-700: #7ed19a;
+
+  --color-orange-700: #f0a06a;
+  --color-purple-500: #b48ef5;
+}
+
+/*
+ * `bg-white` is the card surface, but `text-white` is the nav bar's label on
+ * navy — both compile to var(--color-white), so the variable itself must not be
+ * touched. The utility is overridden instead, which moves the cards and leaves
+ * white text white.
+ */
+.dark .bg-white { background-color: #171c24; }
+.dark .bg-white\/40,
+.dark .bg-white\/50 { background-color: #171c2480; }
+
+/*
+ * Recharts paints an SVG it owns, from props. The grid stroke is the one that
+ * cannot be left alone: at #f1f5f9 it becomes the brightest element on a dark
+ * card and the bars read as if they are behind bars.
+ */
+.dark .recharts-cartesian-grid line { stroke: #252c37; }
+.dark .recharts-default-tooltip {
+  background: #1b212b !important;
+  border-color: #333c4a !important;
+  color: #e8ecf1;
+}
+.dark .recharts-tooltip-label,
+.dark .recharts-tooltip-item { color: #e8ecf1 !important; }
+
+/*
+ * Leaflet owns its own furniture: popups, attribution, zoom buttons and the
+ * scale bar are all white boxes drawn outside React.
+ */
+.dark .leaflet-container { background: #0d1015; }
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background: #1b212b;
+  color: #e8ecf1;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.5);
+}
+.dark .leaflet-bar a,
+.dark .leaflet-bar a:hover {
+  background: #1b212b;
+  color: #cbd3dd;
+  border-bottom-color: #333c4a;
+}
+.dark .leaflet-control-attribution {
+  background: #1b212bcc;
+  color: #8e99a8;
+}
+.dark .leaflet-control-attribution a { color: #7ab0f8; }
+.dark .leaflet-control-scale-line {
+  background: #1b212bcc;
+  border-color: #6f7b8a;
+  color: #cbd3dd;
+}
+.dark .leaflet-control-layers {
+  background: #1b212b;
+  color: #cbd3dd;
+  border-color: #333c4a;
+}
+/* The tiles themselves are photographs and a street map. Imagery is left
+   exactly as flown — dimming a satellite basemap would be altering the
+   evidence. Only the street basemap, which is a drawing, is toned down so it
+   does not glare beside dark chrome. */
+.dark .leaflet-tile-pane img[src*="tile.openstreetmap.org"],
+.dark .leaflet-tile-pane img[src*="basemaps.cartocdn.com"] {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9);
+}
+
+/* Form controls and scrollbars. color-scheme handles most of it; these are the
+   two the browser does not repaint on its own. */
+.dark input, .dark textarea, .dark select { background-color: #1b212b; color: #e8ecf1; }
+.dark input::placeholder, .dark textarea::placeholder { color: #6f7b8a; }
+.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #2b333f; border-radius: 5px; }
+.dark ::-webkit-scrollbar-track { background: #0f1319; }
+
+/* The NDVI chips are 8-bit science images. They are not decoration and are
+   never re-tinted; a false-colour composite whose colours have been altered by
+   a theme is a lie about the data. Same for report photographs. */
+.dark img[alt^="NDVI"] { filter: none; }
+
+/* Only the colours move between themes, never the layout. A transition on
+   colour alone keeps the switch from looking like a page reload, without
+   animating anything that would shift under the pointer. */
+.dark, :root:not(.dark) {
+  --masid-theme-transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  body * { transition: var(--masid-theme-transition, none); }
+  /* Charts and maps redraw themselves; transitioning their internals fights
+     the redraw and smears. */
+  .recharts-wrapper *, .leaflet-container * { transition: none; }
+}
+
+/* The void behind map tiles, in both themes — it was an inline near-white on
+   the container, which no stylesheet could reach. */
+:root:not(.dark) .leaflet-container { background: #f2f2f0; }
+
+/* Arbitrary-value navy — `text-[#1e3a7b]` on links and labels, 44 of them. As a
+   generated class it can be redirected once here rather than edited at every
+   call site. The same navy used as a solid BUTTON fill stays as it is: white on
+   navy works on any surface, so only the foreground use needs lifting. */
+.dark .text-\[\#1e3a7b\] { color: var(--masid-navy); }
+.dark .hover\:border-\[\#1e3a7b\]\/40:hover { border-color: color-mix(in srgb, var(--masid-navy) 40%, transparent); }
+.dark .focus\:border-\[\#1e3a7b\]:focus { border-color: var(--masid-navy); }

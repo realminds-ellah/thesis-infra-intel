@@ -93,6 +93,23 @@ ALIASES = {
     "BALIWAG": "Baliuag",
 }
 
+# What an inspector needs off the contract description, in the order the phrases
+# actually appear in DPWH titles. Longest/most specific first so "concrete slope
+# protection" does not resolve to "concrete".
+STRUCTURE_TYPES = [
+    ("PUMPING STATION", "Pumping station"), ("FLOOD GATE", "Flood gate"),
+    ("FLOODGATE", "Flood gate"), ("SLOPE PROTECTION", "Slope protection"),
+    ("SHORE PROTECTION", "Shore protection"), ("BANK PROTECTION", "Bank protection"),
+    ("RIVER PROTECTION", "Bank protection"), ("RIVERBANK PROTECTION", "Bank protection"),
+    ("REVETMENT", "Revetment"), ("FLOOD WALL", "Flood wall"), ("FLOODWALL", "Flood wall"),
+    ("RIVER WALL", "River wall"), ("DRAINAGE", "Drainage"), ("DREDGING", "Dredging"),
+    ("DESILTING", "Desilting"), ("RIPRAP", "Riprap"), ("RIP-RAP", "Riprap"),
+    ("DIKE", "Dike"), ("EMBANKMENT", "Embankment"), ("PARAPET", "Parapet wall"),
+    ("CHANNEL", "Channel works"), ("WATERWAY", "Waterway works"),
+    ("FLOOD MITIGATION", "Flood mitigation structure"),
+    ("FLOOD CONTROL", "Flood control structure"),
+]
+
 # A published point this close to the boundary of the municipality its own
 # description names is a cartographic edge case, not a relocated project.
 BOUNDARY_TOLERANCE_M = 300
@@ -226,6 +243,50 @@ DECLARED_VOCAB = sorted(VOCAB_TO_LGU, key=len, reverse=True)
 # safe direction for a tool that accuses public officials of nothing.
 PROVINCE_TOKEN = re.compile(r"\b(BULACAN|BULACA)\b")
 
+# A municipality name immediately followed by RIVER, CREEK or CHANNEL is the name
+# of a WATERCOURSE, not a claim about where the site is. The Angat River runs
+# through most of the province, so "ALONG ANGAT RIVER, BULACAN" declares no
+# municipality at all — and reading it as one produced a spurious high-severity
+# MUNI_MISMATCH on 24CC0423, whose coordinate is in Plaridel and correctly so.
+#
+# Found by pipeline/audit_municipality.py, which re-parses the same prose with an
+# independent method: exactly one contract in 1,293 was affected, and this is it.
+# The watercourse-qualified occurrence is removed before the vocabulary sweep, so
+# a description that ALSO names the municipality elsewhere still matches.
+WATERCOURSE_NAME = re.compile(
+    r"\b([A-Z][A-Z .'-]*?)\s+(RIVER|CREEK|CHANNEL|WATERWAY|DIVERSION)\b")
+
+
+def structure_type(description: str) -> str | None:
+    """What an inspector is looking for when they arrive."""
+    d = norm(description)
+    for token, label in STRUCTURE_TYPES:
+        if token in d:
+            return label
+    return None
+
+
+def barangay(description: str) -> str | None:
+    """DPWH titles name the barangay in prose: '... AT BARANGAY PANDUCOT, ...'."""
+    m = re.search(r"\b(?:BRGY\.?|BARANGAY)\s+([A-Z][A-Z0-9 .'\-]{2,40}?)\s*(?:,|$|\()",
+                  description.upper())
+    if not m:
+        return None
+    v = re.sub(r"\s+", " ", m.group(1)).strip(" .,-")
+    return title(v) if v else None
+
+
+def station_limits(description: str):
+    """Chainage markers like 'STA. 0+475 - STA. 0+829' give the exact stretch of
+    river to walk, and its length. Only 14% of contracts carry them, but where
+    they do it is the difference between finding a structure and guessing."""
+    pts = [int(a) * 1000 + int(b) for a, b in
+           re.findall(r"(?:STA|K)\.?\s*(\d+)\s*\+\s*(\d+)", description, re.I)]
+    if len(pts) < 2:
+        return None, None, None
+    lo, hi = min(pts), max(pts)
+    return f"{lo//1000}+{lo%1000:03d}", f"{hi//1000}+{hi%1000:03d}", (hi - lo) or None
+
 
 def declared_municipality(description: str) -> str | None:
     """Recover the site the contract itself names.
@@ -240,6 +301,9 @@ def declared_municipality(description: str) -> str | None:
     a barangay of Guiguinto; 'San Miguel' is a barangay of Calumpit).
     """
     d = PROVINCE_TOKEN.sub(" ", norm(description))
+    # Drop "<NAME> RIVER" style watercourse names before looking for a
+    # municipality; see WATERCOURSE_NAME above.
+    d = WATERCOURSE_NAME.sub(r" \2 ", d)
 
     best = None  # (end position, length, lgu)
     for token in DECLARED_VOCAB:
@@ -466,14 +530,44 @@ def main() -> int:
                 "detail": f"Completion date ({end}) precedes start date ({start}).",
             })
 
+        # ── two different facts, and summing them made one number mean both ──
+        #
+        # "The coordinate falls 4.8 km outside the municipality this contract's
+        # own description names" is the record CONTRADICTING ITSELF. "No
+        # coordinate was published" is the record SAYING NOTHING. Both deserve
+        # attention and they are not the same claim, but MISSING_COORDS carried
+        # severity high, the suspicion threshold is 3, and so a silence scored
+        # exactly what a contradiction scored and tripped the flag on its own.
+        #
+        # Measured on the shipped data, 93 of the 158 records-flagged contracts
+        # — 59% — were flagged for nothing but a missing coordinate, while only
+        # 53 carried an actual self-contradiction. Every sentence describing the
+        # signal said "the published record disagrees with itself", and for the
+        # majority of the contracts it counted, nothing disagreed with anything.
+        #
+        # So the flags are labelled and scored separately. auditScore now means
+        # what it always claimed to mean, and unverifiable is reported as its
+        # own fact — a real and serious failure of the register, which is why it
+        # keeps its place in auditFlags and in the app rather than being demoted.
+        UNVERIFIABLE = {"MISSING_COORDS"}
         for f in flags:
+            f["kind"] = "unverifiable" if f["code"] in UNVERIFIABLE else "inconsistency"
             flag_tally[f["code"]] += 1
 
         weight = {"high": 3, "medium": 2, "low": 1}
-        score = sum(weight[f["severity"]] for f in flags)
+        score = sum(weight[f["severity"]] for f in flags if f["kind"] == "inconsistency")
+        unverifiable = any(f["kind"] == "unverifiable" for f in flags)
 
+        st_from, st_to, st_len = station_limits(r["description"])
         municipality = decl or geoc or "Unspecified"
-        status = "flagged" if flags else STATUS_MAP.get(dpwh_status, "proposed")
+
+        # Status is the lifecycle stage DPWH reports and NOTHING else. An earlier
+        # version overwrote it with "flagged" whenever a check tripped, which hid
+        # 245 completed contracts inside a status that is not a lifecycle stage at
+        # all — the app said 717 completed where DPWH says 962, and no filter
+        # could recover them. A flagged project is still completed; a defective
+        # one would be too. Conditions live in auditFlags, never in the stage.
+        status = STATUS_MAP.get(dpwh_status, "proposed")
 
         projects.append({
             "id": str(r["contractId"]),
@@ -508,8 +602,15 @@ def main() -> int:
             "docCount": sum(1 for c in ("advertisement","contractAgreement","noticeOfAward","noticeToProceed")
                             if isinstance(r[c], str) and r[c].startswith("http")),
             "reportCount": 0 if pd.isna(r["reportCount"]) else int(r["reportCount"]),
+            "structureType": structure_type(r["description"]),
+            "barangay": barangay(r["description"]),
+            "stationFrom": st_from,
+            "stationTo": st_to,
+            "lengthMetres": st_len,
             "auditFlags": flags,
             "auditScore": score,
+            # Not scored into auditScore: it is an absence, not a disagreement.
+            "unverifiable": unverifiable,
         })
 
     projects.sort(key=lambda p: (-p["auditScore"], -p["budget"]))

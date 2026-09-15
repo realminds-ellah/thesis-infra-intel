@@ -58,6 +58,30 @@ export type MarkShape = "circle";
 const ORDINAL_4 = ["#6da7ec", "#3987e5", "#256abf", "#104281"];
 const CAT_3 = ["#2a78d6", "#eb6834", "#1baf7a"];
 
+/**
+ * The five site states, in the same words the sidebar filters use.
+ *
+ * The dots said one thing ("audit priority", a count of flags) while the
+ * filters beside them said another ("Finished", "Being built"), so the legend
+ * and the checkbox list described different worlds. These are the filters'
+ * words, and the map now answers the question the controls ask.
+ *
+ * VALIDATED, NOT PICKED BY EYE. The obvious palette — red for flagged, green
+ * for finished — fails: #c0272d against #046b04 is OKLab ΔE 3.7 under
+ * protanopia, so the single most important distinction on this map is the one
+ * a red-green colour-blind reader cannot make. Separating them by LIGHTNESS
+ * instead of hue fixes it. All ten pairs of the set below clear both floors:
+ * weakest CVD pair 10.1 (Being built vs Not started, tritan), weakest
+ * normal-vision pair 17.1, against a target of 8 and a floor of 15.
+ */
+const SITE = {
+  flagged:    "#c0272d",   // dark red   — condition, and it wins over stage
+  finished:   "#8fd98f",   // light green — lightness carries it under protan
+  building:   "#2a78d6",   // blue
+  notStarted: "#7d7d76",   // grey
+  cancelled:  "#6a3d9a",   // purple
+};
+
 /** Neutral basemap. Data colour belongs to the data; the map underneath recedes. */
 export const BASEMAP = {
   surface: "#f2f2f0",
@@ -152,15 +176,19 @@ export const ENCODINGS: Encoding[] = [
     ],
   },
   {
-    key: "status",
-    label: "Reported status",
+    key: "site",
+    label: "Site status",
     kind: "categorical",
-    note: "DPWH's own status. Five values, but the palette only clears the all-pairs floors for three, so the two rarest fold into Other rather than being given colours that cannot be told apart.",
+    note: "The stage DPWH reports, in the same words the filters use, with contracts flagged for review taking precedence — a finished project whose record contradicts itself is a thing to look at, not a thing to tick off.",
     bins: [
-      { key: "completed", label: "Completed", color: TRAFFIC.good, shape: "circle", test: p => p.status === "completed" },
-      { key: "ongoing", label: "Ongoing", color: CAT_3[0], shape: "circle", test: p => p.status === "ongoing" },
-      { key: "flagged", label: "Flagged for review", color: TRAFFIC.concern, shape: "circle", test: p => p.status === "flagged" },
-      { key: "other", label: "Proposed or terminated", color: NEUTRAL, shape: "circle", test: p => p.status === "proposed" || p.status === "terminated" },
+      // Flagged is tested FIRST and so wins. It is a condition rather than a
+      // stage, and a contract can be both finished and flagged; one mark can
+      // only carry one colour, and the actionable state is the useful one.
+      { key: "flagged",   label: "Flagged for review", color: SITE.flagged,   shape: "circle", test: p => p.auditFlags.length > 0 },
+      { key: "completed", label: "Finished",           color: SITE.finished,  shape: "circle", test: p => p.status === "completed" },
+      { key: "ongoing",   label: "Being built",        color: SITE.building,  shape: "circle", test: p => p.status === "ongoing" },
+      { key: "proposed",  label: "Not started yet",    color: SITE.notStarted,shape: "circle", test: p => p.status === "proposed" },
+      { key: "terminated",label: "Cancelled",          color: SITE.cancelled, shape: "circle", test: p => p.status === "terminated" },
     ],
   },
 ];

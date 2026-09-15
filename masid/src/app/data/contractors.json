@@ -458,11 +458,10 @@
   "totalProjects": 33,
   "activeProjects": 2,
   "completedProjects": 31,
-  "flaggedProjects": 9,
-  "flagRate": 0.273,
+  "flaggedProjects": 8,
+  "flagRate": 0.242,
   "totalValue": 1137156980.81,
   "municipalities": [
-   "Angat",
    "Balagtas",
    "Baliuag",
    "Bocaue",

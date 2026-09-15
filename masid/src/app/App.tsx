@@ -15,24 +15,38 @@ import {
   Satellite, MessageSquare, ZoomIn, ZoomOut, Check, MapPin, Shield,
   Percent, BarChart2, Plus, LogOut, Settings, Users, Globe, Eye,
   EyeOff, Lock, Activity, Wifi, WifiOff, Star, Clock, TrendingUp,
-  TrendingDown, CheckSquare, AlertCircle, Command, Inbox,
+  TrendingDown, CheckSquare, AlertCircle, Command, Inbox, Sun, Moon, MessageSquareWarning,
 } from "lucide-react";
 
 import {
+  SCOPE_BY_ID,
   PROJECTS, CONTRACTORS, META, MUNI_BREAKDOWN, STATUS_PIE, BUDGET_BY_YEAR,
   FLAG_BREAKDOWN, FLAGGED_VALUE, MAP_BOUNDS, FLAG_LABELS, SEVERITY_CFG,
   BOUNDARIES, OFF_MAP, SATELLITE, SAT_BY_ID, SAT_TALLY, VERDICT_CFG, VALIDATION,
-  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY,
+  PROCUREMENT, PROC_BY_ID, PROC_FLAG_LABELS, DOC_LABELS, FUSED_BY_ID, QUADRANT_CFG, TRIAGE, PRIORITY, YEAR_STATS,
 } from "./data";
-import type { Project, Contractor, ProjectStatus } from "./data";
-import { FilterPanel } from "./FilterPanel";
+import type { Project, Contractor, ProjectStatus, AuditFlag } from "./data";
+import { FilterPanel, type MapLayers } from "./FilterPanel";
 import { ROLE_VIEWS } from "./roleFilters";
+import { ProjectMap } from "./ProjectMap";
+import { metresBetween } from "./geo";
+import { LeafletMap } from "./LeafletMap";
+import { SatelliteScreen } from "./SatelliteScreen";
+import { NationwideScreen } from "./NationwideScreen";
+import { RightOfReply } from "./RightOfReply";
+import { StreetLevel } from "./StreetLevel";
+import { WhatThePaperSays } from "./WhatThePaperSays";
+import { InspectionBrief } from "./InspectionBrief";
+import { ReportsFeed } from "./ReportsFeed";
+import { HAZARD_BY_ID, plainSummary } from "./data";
 import { ENCODINGS, ENCODING_BY_KEY, colorOf, shapeOf, markPath, legendFor, suggestEncoding, BASEMAP, type Encoding, type MarkShape } from "./mapColor";
 import { type Filters, emptyFilters, applyFilters, fromQuery, activeCount, toQuery as toQueryString } from "./filters";
+import { type Theme, loadTheme, saveTheme, applyTheme, watchSystem, resolveTheme, tint, accent } from "./theme";
+import { type Lang, loadLang, saveLang, makeT, EN } from "./i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Screen = "dashboard" | "map" | "project-detail" | "satellite" | "documents" | "citizen-report" | "contractors" | "admin" | "transparency";
+type Screen = "dashboard" | "map" | "project-detail" | "satellite" | "documents" | "citizen-report" | "contractors" | "admin" | "transparency" | "nationwide";
 import type { Role } from "./roles";
 type SortDir = "asc" | "desc" | null;
 
@@ -92,10 +106,15 @@ const INTEGRATIONS = [
 const STATUS_CFG: Record<ProjectStatus,{label:string;dot:string;bg:string;text:string}> = {
   completed: { label:"Completed",          dot:"#16a34a", bg:"#dcfce7", text:"#15803d" },
   ongoing:   { label:"Ongoing",            dot:"#2563eb", bg:"#dbeafe", text:"#1d4ed8" },
-  flagged:   { label:"Flagged for Review", dot:"#f59e0b", bg:"#fef3c7", text:"#b45309" },
   proposed:  { label:"Proposed",           dot:"#94a3b8", bg:"#f1f5f9", text:"#64748b" },
   terminated:{ label:"Terminated",         dot:"#dc2626", bg:"#fee2e2", text:"#b91c1c" },
 };
+/** How a commenter is shown in a public thread — the role, not a username. */
+const ROLE_LABELS_PUBLIC: Record<Role,string> = {
+  "dpwh-admin":"DPWH Admin", "dpwh-engineer":"DPWH Engineer", "field-inspector":"Field Inspector",
+  "psa-analyst":"PSA Analyst", "lgu-coordinator":"LGU Coordinator", "public":"Public",
+};
+
 const ROLE_CFG: Record<Role,{label:string;bg:string}> = {
   "dpwh-admin":     { label:"DPWH Admin",       bg:"#1e3a7b" },
   "dpwh-engineer":  { label:"DPWH Engineer",    bg:"#2563eb" },
@@ -141,6 +160,31 @@ function useSort<T>(initial:keyof T|null=null) {
   return { sortKey, sortDir, toggle, apply };
 }
 
+/**
+ * A contractor name short enough to sit on one axis tick.
+ *
+ * The register carries registered names in full — "TOPNOTCH CATALYST BUILDERS
+ * INC. (34061) / ONE FRAME CONSTRUCTION INC." — and blunt truncation turned that
+ * into "TOPNOTCH CATALYST BUIL", which is character-for-character what the
+ * second-largest firm truncates to. Two different entities, one label. So a
+ * joint venture keeps a piece of BOTH names, and only a single-firm name is cut,
+ * with an ellipsis to say it was.
+ */
+function shortFirm(name:string):string {
+  const clean=(s:string)=>s
+    .replace(/\s*\((?:FORMERLY|FORMERLY:)[^)]*\)?.*$/i,"")  // "(FORMERLY X)"
+    .replace(/\s*\(\d+\)/g,"")                              // PhilGEPS id
+    .replace(/[,.]\s*(INC|CORP|CORPORATION)\.?$/i,"")
+    .replace(/\s+/g," ").trim();
+  const parts=name.split("/").map(s=>s.trim()).filter(Boolean);
+  if(parts.length>1) {
+    const head=(s:string)=>clean(s).split(" ").slice(0,2).join(" ");
+    return `${head(parts[0])} / ${head(parts[1])}`;
+  }
+  const s=clean(name);
+  return s.length>24 ? `${s.slice(0,23).replace(/[ ,]+$/,"")}…` : s;
+}
+
 function usePagination(total:number, pageSize=10) {
   const [page,setPage]=useState(1);
   const totalPages=Math.max(1,Math.ceil(total/pageSize));
@@ -165,13 +209,15 @@ function usePagination(total:number, pageSize=10) {
  */
 function AuditFlags({project,compact=false}:{project:Project;compact?:boolean}) {
   if(!project.auditFlags.length) return null;
-  return (
+  const inconsistent=project.auditFlags.filter(f=>f.kind!=="unverifiable");
+  const unverifiable=project.auditFlags.filter(f=>f.kind==="unverifiable");
+  const group=(title:string,flags:AuditFlag[],note:string)=>flags.length?(
     <div className={compact?"space-y-1.5":"space-y-2"}>
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-        <Flag size={11}/>Consistency checks tripped
-        <span className="font-mono bg-gray-100 text-gray-500 px-1.5 rounded normal-case tracking-normal">{project.auditFlags.length}</span>
+        <Flag size={11}/>{title}
+        <span className="font-mono bg-gray-100 text-gray-500 px-1.5 rounded normal-case tracking-normal">{flags.length}</span>
       </div>
-      {project.auditFlags.map(f=>{
+      {flags.map(f=>{
         const s=SEVERITY_CFG[f.severity];
         return (
           <div key={f.code} className="rounded border p-2.5 text-[11px]" style={{background:s.bg,borderColor:s.color+"33",color:s.color}}>
@@ -184,10 +230,15 @@ function AuditFlags({project,compact=false}:{project:Project;compact?:boolean}) 
           </div>
         );
       })}
-      <p className="text-[10px] text-gray-400 leading-relaxed">
-        A flag means the published record disagrees with itself or with official
-        boundary data. It is a reason to look, not a finding.
-      </p>
+      <p className="text-[10px] text-gray-400 leading-relaxed">{note}</p>
+    </div>
+  ):null;
+  return (
+    <div className="space-y-4">
+      {group("Consistency checks tripped",inconsistent,
+        "The published record disagrees with itself or with official boundary data. It is a reason to look, not a finding.")}
+      {group("Cannot be checked",unverifiable,
+        "Nothing here disagrees with anything — the register simply does not publish enough to verify the site. Kept separate from the consistency checks, and not counted towards the suspicion score, because an absence is not a contradiction.")}
     </div>
   );
 }
@@ -196,7 +247,7 @@ function StatusBadge({status,size="sm"}:{status:ProjectStatus;size?:"sm"|"md"}) 
   const c=STATUS_CFG[status];
   return (
     <span className={`inline-flex items-center gap-1.5 font-medium rounded ${size==="md"?"px-2.5 py-1 text-xs":"px-2 py-0.5 text-[11px]"}`}
-      style={{background:c.bg,color:c.text}}>
+      style={{background:tint(c.text),color:accent(c.text)}}>
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{background:c.dot}}/>
       {c.label}
     </span>
@@ -263,7 +314,7 @@ function EmptyState({title,body,action,onAction}:{title:string;body:string;actio
       {action&&onAction&&(
         <button onClick={onAction}
           className="mt-4 px-4 py-2 text-[13px] font-medium text-white rounded hover:opacity-90"
-          style={{background:"#1e3a7b"}}>
+          style={{background:"var(--masid-navy)"}}>
           {action}
         </button>
       )}
@@ -274,7 +325,7 @@ function EmptyState({title,body,action,onAction}:{title:string;body:string;actio
 function FilterChip({label,onRemove}:{label:string;onRemove:()=>void}) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border border-[#1e3a7b]/20 text-[#1e3a7b]"
-      style={{background:"#eef2f9"}}>
+      style={{background:tint("#1e3a7b",10)}}>
       {label}
       <button onClick={onRemove} className="hover:text-red-500 transition-colors ml-0.5">
         <X size={10}/>
@@ -361,6 +412,47 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
           <kbd className="text-[10px] font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200">ESC</kbd>
         </div>
         <div className="overflow-auto" style={{maxHeight:400,scrollbarWidth:"none"}}>
+          {(near||nearErr)&&(
+            <div className="absolute left-3 bottom-16 bg-white rounded border border-gray-200 shadow-xl overflow-hidden"
+              style={{zIndex:900,width:320,maxHeight:"48vh"}}>
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <MapPin size={12} className="text-[#1e3a7b]"/>
+                <span className="text-[12px] font-bold text-gray-700">Nearest to you</span>
+                <button onClick={()=>{setNear(null);setNearErr(null);}}
+                  className="ml-auto p-0.5 text-gray-400 hover:text-gray-600"><X size={13}/></button>
+              </div>
+              {nearErr?(
+                <p className="px-3 py-3 text-[12px] text-gray-600 leading-relaxed">{nearErr}</p>
+              ):(
+                <div className="overflow-y-auto" style={{maxHeight:"40vh"}}>
+                  {nearest.map(({p,m})=>(
+                    <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                      className="w-full text-left px-3 py-2 border-b border-gray-50 hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{background:colorOf(p,enc)}}/>
+                        <span className="font-mono text-[10px] text-gray-500">{p.id}</span>
+                        <span className="ml-auto font-mono text-[11px] font-semibold text-gray-700">
+                          {m<1000?`${m} m`:`${(m/1000).toFixed(1)} km`}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                        {p.municipality} · {p.description.slice(0,54)}…
+                      </div>
+                    </button>
+                  ))}
+                  {nearest.length===0&&(
+                    <p className="px-3 py-3 text-[12px] text-gray-500">
+                      No contract in the current filters has a coordinate to measure against.
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="px-3 py-2 text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+                Straight-line distance from your device to the coordinate DPWH published. Your
+                location is used in this browser only and is not sent anywhere.
+              </p>
+            </div>
+          )}
           {filtered.length===0&&(
             <div className="py-10 text-center text-[13px] text-gray-400">No commands matching "{q}"</div>
           )}
@@ -398,86 +490,10 @@ function CommandPalette({onClose,onNavigate,onCreate}:{onClose:()=>void;onNaviga
 
 // ─── Map components ───────────────────────────────────────────────────────────
 
-function MapMarker({p,selected,onClick,fill,shape}:{p:Project&{lat:number;lng:number};selected:boolean;onClick:()=>void;fill:string;shape:MarkShape}) {
-  const [hov,setHov]=useState(false);
-  const {x,y}=toXY(p.lng,p.lat);
-  const c={dot:fill};
-  return (
-    <g transform={`translate(${x},${y})`} onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{cursor:"pointer"}} role="button" aria-label={p.name}>
-      
-      {selected&&<circle r={12} fill="none" stroke={c.dot} strokeWidth={2} opacity={0.85}/>}
-      <path d={markPath(shape,selected?7:4.8)} fill={c.dot} stroke={BASEMAP.surface} strokeWidth={2} strokeLinejoin="round"/>
-      {hov&&!selected&&(
-        <g transform="translate(12,-44)">
-          <rect x={0} y={0} width={172} height={40} rx={4} fill="white" style={{filter:"drop-shadow(0 2px 10px rgba(0,0,0,.18))"}}/>
-          <text x={8} y={16} fontSize={10.5} fontWeight={600} fill="#0d1f3c" style={{fontFamily:"Inter, sans-serif"}}>{p.name.length>26?p.name.slice(0,26)+"…":p.name}</text>
-          <text x={8} y={32} fontSize={9.5} fill="#64748b" style={{fontFamily:"Inter, sans-serif"}}>{p.municipality} · {peso(p.budget)}</text>
-        </g>
-      )}
-    </g>
-  );
-}
-
-/**
- * Bulacan drawn from geoBoundaries ADM3 polygons — the same boundaries the
- * pipeline reverse-geocodes against. The mock drew a decorative province blob;
- * a map whose flags read "this coordinate is in the wrong municipality" has to
- * show the actual lines that judgement was made against.
- */
-function MapSVG({projects,selectedId,onSelect,enc}:{projects:Project[];selectedId:string;onSelect:(id:string)=>void;enc:Encoding}) {
-  const ringPath=(ring:[number,number][])=>
-    ring.map(([lng,lat],i)=>{const{x,y}=toXY(lng,lat);return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`;}).join("")+"Z";
-  const paths=useMemo(()=>BOUNDARIES.map(b=>({
-    name:b.name,
-    d:b.rings.map(ringPath).join(" "),
-    served:META.coverage.municipalitiesServed.includes(b.name),
-    label:(()=>{
-      const pts=b.rings.flat();
-      const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length;
-      const cy=pts.reduce((s,p)=>s+p[1],0)/pts.length;
-      return toXY(cx,cy);
-    })(),
-  })),[]);
-  const step=(v:number)=>Math.round(v*10)/10;
-  const glats:number[]=[]; for(let v=step(MB.minLat);v<=MB.maxLat;v+=0.1) glats.push(step(v));
-  const glngs:number[]=[]; for(let v=step(MB.minLng);v<=MB.maxLng;v+=0.1) glngs.push(step(v));
-  return (
-    <svg viewBox={`0 0 ${MB.W} ${MB.H}`} className="w-full h-full" aria-label="Map of Bulacan Province with flood control project locations" role="img">
-      <rect width={MB.W} height={MB.H} fill={BASEMAP.surface}/>
-      {glats.map(lat=>{const{y}=toXY(MB.minLng,lat);return(<g key={`la${lat}`}><line x1={0} y1={y} x2={MB.W} y2={y} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={5} y={y-3} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lat.toFixed(1)}°N</text></g>);})}
-      {glngs.map(lng=>{const{x}=toXY(lng,MB.minLat);return(<g key={`ln${lng}`}><line x1={x} y1={0} x2={x} y2={MB.H} stroke={BASEMAP.grid} strokeWidth={0.35} strokeDasharray="4,5"/><text x={x+3} y={MB.H-6} fontSize={7} fill={BASEMAP.label} fontFamily="DM Mono,monospace">{lng.toFixed(1)}°E</text></g>);})}
-      {/* Municipalities this district office's own records describe are filled;
-          the rest of the province is drawn but left pale for context. */}
-      {paths.map(p=><path key={p.name} d={p.d} fill={p.served?BASEMAP.servedFill:BASEMAP.otherFill} stroke={BASEMAP.stroke} strokeWidth={p.served?0.9:0.4} strokeOpacity={p.served?0.85:0.4}/>)}
-      {paths.filter(p=>p.served).map(p=>(
-        <text key={`t${p.name}`} x={p.label.x} y={p.label.y} textAnchor="middle" fontSize={7} fill={BASEMAP.label} fontFamily="Inter,sans-serif" fontWeight={700} letterSpacing={0.5} style={{userSelect:"none",pointerEvents:"none"}}>
-          {p.name.replace("City of ","").toUpperCase()}
-        </text>
-      ))}
-      {projects.filter(p=>p.lat!=null&&p.lng!=null
-        &&p.lat>=MB.minLat&&p.lat<=MB.maxLat&&p.lng>=MB.minLng&&p.lng<=MB.maxLng)
-        .map(p=><MapMarker key={p.id} p={p as Project&{lat:number;lng:number}} selected={selectedId===p.id} onClick={()=>onSelect(selectedId===p.id?"":p.id)} fill={colorOf(p,enc)} shape={shapeOf(p,enc)}/>)}
-      {/* Scale bar measured from the current extent — a fixed "10 km" label would
-          be wrong the moment the bounds change. */}
-      {(()=>{
-        const midLat=(MB.minLat+MB.maxLat)/2;
-        const kmPerPx=((MB.maxLng-MB.minLng)*111.32*Math.cos(midLat*Math.PI/180))/MB.W;
-        const km=[1,2,5,10,20,50].reverse().find(k=>k/kmPerPx<=110)??1;
-        const w=km/kmPerPx;
-        return (
-          <g transform={`translate(70,${MB.H-32})`}>
-            <rect x={-8} y={-3} width={w+16} height={18} rx={3} fill="white" opacity={0.88}/>
-            <line x1={0} y1={8} x2={w} y2={8} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <line x1={0} y1={5} x2={0} y2={11} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <line x1={w} y1={5} x2={w} y2={11} stroke="#1e3a7b" strokeWidth={1.5}/>
-            <text x={w/2} y={6} textAnchor="middle" fontSize={7} fill="#1e3a7b" fontFamily="DM Mono,monospace" dominantBaseline="auto">{km} km</text>
-          </g>
-        );
-      })()}
-      <g transform={`translate(${MB.W-40},26)`}><circle r={15} fill="white" opacity={0.88}/><polygon points="0,-11 -4,-2 4,-2" fill="#1e3a7b"/><line x1={0} y1={-2} x2={0} y2={10} stroke="#1e3a7b" strokeWidth={1.5}/><text x={0} y={-13} textAnchor="middle" fontSize={9} fill="#1e3a7b" fontFamily="Inter,sans-serif" fontWeight={700}>N</text></g>
-    </svg>
-  );
-}
+// MapMarker and MapSVG were removed with the hand-drawn map they served. The
+// register now uses Leaflet (src/app/LeafletMap.tsx): real tiles, working zoom,
+// marker clustering and a satellite basemap — the parts BetterGov.ph's
+// flood-control map got right, plus the imagery layer an audit tool needs.
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
@@ -513,7 +529,9 @@ function LoginScreen({onLogin}:{onLogin:(role:Role)=>void}) {
         <div className="relative">
           <div className="flex items-center gap-3 mb-10">
             <div className="w-9 h-9 rounded flex items-center justify-center" style={{background:"#f59e0b"}}><Shield size={18} style={{color:"#1e3a7b"}}/></div>
-            <div><div className="text-white font-bold text-lg tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL MONITORING</div></div>
+            {/* The acronym spelled out at least once, on the one screen every
+                visitor passes through. It appeared nowhere in the app before. */}
+            <div><div className="text-white font-bold text-lg tracking-widest">MASID</div><div className="text-white/50 tracking-wide" style={{fontSize:8.5}}>MONITORING AND SURVEILLANCE OF INFRASTRUCTURE DELIVERY</div></div>
           </div>
           <h2 className="text-white text-3xl font-bold leading-tight mb-3">Infrastructure<br/>Monitoring for<br/>the Philippines</h2>
           <p className="text-white/50 text-sm leading-relaxed">An integrated platform for DPWH flood control tracking, satellite monitoring, procurement transparency, and citizen engagement.</p>
@@ -564,7 +582,7 @@ function LoginScreen({onLogin}:{onLogin:(role:Role)=>void}) {
             </div>
             <button type="submit" disabled={loading} aria-busy={loading}
               className="w-full py-3 text-white text-sm font-semibold rounded flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2"
-              style={{background:"#1e3a7b"}}>
+              style={{background:"var(--masid-navy)"}}>
               {loading?<><RefreshCw size={15} className="animate-spin"/>Signing in…</>:<><Lock size={15}/>Sign In</>}
             </button>
             <div className="flex items-center gap-3"><div className="flex-1 h-px bg-gray-200"/><span className="text-[11px] text-gray-400">or</span><div className="flex-1 h-px bg-gray-200"/></div>
@@ -694,7 +712,7 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
         </div>
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
           <button onClick={()=>step>1?setStep(s=>s-1):onClose()} className="px-4 py-2 text-sm border border-gray-200 rounded text-gray-600 hover:bg-white">{step===1?"Cancel":"← Back"}</button>
-          <button onClick={step<4?next:save} className="px-5 py-2 text-sm font-semibold text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}>{step<4?"Continue →":"Create Project"}</button>
+          <button onClick={step<4?next:save} className="px-5 py-2 text-sm font-semibold text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}>{step<4?"Continue →":"Create Project"}</button>
         </div>
       </div>
     </div>
@@ -703,28 +721,76 @@ function CreateProjectModal({onClose,onSave}:{onClose:()=>void;onSave:()=>void})
 
 // ─── Top Nav ──────────────────────────────────────────────────────────────────
 
-function TopNav({screen,onNavigate,onToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette}:{
-  screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;onToggleNotifications:()=>void;
+/**
+ * Light or dark, and nothing else.
+ *
+ * This carried a third option — follow the operating system — and the argument
+ * for it was good: a machine that turns dark at sunset should turn the dashboard
+ * dark at sunset without being told. It was removed on request, and the request
+ * is reasonable. Three states in a 78px control meant most people never worked
+ * out what the monitor icon did, and a setting nobody understands is worse than
+ * one that does not exist.
+ *
+ * The system preference still decides the FIRST view — see the inline script in
+ * index.html — so a reader who has never touched this still lands in the theme
+ * their device asked for. What is gone is only the ability to go back to
+ * following it after choosing, which is a small loss for a much clearer control.
+ */
+function ThemeToggle({theme,setTheme}:{theme:Theme;setTheme:(t:Theme)=>void}) {
+  const opts:[Theme,React.ReactNode,string][] = [
+    ["light",  <Sun size={12}/>,  "Light"],
+    ["dark",   <Moon size={12}/>, "Dark"],
+  ];
+  // "system" is still a valid stored value from before this changed; show it as
+  // whichever it currently resolves to rather than leaving nothing selected.
+  const shown = theme === "system" ? (resolveTheme("system")) : theme;
+  return (
+    <div role="radiogroup" aria-label="Colour theme"
+      className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-white/15 shrink-0">
+      {opts.map(([t,icon,label])=>(
+        <button key={t} role="radio" aria-checked={shown===t} title={label} aria-label={label}
+          onClick={()=>setTheme(t)}
+          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+            shown===t ? "bg-white/20 text-white" : "text-white/45 hover:text-white hover:bg-white/10"}`}>
+          {icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TopNav({screen,onNavigate,onToggleSidebar,canToggleSidebar,onToggleNotifications,unreadCount,role,onLogout,onCreateProject,canCreate,onOpenPalette,theme,setTheme,lang,setLang}:{
+  screen:Screen;onNavigate:(s:Screen)=>void;onToggleSidebar:()=>void;canToggleSidebar:boolean;onToggleNotifications:()=>void;
   unreadCount:number;role:Role;onLogout:()=>void;onCreateProject:()=>void;canCreate:boolean;onOpenPalette:()=>void;
+  theme:Theme;setTheme:(t:Theme)=>void;lang:Lang;setLang:(l:Lang)=>void;
 }) {
   const rc=ROLE_CFG[role];
+  const t=makeT(lang,EN);
   const links:[string,Screen,React.ReactNode,Role[]|null][]=[
-    ["Dashboard","dashboard",<BarChart2 size={13}/>,null],
-    ["Map","map",<MapIcon size={13}/>,null],
-    ["Satellite","satellite",<Satellite size={13}/>,null],
-    ["Documents","documents",<FileText size={13}/>,null],
-    ["Reports","citizen-report",<Camera size={13}/>,null],
-    ["Contractors","contractors",<Building2 size={13}/>,["dpwh-admin","dpwh-engineer"]],
-    ["Admin","admin",<Settings size={13}/>,["dpwh-admin"]],
-    ["Public","transparency",<Globe size={13}/>,null],
+    [t("nav.dashboard"),"dashboard",<BarChart2 size={13}/>,null],
+    [t("nav.map"),"map",<MapIcon size={13}/>,null],
+    [t("nav.satellite"),"satellite",<Satellite size={13}/>,null],
+    [t("nav.documents"),"documents",<FileText size={13}/>,null],
+    [t("nav.reports"),"citizen-report",<Camera size={13}/>,null],
+    [t("nav.contractors"),"contractors",<Building2 size={13}/>,["dpwh-admin","dpwh-engineer"]],
+    [t("nav.admin"),"admin",<Settings size={13}/>,["dpwh-admin"]],
+    [t("nav.nationwide"),"nationwide",<Globe size={13}/>,null],
+    [t("nav.public"),"transparency",<Shield size={13}/>,null],
   ];
   const visible=links.filter(([,,, roles])=>!roles||roles.includes(role));
   return (
-    <header className="h-[52px] shrink-0 flex items-center gap-2 px-3 border-b border-white/10" style={{background:"#1e3a7b"}}>
-      <button onClick={onToggleSidebar} aria-label="Toggle sidebar" className="w-7 h-7 flex items-center justify-center rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"><Menu size={16}/></button>
+    <header className="h-[52px] shrink-0 flex items-center gap-2 px-3 border-b border-white/10" style={{background:"var(--masid-navy)"}}>
+      {/* Only offered where a sidebar exists to collapse. It used to sit on every
+          screen and do nothing on most of them. */}
+      {canToggleSidebar
+        ? <button onClick={onToggleSidebar} aria-label="Toggle filters" title="Show or hide the filters"
+            className="w-7 h-7 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"><Menu size={16}/></button>
+        : <div className="w-7 h-7"/>}
       <div className="flex items-center gap-2 mr-2 shrink-0">
         <div className="w-7 h-7 rounded flex items-center justify-center" style={{background:"#f59e0b"}}><Shield size={14} style={{color:"#1e3a7b"}}/></div>
-        <div className="leading-none"><div className="text-white font-bold text-sm tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL PH</div></div>
+        {/* Short in the nav bar, where there is no room; the full name is on the
+            title so it is one hover away rather than nowhere. */}
+        <div className="leading-none" title="MASID — Monitoring And Surveillance of Infrastructure Delivery"><div className="text-white font-bold text-sm tracking-widest">MASID</div><div className="text-white/40 tracking-wider" style={{fontSize:8}}>FLOOD CONTROL PH</div></div>
       </div>
       <nav className="flex items-center gap-0.5 overflow-x-auto" style={{scrollbarWidth:"none"}}>
         {visible.map(([label,s,icon])=>(
@@ -746,6 +812,20 @@ function TopNav({screen,onNavigate,onToggleSidebar,onToggleNotifications,unreadC
           <Plus size={13}/>New Project
         </button>
       )}
+      {/* Language before theme: which words the interface uses matters more to
+          the person this was built for than whether it is light or dark. */}
+      <div role="radiogroup" aria-label="Language"
+        className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-white/15 shrink-0">
+        {([["en","EN","English"],["fil","FIL","Filipino"]] as const).map(([v,short,full])=>(
+          <button key={v} role="radio" aria-checked={lang===v} title={full} aria-label={full}
+            onClick={()=>setLang(v)}
+            className={`px-1.5 h-6 flex items-center justify-center rounded text-[10px] font-bold tracking-wide transition-colors ${
+              lang===v?"bg-white/20 text-white":"text-white/45 hover:text-white hover:bg-white/10"}`}>
+            {short}
+          </button>
+        ))}
+      </div>
+      <ThemeToggle theme={theme} setTheme={setTheme}/>
       <button onClick={onToggleNotifications} aria-label={`Notifications${unreadCount>0?`, ${unreadCount} unread`:""}`}
         className="relative w-8 h-8 flex items-center justify-center text-white/55 hover:text-white transition-colors shrink-0">
         <Bell size={17}/>
@@ -779,6 +859,35 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
   const withCoords=META.coverage.withCoordinates;
   const avgCompletion=PROJECTS.reduce((s,p)=>s+p.completion,0)/PROJECTS.length;
   const pct=(n:number)=>`${Math.round(n/PROJECTS.length*100)}%`;
+  // 309 flagged records used to render as 309 table rows, which is most of why
+  // this page was 23 screens tall. Ten at a time, newest concern first.
+  const pg=usePagination(atRisk.length,10);
+
+  /**
+   * Where the money went.
+   *
+   * The question every reader of a public works register actually arrives with,
+   * and the one the rest of this dashboard does not answer. Bars are total award
+   * value per firm; the headline is the concentration behind them.
+   */
+  const money=useMemo(()=>{
+    const ranked=[...CONTRACTORS].sort((a,b)=>b.totalValue-a.totalValue);
+    const total=ranked.reduce((s,c)=>s+c.totalValue,0);
+    let cum=0,half=0;
+    for(const c of ranked){cum+=c.totalValue;half++;if(cum/total>=0.5)break;}
+    const revoked=ranked.filter(c=>c.registrationRevoked);
+    return {
+      total, half, firms:ranked.length,
+      revokedCount:revoked.length,
+      revokedValue:revoked.reduce((s,c)=>s+c.totalValue,0),
+      top:ranked.slice(0,10).map(c=>({
+        name:shortFirm(c.name),
+        full:c.name, valueB:+(c.totalValue/1e9).toFixed(2),
+        share:c.totalValue/total, contracts:c.totalProjects,
+        revoked:!!c.registrationRevoked,
+      })),
+    };
+  },[]);
   // Every figure below is counted from the loaded records. Where the public
   // record has no number — disbursement above all — none is shown.
   const kpis=[
@@ -789,7 +898,22 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
     {l:"Reported Completion",     v:`${avgCompletion.toFixed(1)}%`,    s:"Mean DPWH-reported progress", trend:`${PROJECTS.filter(p=>p.dpwhStatus==="Completed").length} marked complete`, up:true, c:"#7c3aed"},
     {l:"Imagery Assessed",        v:SATELLITE.coverage.assessed.toLocaleString(), s:`Sentinel-2 10 m · ${SATELLITE.coverage.assessable.toLocaleString()} assessable`, trend:VALIDATION.discriminates?"validated against controls":"no discriminative power", up:false, c:VALIDATION.discriminates?"#0f766e":"#b91c1c"},
   ];
-  const NAVY="#1e3a7b",GREEN="#16a34a",AMBER="#f59e0b",GRAY="#94a3b8";
+  // Series colours as custom properties: an SVG fill accepts var(), so the
+  // charts follow the theme with no hook, no re-render and no second palette.
+  const NAVY="var(--masid-navy)",GREEN="#16a34a",AMBER="#f59e0b",GRAY="#94a3b8";
+
+  /** A named group, so the page reads as four questions rather than nine cards. */
+  const Section=({label,note,children}:{label:string;note?:string;children:React.ReactNode})=>(
+    <section className="space-y-3">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 shrink-0">{label}</h2>
+        {note&&<span className="text-[11px] text-gray-400 truncate">{note}</span>}
+        <div className="flex-1 border-b border-gray-200"/>
+      </div>
+      {children}
+    </section>
+  );
+
   return (
     <div className="flex-1 overflow-auto bg-gray-50" style={{scrollbarWidth:"none"}}>
       <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -797,11 +921,12 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
           <div><h1 className="text-lg font-bold text-gray-900">Executive Dashboard</h1><p className="text-[13px] text-gray-500">{META.areaOfInterest} · DPWH Region III · {META.coverage.projects.toLocaleString()} flood control records, {META.coverage.yearMin}–{META.coverage.yearMax} · dataset built {META.generated.slice(0,10)}</p></div>
           <div className="flex items-center gap-2">
             <button onClick={()=>toast.success("Exporting PDF report…")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export PDF</button>
-            <button onClick={()=>onNavigate("map")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><MapIcon size={13}/>Open Map</button>
+            <button onClick={()=>onNavigate("map")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><MapIcon size={13}/>Open Map</button>
           </div>
         </div>
       </div>
-      <div className="p-6 space-y-5 max-w-7xl mx-auto">
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <Section label="Overview" note="counted from the loaded records; no figure here is estimated">
         <div className="grid grid-cols-6 gap-3">
           {kpis.map(k=>(
             <div key={k.l} className="bg-white rounded border border-gray-200 p-4">
@@ -814,6 +939,9 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </div>
           ))}
         </div>
+        </Section>
+
+        <Section label="Where the contracts are" note={`${META.coverage.municipalitiesServed.length} municipalities served by this district office`}>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 bg-white rounded border border-gray-200 p-4">
             <div className="text-[12px] font-bold text-gray-700 mb-4">Projects by Municipality</div>
@@ -823,11 +951,13 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 <XAxis type="number" tick={{fontSize:10,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
                 <YAxis dataKey="name" type="category" tick={{fontSize:9,fill:"#64748b"}} tickLine={false} axisLine={false} width={78} interval={0}/>
                 <Tooltip contentStyle={{fontSize:11,borderRadius:6,border:"1px solid #e2e8f0"}}/>
+                {/* Three lifecycle stages, which is all DPWH reports. Flagged and
+                    Terminated were also drawn here and were zero in every bar —
+                    two legend entries standing for nothing. Flagged in particular
+                    is a condition, not a stage; it has its own panel below. */}
                 <Bar dataKey="completed"  name="Completed"  stackId="a" fill={GREEN}/>
                 <Bar dataKey="ongoing"    name="Ongoing"    stackId="a" fill={NAVY}/>
-                <Bar dataKey="flagged"    name="Flagged"    stackId="a" fill={AMBER}/>
-                <Bar dataKey="proposed"   name="Proposed"   stackId="a" fill={GRAY}/>
-                <Bar dataKey="terminated" name="Terminated" stackId="a" fill="#dc2626" radius={[0,2,2,0]}/>
+                <Bar dataKey="proposed"   name="Proposed"   stackId="a" fill={GRAY} radius={[0,2,2,0]}/>
                 <Legend iconType="square" iconSize={8} wrapperStyle={{fontSize:11}}/>
               </BarChart>
             </ResponsiveContainer>
@@ -844,22 +974,85 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </div>
           </div>
         </div>
+        </Section>
+
+        <Section label="Where the money went" note={`${peso(money.total)} awarded across ${money.firms} firms`}>
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded border border-gray-200 p-4">
-            <div className="text-[12px] font-bold text-gray-700">Contract Value Awarded by Year (₱M)</div>
-            <div className="text-[11px] text-gray-400 mb-3">Disbursement is not published by the transparency portal, so no spend series is shown.</div>
+            <div className="text-[12px] font-bold text-gray-700">Contract value awarded, by year (₱M)</div>
+            <div className="text-[11px] text-gray-400 mb-3">Spending rose roughly 58-fold between 2016 and 2024.</div>
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={BUDGET_BY_YEAR} margin={{top:0,right:8,bottom:0,left:8}}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/><XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/><YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
-                <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>`₱${v.toLocaleString()}M`}/><Legend iconType="square" iconSize={8} wrapperStyle={{fontSize:11}}/>
-                <Bar dataKey="clean"   name="No flags"     stackId="v" fill={NAVY}/>
-                <Bar dataKey="flagged" name="Flagged"      stackId="v" fill={AMBER} radius={[2,2,0,0]}/>
+              <BarChart data={YEAR_STATS} margin={{top:0,right:8,bottom:0,left:8}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                <XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}} formatter={(v:number)=>[`₱${v.toLocaleString()}M`,"awarded"]}/>
+                <Bar dataKey="valueM" name="Awarded" fill="var(--masid-blue)" radius={[2,2,0,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* The question a reader arrives with, and the one nothing else on this
+              page answered: which companies got the money. Bars are total award
+              value per firm — one hue, because every bar is the same kind of
+              thing and the length is the whole message. */}
+          <div className="bg-white rounded border border-gray-200 p-4">
+            <div className="flex items-baseline gap-2">
+              <div className="text-[12px] font-bold text-gray-700">Who was paid — ten largest contractors</div>
+              <button onClick={()=>onNavigate("contractors")}
+                className="text-[11px] text-[#1e3a7b] hover:underline ml-auto shrink-0">All {money.firms} firms →</button>
+            </div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              <strong className="text-gray-600">{money.half} of {money.firms} firms hold half</strong> of the {peso(money.total)} awarded.
+              {money.revokedCount>0&&<> {money.revokedCount} firms carry a registration DPWH marks revoked ({peso(money.revokedValue)}).</>}
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={money.top} layout="vertical" margin={{top:0,right:34,bottom:0,left:152}}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9"/>
+                <XAxis type="number" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}
+                  tickFormatter={(v:number)=>`₱${v}B`}/>
+                {/* One line per firm. Recharts' default tick wraps a long name onto
+                    extra lines, and ten wrapped names overlap into an unreadable
+                    block — the names have to stay on one row each. */}
+                <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={152} interval={0}
+                  tick={({x,y,payload}:{x:number;y:number;payload:{value:string}})=>(
+                    <text x={x} y={y} dy={3} textAnchor="end" fontSize={9} fill="#64748b">{payload.value}</text>
+                  )}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}}
+                  formatter={(v:number,_n,p:{payload:{share:number;contracts:number}})=>
+                    [`₱${v}B — ${(p.payload.share*100).toFixed(1)}% of all award value, ${p.payload.contracts} contracts`,"awarded"]}
+                  labelFormatter={(_l,pl)=>pl?.[0]?.payload?.full??""}/>
+                <Bar dataKey="valueB" name="Awarded" fill={NAVY} radius={[0,2,2,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        </Section>
+
+        <Section label="What the record disputes" note="checks on published documents — not observations of the ground">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded border border-gray-200 p-4">
+            <div className="text-[12px] font-bold text-gray-700">Share won at exactly 96.00% of the approved budget</div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              Absent through 2018, then 51% in 2020 and never below 36% since. The national rate is 3.9%.
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={YEAR_STATS} margin={{top:0,right:8,bottom:0,left:8}}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9"/>
+                <XAxis dataKey="year" tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}/>
+                <YAxis tick={{fontSize:9,fill:"#94a3b8"}} tickLine={false} axisLine={false}
+                  domain={[0,0.65]} tickFormatter={(v:number)=>`${Math.round(v*100)}%`}/>
+                <Tooltip contentStyle={{fontSize:11,borderRadius:6}}
+                  formatter={(v:number,_n,p:{payload:{at96:number;withRatio:number}})=>[`${(v*100).toFixed(0)}%  (${p.payload.at96} of ${p.payload.withRatio})`,"at 96.00%"]}/>
+                <Bar dataKey="at96Rate" name="At 96.00%" fill="#e8722c" radius={[2,2,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="bg-white rounded border border-gray-200 p-4">
-            <div className="text-[12px] font-bold text-gray-700">Records by Consistency Check</div>
-            <div className="text-[11px] text-gray-400 mb-3">Checks on published records only — not observations of the ground.</div>
+            <div className="text-[12px] font-bold text-gray-700">Records by consistency check</div>
+            <div className="text-[11px] text-gray-400 mb-3">
+              <strong className="text-gray-600">{flagged.length} records</strong> trip at least one check. A record can trip more than one.
+            </div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={FLAG_BREAKDOWN} layout="vertical" margin={{top:0,right:24,bottom:0,left:120}}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9"/>
@@ -871,10 +1064,16 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             </ResponsiveContainer>
           </div>
         </div>
-        {/* The 2x2 the fusion exists to produce. Two independent signals — the
-            contract record disagreeing with itself, and the award sitting with a
-            heavily concentrated contractor — measured to correlate at r = -0.12,
-            so "both" is genuinely narrower than either list on its own. */}
+        </Section>
+
+        <Section label="What to audit first" note="an ordering of the published record, not a prediction about the ground">
+        {/* The 2x2 the fusion exists to produce. Two signals that are not
+            proxies for each other — the contract record disagreeing with itself,
+            and the bidding pattern — computed to correlate at r = -0.26 across
+            all 1,293 contracts, so "both" is genuinely narrower than either list
+            on its own. The figure is exported as SIGNAL_CORRELATION rather than
+            written here by hand; two hand-written copies had already drifted to
+            two different wrong values. */}
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2 flex-wrap">
             <Layers size={14} className="text-[#1e3a7b]"/>
@@ -900,7 +1099,11 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                 An ordering, not a prediction: there is no public itemised list of confirmed
                 ghost projects to validate a ranking against.
               </div>
-              <table className="w-full text-[12px]">
+              <div className="overflow-x-auto">
+                {/* Scrolls rather than clips. The card around this table is
+                    overflow-hidden, so on a 390px phone columns four onward were
+                    not merely cramped, they were invisible and unreachable. */}
+              <table className="w-full text-[12px] min-w-[760px]">
                 <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Municipality","Contractor","Value","Signals","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
                 <tbody>
                   {PRIORITY.slice(0,8).map(f=>{
@@ -921,6 +1124,7 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                   })}
                 </tbody>
               </table>
+              </div>
             </>
           )}
         </div>
@@ -932,10 +1136,15 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
             <span className="text-[11px] font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded ml-1">{atRisk.length}</span>
           </div>
           {atRisk.length===0?<EmptyState title="No at-risk projects" body="All active projects are progressing on schedule."/>:(
-            <table className="w-full text-[12px]">
-              <thead><tr className="border-b border-gray-100 bg-gray-50">{["Project","Municipality","Contractor","Completion","Status","Imagery","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
+            <>
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
+              <thead><tr className="border-b border-gray-100 bg-gray-50">{["Project","Municipality","Contractor","Reported progress","Status","Imagery","Action"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
-                {atRisk.map(p=>(
+                {pg.paginate(atRisk).map(p=>(
                   <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3"><div className="font-medium text-gray-800">{p.name.slice(0,42)}{p.name.length>42?"…":""}</div><div className="text-[10px] font-mono text-gray-400">{p.id}</div></td>
                     <td className="px-4 py-3 text-gray-600">{p.municipality}</td>
@@ -946,15 +1155,20 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
                       const sat=SAT_BY_ID.get(p.id);
                       if(!sat) return <span className="text-[11px] text-gray-300">not assessed</span>;
                       const v=VERDICT_CFG[sat.verdict];
-                      return <span className="text-[11px] px-2 py-0.5 rounded font-medium" style={{background:v.bg,color:v.color}} title={v.note}>{v.short}</span>;
+                      return <span className="text-[11px] px-2 py-0.5 rounded font-medium" style={{background:tint(v.color),color:accent(v.color)}} title={v.note}>{v.short}</span>;
                     })()}</td>
                     <td className="px-4 py-3"><button onClick={()=>onViewDetail(p.id)} className="text-[#1e3a7b] text-[11px] font-medium flex items-center gap-1 hover:underline">Review<ArrowRight size={10}/></button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
+            <Pagination page={pg.page} totalPages={pg.totalPages} setPage={pg.setPage}
+              total={atRisk.length} pageSize={pg.pageSize}/>
+            </>
           )}
         </div>
+        </Section>
       </div>
     </div>
   );
@@ -962,23 +1176,40 @@ function DashboardScreen({onNavigate,onViewDetail}:{onNavigate:(s:Screen)=>void;
 
 // ─── Map Screen ───────────────────────────────────────────────────────────────
 
-function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role}) {
+function MapScreen({projects,onViewDetail,filters,onClearFilters,role,layers,colorBy}:{projects:Project[];onViewDetail:(id:string)=>void;filters:Filters;onClearFilters:()=>void;role:Role;layers:MapLayers;colorBy:string|null}) {
   const [selectedId,setSelectedId]=useState("");
+  const [briefFor,setBriefFor]=useState<Project|null>(null);
   const [viewMode,setViewMode]=useState<"map"|"list">("map");
   // Colour follows the filter unless the user overrides it: setting a delivery
   // filter and then having to pick "colour by delivery" separately is a step
   // that should not exist.
-  const [colorOverride,setColorOverride]=useState<string|null>(null);
   // The filter wins if it implies an encoding; otherwise the role's default —
   // an inspector opens on delivery, an analyst on flood exposure.
   const roleDefault=(ROLE_VIEWS[role]??ROLE_VIEWS["dpwh-admin"]).defaultEncoding;
+  // Site status unless the reader picks otherwise, or unless the filters they
+  // set imply a different question. The dots and the filter checkboxes have to
+  // agree out of the box; anything else is two legends contradicting each other.
+  const [replyFor,setReplyFor]=useState<Project|null>(null);
+  const [near,setNear]=useState<[number,number]|null>(null);
+  const [nearBusy,setNearBusy]=useState(false);
+  const [nearErr,setNearErr]=useState<string|null>(null);
+
+  /** The ten nearest contracts to the reader, measured not guessed. */
+  const nearest=useMemo(()=>{
+    if(!near) return [];
+    return projects
+      .filter(p=>p.lat!=null&&p.lng!=null)
+      .map(p=>({p,m:metresBetween(near,[p.lat!,p.lng!])}))
+      .sort((a,b)=>a.m-b.m).slice(0,10);
+  },[near,projects]);
+
   const suggested=suggestEncoding(filters as never);
-  const encKey=colorOverride??(suggested==="priority"?roleDefault:suggested);
+  const encKey=colorBy??(suggested==="priority"?roleDefault:suggested);
   const enc=ENCODING_BY_KEY.get(encKey)!;
   const legend=useMemo(()=>legendFor(enc,projects),[enc,projects]);
   const [q,setQ]=useState("");
   const sort=useSort<Project>();
-  const flagged=projects.filter(p=>p.status==="flagged").length;
+  const flagged=projects.filter(p=>p.auditFlags.length>0).length;
   const filtered=useMemo(()=>projects.filter(p=>!q||p.name.toLowerCase().includes(q.toLowerCase())||p.municipality.toLowerCase().includes(q.toLowerCase())),[projects,q]);
   const sorted=useMemo(()=>sort.apply(filtered),[filtered,sort.apply]);
   const pg=usePagination(filtered.length,8);
@@ -987,28 +1218,259 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
   const nActive=activeCount(filters);
 
   const SlidePanel=({project}:{project:Project})=>{
-    const c=STATUS_CFG[project.status];
+    const pr=PROC_BY_ID.get(project.id);
+    const hz=HAZARD_BY_ID.get(project.id);
+    const sat=SAT_BY_ID.get(project.id);
+    const docs=pr?(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>pr.documents[k]):[];
+    const flags=[...project.auditFlags.map(f=>({...f,label:FLAG_LABELS[f.code]??f.code})),
+                 ...(pr?.procurementFlags??[]).map(f=>({...f,label:PROC_FLAG_LABELS[f.code]??f.code}))];
+    const saved=pr?.abc&&pr?.awardAmount?pr.abc-pr.awardAmount:null;
+
+    const Section=({title,children}:{title:string;children:React.ReactNode})=>(
+      <section className="pt-4 mt-4 border-t border-gray-100 first:pt-0 first:mt-0 first:border-0">
+        <h4 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">{title}</h4>
+        {children}
+      </section>
+    );
+    const Fact=({l,v,sub}:{l:string;v:React.ReactNode;sub?:string})=>(
+      <div className="flex items-baseline justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+        <span className="text-[12px] text-gray-500 shrink-0">{l}</span>
+        <span className="text-right">
+          <span className="text-[13px] text-gray-900 font-medium">{v}</span>
+          {sub&&<span className="block text-[10px] text-gray-400 mt-0.5">{sub}</span>}
+        </span>
+      </div>
+    );
+    const dt=(d:string|null|undefined)=>d?new Date(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}):"—";
+
     return (
-      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col z-10" style={{width:296}}>
-        <div className="flex items-start gap-2 p-4 border-b border-gray-100">
-          <div className="flex-1 min-w-0"><div className="text-[10px] font-mono text-gray-400 mb-1">{project.id}</div><h3 className="text-[13px] font-bold text-gray-900 leading-snug">{project.name}</h3></div>
-          <button onClick={()=>setSelectedId("")} aria-label="Close panel" className="p-1 text-gray-400 hover:text-gray-600 rounded shrink-0"><X size={15}/></button>
-        </div>
-        <div className="h-28 relative" style={{background:"linear-gradient(135deg,#ccdce8,#dde6f0)"}}>
-          <svg viewBox="0 0 296 112" className="w-full h-full absolute inset-0"><rect width={296} height={112} fill="#cddde8"/><polygon points="38,4 42,24 46,54 42,88 38,112 75,112 130,108 158,94 162,72 160,52 154,34 122,18 84,8 55,6" fill="#dde6f0" stroke="#1e3a7b" strokeWidth={0.8}/>{(()=>{const{x,y}=toXY(project.lng,project.lat);const nx=(x/MB.W)*296,ny=(y/MB.H)*112;return(<><circle cx={nx} cy={ny} r={9} fill={c.dot} opacity={0.15}/><circle cx={nx} cy={ny} r={4.5} fill={c.dot} stroke="white" strokeWidth={1.5}/></>);})()}</svg>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3.5" style={{scrollbarWidth:"none"}}>
-          <div className="flex items-center gap-2 flex-wrap"><StatusBadge status={project.status}/>{project.status==="flagged"&&<span className="text-[11px] text-amber-600 flex items-center gap-1"><AlertTriangle size={11}/>Needs Review</span>}</div>
-          <AuditFlags project={project} compact/>
-          <div className="space-y-2.5">
-            {[{icon:<Building2 size={12} className="text-gray-400"/>,l:"Contractor",v:project.contractor},{icon:<MapPin size={12} className="text-gray-400"/>,l:"Location",v:`${project.municipality}, Bulacan`},{icon:<Banknote size={12} className="text-gray-400"/>,l:"Budget",v:pesoFull(project.budget),m:true}].map(({icon,l,v,m})=>(
-              <div key={l} className="flex items-start gap-2"><div className="mt-0.5 shrink-0">{icon}</div><div className="flex-1 min-w-0"><div className="text-[10px] text-gray-400">{l}</div><div className={`text-[12px] font-medium text-gray-800 ${m?"font-mono":""}`}>{v}</div></div></div>
-            ))}
-            <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 flex items-center gap-1"><Percent size={11}/>Completion</span><span className="text-[12px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+      <div className="absolute right-0 top-0 bottom-0 bg-white border-l border-gray-200 shadow-2xl flex flex-col" style={{width:440,zIndex:1000}}>
+        <div className="flex items-start gap-2 px-5 py-4 border-b border-gray-100 shrink-0">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-mono text-gray-400">{project.id}</div>
+            <h3 className="text-[14px] font-bold text-gray-900 leading-snug mt-1">{project.name}</h3>
+            <div className="text-[12px] text-gray-500 mt-1 flex items-center gap-1"><MapPin size={11}/>{project.municipality}, Bulacan</div>
+            <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+              <StatusBadge status={project.status}/>
+              {project.auditFlags.length>0&&(
+                <span className="text-[11px] px-2 py-0.5 rounded font-medium flex items-center gap-1" style={{background:tint("#c05621"),color:accent("#c05621")}}>
+                  <AlertTriangle size={10}/>Flagged for review
+                </span>
+              )}
+              {hz?.hazard&&hz.hazard!=="none"&&<span className="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-700">{hz.hazard} flood risk</span>}
+            </div>
           </div>
+          <button onClick={()=>setSelectedId("")} aria-label="Close panel" className="p-1 text-gray-400 hover:text-gray-600 rounded shrink-0"><X size={16}/></button>
         </div>
-        <div className="p-4 border-t border-gray-100">
-          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90 transition-opacity" style={{background:"#1e3a7b"}}>View Full Details<ArrowRight size={14}/></button>
+
+        {project.lat!=null&&project.lng!=null?(
+          <div className="border-b border-gray-100 shrink-0">
+            <ProjectMap project={project as Project&{lat:number;lng:number}} enc={enc} onPick={id=>setSelectedId(id)}/>
+            <div className="px-5 py-1.5 text-[10px] text-gray-400 flex items-center justify-between">
+              <span className="font-mono">{project.lat.toFixed(5)}, {project.lng.toFixed(5)}</span>
+              <span>nearby contracts are clickable</span>
+            </div>
+          </div>
+        ):(
+          <div className="border-b border-gray-100 px-5 py-6 text-center shrink-0">
+            <MapPin size={20} className="text-gray-300 mx-auto mb-1.5"/>
+            <div className="text-[12px] text-gray-600 font-medium">No location was published</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">so this contract cannot be found on the ground, or checked from a map</div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-5 py-4" style={{scrollbarWidth:"none"}}>
+          {/* Something to read before anything to scan. Everything in it is on
+              screen elsewhere; the point is a form a person can take in. */}
+          <p className="text-[13px] text-gray-700 leading-relaxed mb-3">{plainSummary(project)}</p>
+
+          <details className="mb-3.5 group">
+            <summary className="text-[11px] text-[#1e3a7b] cursor-pointer hover:underline">
+              Read the full contract description
+            </summary>
+            <p className="text-[12px] text-gray-600 leading-relaxed mt-1.5 pl-2 border-l-2 border-gray-100">
+              {project.description}
+            </p>
+          </details>
+
+          {/* The three numbers that answer "what did this cost and was it competed" */}
+          <div className="grid grid-cols-3 gap-2 mb-1">
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold text-gray-900">{pr?.awardAmount?peso(pr.awardAmount):"—"}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">awarded</div>
+            </div>
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold" style={{color:pr?.bidRatio&&Math.abs(pr.bidRatio*100-96)<0.01?accent("#c05621"):"var(--color-gray-900)"}}>
+                {pr?.bidRatio?`${(pr.bidRatio*100).toFixed(2)}%`:"—"}
+              </div>
+              <div className="text-[10px] text-gray-500 mt-0.5">of budget</div>
+            </div>
+            <div className="rounded bg-gray-50 p-2.5">
+              <div className="font-mono text-[15px] font-bold" style={{color:(pr?.bidders??0)===1?accent("#c0272d"):"var(--color-gray-900)"}}>{pr?.bidders??"—"}</div>
+              <div className="text-[10px] text-gray-500 mt-0.5">{pr?.bidders===1?"bidder":"bidders"}</div>
+            </div>
+          </div>
+
+          {flags.length>0&&(
+            <Section title={`What's flagged — ${flags.length}`}>
+              <div className="space-y-2">
+                {flags.map(f=>{
+                  const sv=SEVERITY_CFG[f.severity];
+                  return (
+                    <div key={f.code} className="rounded border px-3 py-2.5" style={{background:sv.bg,borderColor:sv.color+"33"}}>
+                      <div className="text-[12px] font-semibold mb-1" style={{color:sv.color}}>{f.label}</div>
+                      <div className="text-[11px] text-gray-700 leading-relaxed">{f.detail}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 leading-relaxed mt-2">
+                A flag means the public record disagrees with itself. It is a reason to look,
+                not proof that anything was done wrong.
+              </p>
+            </Section>
+          )}
+
+          <Section title="The contract">
+            <Fact l="Contractor" v={project.contractor.replace(/\s*\(.*$/,"")}/>
+            <Fact l="Approved budget" v={pr?.abc?pesoFull(pr.abc):"—"}/>
+            <Fact l="Awarded for" v={pr?.awardAmount?pesoFull(pr.awardAmount):"—"}
+              sub={saved?`₱${saved.toLocaleString("en-PH",{maximumFractionDigits:0})} below the approved budget`:undefined}/>
+            <Fact l="Reported progress" v={`${project.completion}%`}/>
+            {/* What the contract says it covers. The map draws this as a circle;
+                the number belongs here so the two agree. */}
+            {/* Always shown, including when it is absent. Only 224 of 1,293
+                contracts state chainage, and silently omitting the row made a
+                missing extent look identical to a page that had not loaded. */}
+            <Fact l="Stated extent"
+              v={(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null
+                ? `${(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m`
+                : <span className="text-gray-400">not published</span>}/>
+            {/* The contract's own quantities, split by what can be seen. This
+                is the only thing in the panel that says what SHOULD be here
+                rather than what the register says about it. */}
+            <div className="col-span-2 mt-1"><WhatThePaperSays contractId={project.id}/></div>
+
+            {/* Eye level, where a sky view stops being able to help. */}
+            {project.lat!=null&&project.lng!=null&&(
+              <div className="col-span-2 mt-1"><StreetLevel lat={project.lat} lng={project.lng}/></div>
+            )}
+            {/* A route for the people named here to answer. Placed with the
+                contract facts rather than buried, because the party best placed
+                to correct a coordinate is the firm that built at it. */}
+            <div className="col-span-2 mt-1">
+              <button onClick={()=>setReplyFor(project)}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded border border-gray-200 text-[11px] text-gray-600 hover:bg-gray-50">
+                <MessageSquareWarning size={12}/>Is something here wrong? Answer this record
+              </button>
+            </div>
+            {/* What the yellow shape on the map is, and how far to trust it. The
+                corridor's direction comes from OSM channel geometry, not from
+                DPWH, so the channel it was derived from is named and the
+                distance to it is given — a corridor built off a channel 300 m
+                away is a much weaker claim than one the point sits on. */}
+            {(()=>{const sc=SCOPE_BY_ID.get(project.id); if(!sc) return null;
+              const weak=sc.metresToWaterway>100;
+              return (
+                <div className="col-span-2 mt-1 rounded border px-2.5 py-2 text-[11px] leading-relaxed"
+                  style={{background:tint("#b45309",10),borderColor:tint("#b45309",34),color:"var(--color-gray-700)"}}>
+                  <strong>The yellow shape is an estimate.</strong> {sc.coveredMetres.toLocaleString()} m
+                  along {sc.waterwayName?<>the <strong>{sc.waterwayName}</strong></>:<>an unnamed {sc.waterwayClass??"channel"}</>},
+                  centred on the published point. The register gives a length but no direction, so the
+                  line of it comes from OpenStreetMap, not from DPWH.
+                  <div className="mt-1" style={{color:weak?accent("#c0272d"):"var(--color-gray-500)"}}>
+                    {weak
+                      ? `The nearest mapped channel is ${sc.metresToWaterway} m away — far enough that this corridor may follow the wrong watercourse, and far enough to be worth asking about on its own.`
+                      : `Nearest mapped channel is ${sc.metresToWaterway} m from the point.`}
+                    {sc.coveredMetres<sc.lengthMetres-20&&` The mapped channel ran out, so ${sc.coveredMetres} m of the stated ${sc.lengthMetres} m is drawn.`}
+                  </div>
+                </div>
+              );})()}
+            <Fact l="Funding source" v={<span className="text-[12px]">{project.fundingSource}</span>}/>
+          </Section>
+
+          {pr&&pr.bidderList&&pr.bidderList.length>0&&(
+            <Section title={`Who bid — ${pr.bidderList.length}`}>
+              <div className="space-y-1">
+                {pr.bidderList.map((b,i)=>(
+                  <div key={`${b.pcab??b.name}-${i}`} className="flex items-baseline gap-2 py-1.5 border-b border-gray-50 last:border-0">
+                    <span className={`text-[12px] flex-1 ${b.won?"font-semibold text-gray-900":"text-gray-600"}`}>{b.name||"(unnamed)"}</span>
+                    {b.won&&<span className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0" style={{background:tint("#046b04"),color:accent("#046b04")}}>won</span>}
+                    {b.pcab&&<span className="text-[10px] font-mono text-gray-400 shrink-0">PCAB {b.pcab}</span>}
+                  </div>
+                ))}
+              </div>
+              {pr.bidderList.length===1&&(
+                <p className="text-[10px] text-gray-400 leading-relaxed mt-2">
+                  Nobody else bid. Nationally, 9% of flood-control contracts are awarded
+                  without a competing bid.
+                </p>
+              )}
+            </Section>
+          )}
+
+          <Section title="Timeline">
+            <div className="space-y-0">
+              {[["Advertised",pr?.advertisementDate],["Awarded",pr?.dateOfAward],
+                ["Started",project.startDate],["Due to finish",project.endDate]].map(([l,d],i,arr)=>(
+                <div key={l as string} className="flex gap-3">
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-2 h-2 rounded-full mt-1.5" style={{background:d?"#1e3a7b":"#e5e7eb"}}/>
+                    {i<arr.length-1&&<div className="w-px flex-1 bg-gray-200 my-0.5"/>}
+                  </div>
+                  <div className="pb-3 flex-1 flex items-baseline justify-between gap-2">
+                    <span className="text-[12px] text-gray-500">{l as string}</span>
+                    <span className="text-[12px] font-mono text-gray-800">{dt(d as string)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          <Section title={`Documents — ${docs.length}`}>
+            {docs.length?(
+              <div className="space-y-1">
+                {docs.map(k=>(
+                  <a key={k} href={pr!.documents[k]!} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2.5 px-3 py-2.5 rounded border border-gray-100 hover:border-[#1e3a7b]/30 hover:bg-blue-50/30 text-[12px] text-gray-700">
+                    <FileText size={14} style={{color:"#1e3a7b"}}/><span className="flex-1">{DOC_LABELS[k]}</span><ExternalLink size={11} className="text-gray-300"/>
+                  </a>
+                ))}
+              </div>
+            ):<div className="text-[12px] text-gray-400">None published for this contract</div>}
+          </Section>
+
+          {(hz||sat)&&(
+            <Section title="On the ground">
+              {hz&&hz.level!=null&&(
+                <Fact l="Flood risk at this spot"
+                  v={hz.level>0?`${hz.hazard} hazard`:"outside the flood model"}
+                  sub={hz.level===0&&hz.metresToHazard!=null?`${hz.metresToHazard.toLocaleString()} m from the nearest flood-prone area`:undefined}/>
+              )}
+              {sat&&(
+                <div className="mt-2 rounded border px-3 py-2.5" style={{background:tint(VERDICT_CFG[sat.verdict].color),borderColor:tint(VERDICT_CFG[sat.verdict].color,38)}}>
+                  <div className="text-[12px] font-semibold mb-1" style={{color:VERDICT_CFG[sat.verdict].color}}>{VERDICT_CFG[sat.verdict].label}</div>
+                  <div className="text-[11px] text-gray-600 leading-relaxed">{VERDICT_CFG[sat.verdict].note}</div>
+                </div>
+              )}
+            </Section>
+          )}
+        </div>
+
+        <div className="px-5 py-3.5 border-t border-gray-100 shrink-0 space-y-2">
+          {project.lat!=null&&project.lng!=null&&(
+            <div className="flex gap-2">
+              <a href={`https://www.google.com/maps/search/?api=1&query=${project.lat},${project.lng}`} target="_blank" rel="noreferrer"
+                className="flex-1 py-2 rounded border border-gray-200 text-[12px] text-gray-600 flex items-center justify-center gap-1.5 hover:border-[#1e3a7b]/40 hover:text-[#1e3a7b]">
+                <MapPin size={12}/>Navigate
+              </a>
+              <button onClick={()=>setBriefFor(project)}
+                className="flex-1 py-2 rounded border border-gray-200 text-[12px] text-gray-600 flex items-center justify-center gap-1.5 hover:border-[#1e3a7b]/40 hover:text-[#1e3a7b]">
+                <FileText size={12}/>Field brief
+              </button>
+            </div>
+          )}
+          <button onClick={()=>onViewDetail(project.id)} className="w-full py-2.5 rounded text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:opacity-90" style={{background:"var(--masid-navy)"}}>Open full record<ArrowRight size={14}/></button>
         </div>
       </div>
     );
@@ -1044,40 +1506,79 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
 
       {viewMode==="map"?(
         <div className="flex-1 relative overflow-hidden">
-          <MapSVG projects={filtered} selectedId={selectedId} onSelect={setSelectedId} enc={enc}/>
-          <div className="absolute left-3 bottom-8 flex flex-col gap-1">
-            <button aria-label="Zoom in"  className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomIn  size={14}/></button>
-            <button aria-label="Zoom out" className="w-8 h-8 bg-white border border-gray-200 rounded shadow-sm flex items-center justify-center text-gray-500 hover:bg-gray-50"><ZoomOut size={14}/></button>
-          </div>
-          <div className="absolute bottom-8 right-3 bg-white/95 border border-gray-200 rounded shadow-sm p-3 backdrop-blur-sm" style={{maxWidth:250}} role="group" aria-label="Map legend">
-            <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Colour by</label>
-            <select value={encKey} onChange={e=>setColorOverride(e.target.value)}
-              className="w-full text-[12px] border border-gray-200 rounded px-2 py-1 bg-white mb-2 focus:outline-none focus:border-[#1e3a7b]">
-              {ENCODINGS.map(o=><option key={o.key} value={o.key}>{o.label}</option>)}
-            </select>
-            {/* Counts and words carry the meaning, not the colour on its own —
-                the palette clears every CVD gate but sits below 3:1 against the
-                basemap, and a labelled legend is the method's relief for that. */}
-            <div className="space-y-1">
-              {legend.map(b=>(
-                <div key={b.key} className={`flex items-center gap-2 ${b.n===0?"opacity-40":""}`}>
-                  <svg width={14} height={14} viewBox="-7 -7 14 14" className="shrink-0" aria-hidden>
-                    <path d={markPath(b.shape,5)} fill={b.color} stroke={BASEMAP.surface} strokeWidth={1.5} strokeLinejoin="round"/>
-                  </svg>
-                  <span className="text-[11px] text-gray-600 flex-1 leading-tight">{b.label}</span>
-                  <span className="text-[10px] font-mono text-gray-400 tabular-nums">{b.n.toLocaleString()}</span>
+          {/*
+            The question an ordinary person actually arrives with.
+
+            Until now the only way in was a contract id or 1,293 rows of table —
+            fine for an auditor, useless for someone who wants to know what was
+            built on their own barangay's riverbank. The device already knows
+            where it is, and every contract has a coordinate, so the answer is
+            one tap away and was simply never offered.
+          */}
+          <button onClick={()=>{
+              if(!navigator.geolocation){setNearErr("This browser will not share a location.");return;}
+              setNearBusy(true); setNearErr(null);
+              navigator.geolocation.getCurrentPosition(
+                pos=>{ setNearBusy(false); setNear([pos.coords.latitude,pos.coords.longitude]); },
+                ()=>{ setNearBusy(false); setNearErr("Location permission was declined, so nothing can be measured from where you are."); },
+                {enableHighAccuracy:true,timeout:10000});
+            }}
+            className="absolute left-3 bottom-3 flex items-center gap-1.5 px-3 py-2 rounded shadow-lg text-[12px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+            style={{background:"var(--masid-navy)",zIndex:900}} disabled={nearBusy}>
+            <MapPin size={13}/>{nearBusy?"Finding you…":near?"Update my location":"What is near me?"}
+          </button>
+          <LeafletMap projects={layers.markers?filtered:[]} enc={enc} selectedId={selectedId}
+            onSelect={setSelectedId} showBoundaries={layers.boundaries}
+            cluster={layers.cluster}/>
+          {(near||nearErr)&&(
+            <div className="absolute left-3 bottom-16 bg-white rounded border border-gray-200 shadow-xl overflow-hidden"
+              style={{zIndex:900,width:320,maxHeight:"48vh"}}>
+              <div className="px-3 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+                <MapPin size={12} className="text-[#1e3a7b]"/>
+                <span className="text-[12px] font-bold text-gray-700">Nearest to you</span>
+                <button onClick={()=>{setNear(null);setNearErr(null);}}
+                  className="ml-auto p-0.5 text-gray-400 hover:text-gray-600"><X size={13}/></button>
+              </div>
+              {nearErr?(
+                <p className="px-3 py-3 text-[12px] text-gray-600 leading-relaxed">{nearErr}</p>
+              ):(
+                <div className="overflow-y-auto" style={{maxHeight:"40vh"}}>
+                  {nearest.map(({p,m})=>(
+                    <button key={p.id} onClick={()=>setSelectedId(p.id)}
+                      className="w-full text-left px-3 py-2 border-b border-gray-50 hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{background:colorOf(p,enc)}}/>
+                        <span className="font-mono text-[10px] text-gray-500">{p.id}</span>
+                        <span className="ml-auto font-mono text-[11px] font-semibold text-gray-700">
+                          {m<1000?`${m} m`:`${(m/1000).toFixed(1)} km`}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gray-700 leading-tight mt-0.5">
+                        {p.municipality} · {p.description.slice(0,54)}…
+                      </div>
+                    </button>
+                  ))}
+                  {nearest.length===0&&(
+                    <p className="px-3 py-3 text-[12px] text-gray-500">
+                      No contract in the current filters has a coordinate to measure against.
+                    </p>
+                  )}
                 </div>
-              ))}
+              )}
+              <p className="px-3 py-2 text-[10px] text-gray-400 leading-relaxed border-t border-gray-100">
+                Straight-line distance from your device to the coordinate DPWH published. Your
+                location is used in this browser only and is not sent anywhere.
+              </p>
             </div>
-            <p className="text-[10px] text-gray-400 mt-2 leading-snug">{enc.note}</p>
-            {colorOverride&&<button onClick={()=>setColorOverride(null)} className="text-[10px] text-[#1e3a7b] hover:underline mt-1">follow filter</button>}
-          </div>
+          )}
           {filtered.length===0&&(
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-              <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={()=>(Object.keys(filters) as ProjectStatus[]).forEach(k=>!filters[k]&&onToggleStatus(k))}/>
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80" style={{zIndex:900}}>
+              <EmptyState title="No projects match your filters" body="Try adjusting the status or municipality filters in the sidebar." action="Reset Filters" onAction={onClearFilters}/>
             </div>
           )}
           {selected&&<SlidePanel project={selected}/>}
+          {briefFor&&<InspectionBrief project={briefFor} onClose={()=>setBriefFor(null)}/>}
+          {replyFor&&<RightOfReply contractId={replyFor.id} contractName={replyFor.name} onClose={()=>setReplyFor(null)}/>}
         </div>
       ):(
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -1085,7 +1586,11 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
             {filtered.length===0?(
               <EmptyState title="No projects found" body={q?`No results for "${q}"`:"No projects match the current filters."} action={q?"Clear search":undefined} onAction={q?()=>setQ(""):undefined}/>
             ):(
-              <table className="w-full text-[13px] border-collapse">
+              <div className="overflow-x-auto">
+                {/* Scrolls rather than clips. The card around this table is
+                    overflow-hidden, so on a 390px phone columns four onward were
+                    not merely cramped, they were invisible and unreachable. */}
+              <table className="w-full text-[13px] border-collapse min-w-[760px]">
                 <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                   <tr>
                     <SortTh col={"name" as keyof Project}         label="Project"      sortKey={sort.sortKey as keyof Project|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Project)=>void}/>
@@ -1111,6 +1616,7 @@ function MapScreen({projects,onViewDetail,filters,onClearFilters,role}:{projects
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
           <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
@@ -1146,7 +1652,7 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button className="flex items-center gap-1.5 px-3 py-2 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export</button>
-            <button onClick={()=>toast.success("Edit mode enabled")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><Edit2 size={13}/>Edit</button>
+            <button onClick={()=>toast.success("Edit mode enabled")} className="flex items-center gap-1.5 px-3 py-2 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><Edit2 size={13}/>Edit</button>
           </div>
         </div>
         {project.auditFlags.length>0&&<div className="ml-11 mt-3"><AuditFlags project={project}/></div>}
@@ -1188,7 +1694,20 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
               <dl className="p-4 space-y-3.5">
                 {[{l:"Contractor",v:project.contractor},{l:"Municipality",v:`${project.municipality}, Bulacan`},{l:"Funding Source",v:project.fundingSource}].map(({l,v})=>(<div key={l}><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">{l}</dt><dd className="text-[13px] font-medium text-gray-800">{v}</dd></div>))}
                 <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Contract Amount</dt><dd className="text-[17px] font-mono font-bold text-gray-900">{pesoFull(project.budget)}</dd></div>
-                <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 uppercase tracking-wider">Completion</span><span className="text-[13px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={project.completion} aria-valuemin={0} aria-valuemax={100}><div className="h-2 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+                <div><div className="flex items-center justify-between mb-1.5"><span className="text-[10px] text-gray-400 uppercase tracking-wider" title="The percentage DPWH publishes. Not an observation of the site.">Reported progress</span><span className="text-[13px] font-mono font-bold" style={{color:c.dot}}>{project.completion}%</span></div><div className="w-full bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={project.completion} aria-valuemin={0} aria-valuemax={100}><div className="h-2 rounded-full" style={{width:`${project.completion}%`,background:c.dot}}/></div></div>
+                {/* What the contract claims to cover. The detail map draws this
+                    as a circle; the number belongs beside it so the two agree. */}
+                <div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Stated extent</dt>
+                  <dd className="text-[13px] font-mono text-gray-800">
+                    {(project as unknown as {lengthMetres?:number|null}).lengthMetres!=null?(<>
+                      {(project as unknown as {lengthMetres:number}).lengthMetres.toLocaleString()} m
+                      {(project as unknown as {stationFrom?:string|null}).stationFrom&&(
+                        <span className="text-[11px] text-gray-400 ml-1.5">
+                          STA {(project as unknown as {stationFrom:string}).stationFrom} → {(project as unknown as {stationTo:string}).stationTo}
+                        </span>
+                      )}
+                    </>):<span className="text-[12px] text-gray-400">not published</span>}
+                  </dd></div>
                 <div className="grid grid-cols-2 gap-3"><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Start (NTP)</dt><dd className="text-[12px] font-mono text-gray-700">{project.startDate??"—"}</dd></div><div><dt className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">Target End</dt><dd className="text-[12px] font-mono text-gray-700">{project.endDate??"—"}</dd></div></div>
               </dl>
             </div>
@@ -1246,7 +1765,7 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
                 const r30=sat.rings.r30, r150=sat.rings.r150;
                 return (
                   <div className="max-w-2xl space-y-4">
-                    <div className="rounded border p-3.5" style={{background:cfg.bg,borderColor:cfg.color+"44"}}>
+                    <div className="rounded border p-3.5" style={{background:tint(cfg.color),borderColor:tint(cfg.color,42)}}>
                       <div className="text-[12px] font-bold mb-1" style={{color:cfg.color}}>{cfg.label}</div>
                       <p className="text-[12px] text-gray-700 leading-relaxed">{sat.detail}</p>
                     </div>
@@ -1284,189 +1803,9 @@ function ProjectDetailScreen({project,onBack,onOpenSatellite}:{project:Project;o
 
 // ─── Satellite Screen ─────────────────────────────────────────────────────────
 
-function SatelliteScreen({project}:{project:Project|null}) {
-  const sat=project?SAT_BY_ID.get(project.id):undefined;
-  const cfg=sat?VERDICT_CFG[sat.verdict]:null;
-  const radii=[30,90,150];
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5 shrink-0 flex items-center gap-3">
-        <Satellite size={18} style={{color:"#1e3a7b"}}/>
-        <div>
-          <div className="text-[14px] font-bold text-gray-900">Satellite Monitoring</div>
-          <div className="text-[12px] text-gray-500">{project?.name.slice(0,70)??"Select a project"} · Sentinel-2 L2A, 10 m · {SATELLITE.source.access}</div>
-        </div>
-        {cfg&&<span className="ml-auto text-[11px] font-semibold px-2.5 py-1 rounded" style={{background:cfg.bg,color:cfg.color}}>{cfg.short.toUpperCase()}</span>}
-      </div>
-      <div className="flex-1 overflow-auto p-6" style={{scrollbarWidth:"none"}}>
-        <div className="max-w-4xl mx-auto space-y-4">
-
-          {/* The control sample measured this method against itself. If it cannot
-              separate flagged records from ordinary ones, that has to be the first
-              thing anyone reads — before any individual verdict. */}
-          <div className="rounded border p-4" style={VALIDATION.discriminates
-            ? {background:"#f0fdf4",borderColor:"#86efac"}
-            : {background:"#fef2f2",borderColor:"#fca5a5"}}>
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" style={{color:VALIDATION.discriminates?"#15803d":"#b91c1c"}}/>
-              <div className="min-w-0">
-                <div className="text-[12px] font-bold mb-1" style={{color:VALIDATION.discriminates?"#15803d":"#b91c1c"}}>
-                  Method validation — {VALIDATION.discriminates?"detector separates flagged from control":"no measured discriminative power"}
-                </div>
-                <p className="text-[12px] text-gray-700 leading-relaxed">{VALIDATION.verdict}</p>
-                <div className="flex gap-5 mt-2.5 text-[11px] font-mono text-gray-600 flex-wrap">
-                  <span>flagged <strong>{VALIDATION.flagged.detections}/{VALIDATION.flagged.assessed}</strong> ({((VALIDATION.flagged.rate??0)*100).toFixed(1)}%)</span>
-                  <span>seeded control <strong>{VALIDATION.control.detections}/{VALIDATION.control.assessed}</strong> ({((VALIDATION.control.rate??0)*100).toFixed(1)}%)</span>
-                  <span>median σ at 30 m — flagged {VALIDATION.flagged.medianZNdvi30m}, control {VALIDATION.control.medianZNdvi30m}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {!project&&<EmptyState title="No project selected" body="Open a project from the map or list to see its imagery assessment."/>}
-
-          {project&&!sat&&(
-            <div className="bg-white rounded border border-gray-200 p-5">
-              <div className="text-[14px] font-bold text-gray-800 mb-1">Not assessed</div>
-              <p className="text-[13px] text-gray-500 leading-relaxed">
-                This contract is not in the assessed subset. The satellite tier runs on an
-                audit-priority selection — the highest-scoring flagged records plus a seeded
-                control sample — so that flagged and unflagged records are measured the same
-                way. {SATELLITE.coverage.assessed} of {SATELLITE.coverage.total.toLocaleString()} records
-                have been assessed so far. Raise <code className="font-mono">--limit</code> on
-                <code className="font-mono"> pipeline/satellite.py</code> to extend coverage;
-                results cache, so only new records are fetched.
-              </p>
-            </div>
-          )}
-
-          {sat&&cfg&&(
-            <>
-              <div className="rounded border p-4" style={{background:cfg.bg,borderColor:cfg.color+"44"}}>
-                <div className="flex items-start gap-2.5">
-                  <Satellite size={15} className="shrink-0 mt-0.5" style={{color:cfg.color}}/>
-                  <div>
-                    <div className="text-[13px] font-bold mb-1" style={{color:cfg.color}}>{cfg.label}</div>
-                    <p className="text-[12px] text-gray-700 leading-relaxed">{sat.detail}</p>
-                    <p className="text-[11px] text-gray-500 leading-relaxed mt-2">{cfg.note}</p>
-                  </div>
-                </div>
-              </div>
-
-              {sat.chips&&(
-                <div className="bg-white rounded border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center gap-3 flex-wrap">
-                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">NDVI, before and after</span>
-                    <span className="text-[11px] text-gray-400">· rings mark the 30 / 90 / 150 m sampling radii, cross marks the published coordinate</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 p-4">
-                    {([["before","Before construction",sat.scenesBefore],["after","After completion",sat.scenesAfter]] as const).map(([k,label,scenes])=>(
-                      <figure key={k} className="m-0">
-                        <img src={sat.chips![k]} alt={`NDVI composite ${label.toLowerCase()} for ${project.id}`}
-                          className="w-full rounded border border-gray-200" style={{imageRendering:"pixelated",aspectRatio:"1"}}/>
-                        <figcaption className="mt-2">
-                          <div className="text-[12px] font-semibold text-gray-700">{label}</div>
-                          <div className="text-[10px] font-mono text-gray-400 truncate" title={scenes.join(", ")}>{scenes.length} scene{scenes.length===1?"":"s"} · median composite</div>
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                  <div className="px-4 pb-3 flex items-center gap-3 flex-wrap text-[10px] text-gray-400">
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-8 h-2.5 rounded-sm" style={{background:"linear-gradient(90deg,#6e4a2e,#a68a6a,#ded8c6,#96be78,#40914a,#12522c)"}}/>bare ground → dense vegetation</span>
-                    <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{background:"#8c8f94"}}/>cloud-masked, no clear observation</span>
-                    <span>· 1 px = 10 m</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded border border-gray-200 p-4">
-                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Change by sampling radius</div>
-                <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                  Each figure is the local change from the pre-construction period to the
-                  post-completion period, measured against a bootstrap null: {String(SATELLITE.method.nullSamples)} discs
-                  of the same radius dropped at random in this site&apos;s own 300–600 m annulus.
-                  &ldquo;Rank vs null&rdquo; is where the real disc falls among them. Construction reads
-                  as NDVI down and NDBI up; both must pass {String(SATELLITE.method.ndviZThreshold)}σ / +{String(SATELLITE.method.ndbiZThreshold)}σ to count.
-                </p>
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      {["Radius","ΔNDVI","σ","ΔNDBI","σ","Rank vs null","Reads as"].map(h=>(
-                        <th key={h} className="text-left py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {radii.map(r=>{
-                      const v=sat.rings[`r${r}`];
-                      if(!v) return (
-                        <tr key={r} className="border-b border-gray-50">
-                          <td className="py-2.5 font-mono">{r} m</td>
-                          <td colSpan={6} className="py-2.5 text-gray-300">not enough clear pixels</td>
-                        </tr>
-                      );
-                      const hit=v.zNdvi<=Number(SATELLITE.method.ndviZThreshold)&&v.zNdbi>=Number(SATELLITE.method.ndbiZThreshold);
-                      return (
-                        <tr key={r} className="border-b border-gray-50">
-                          <td className="py-2.5 font-mono text-gray-700">{r} m</td>
-                          <td className="py-2.5 font-mono" style={{color:v.dNdvi<0?"#15803d":"#64748b"}}>{v.dNdvi>=0?"+":""}{v.dNdvi.toFixed(3)}</td>
-                          <td className="py-2.5 font-mono text-gray-500">{v.zNdvi>=0?"+":""}{v.zNdvi.toFixed(2)}</td>
-                          <td className="py-2.5 font-mono" style={{color:v.dNdbi>0?"#b45309":"#64748b"}}>{v.dNdbi>=0?"+":""}{v.dNdbi.toFixed(3)}</td>
-                          <td className="py-2.5 font-mono text-gray-500">{v.zNdbi>=0?"+":""}{v.zNdbi.toFixed(2)}</td>
-                          <td className="py-2.5 font-mono text-gray-500" title="Share of randomly placed same-radius discs showing less NDVI change than this one">{(v.pctNdvi*100).toFixed(0)}th pct</td>
-                          <td className="py-2.5">{hit
-                            ?<span className="text-[11px] px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-700">construction-consistent</span>
-                            :<span className="text-[11px] text-gray-400">below threshold</span>}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded border border-gray-200 p-4">
-                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Assessment Quality</div>
-                  <dl className="space-y-2.5">
-                    {[
-                      {l:"Confidence",v:sat.confidence},
-                      {l:"Cloud-free fraction",v:`${Math.round(sat.cloudFreeFraction*100)}%`},
-                      {l:"Null discs sampled",v:sat.control?String(sat.control.nullDiscs):"—"},
-                      {l:"Method validated",v:VALIDATION.discriminates?"yes":"no — see banner"},
-                    ].map(({l,v})=>(
-                      <div key={l} className="flex items-center justify-between">
-                        <dt className="text-[12px] text-gray-500">{l}</dt>
-                        <dd className="text-[12px] font-mono font-medium text-gray-800">{v}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-                <div className="bg-white rounded border border-gray-200 p-4">
-                  <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Scenes Used</div>
-                  <div className="space-y-2 text-[11px] font-mono text-gray-600">
-                    <div><span className="text-gray-400 not-italic font-sans">Before · </span>{sat.scenesBefore.length?sat.scenesBefore.join(", "):"—"}</div>
-                    <div><span className="text-gray-400 font-sans">After · </span>{sat.scenesAfter.length?sat.scenesAfter.join(", "):"—"}</div>
-                  </div>
-                  <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
-                    Copernicus Sentinel data (ESA), retrieved from AWS Open Data via Earth Search. No account required.
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="text-[11px] text-gray-400 leading-relaxed border-t border-gray-100 pt-3">
-            <strong className="text-gray-500">What this cannot do.</strong> Sentinel-2 resolves 10 m
-            per pixel. A revetment two metres wide, a drainage line, a repair to an existing structure,
-            or any work on ground that was already bare will produce no signal at all. A &ldquo;no signal&rdquo;
-            result narrows where to look; it does not establish that nothing was built. Field inspection
-            and sub-metre imagery remain the only ways to settle an individual case.
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// SatelliteScreen now lives in src/app/SatelliteScreen.tsx — a browsable
+// workbench rather than a view that only worked if you arrived carrying a
+// selection.
 
 // ─── Documents Screen ─────────────────────────────────────────────────────────
 
@@ -1481,7 +1820,7 @@ function DocumentsScreen() {
     .filter(({r,p})=>p&&Object.values(r.documents).some(Boolean)&&
       (!q||r.id.toLowerCase().includes(q.toLowerCase())||p!.description.toLowerCase().includes(q.toLowerCase())))
   ,[q]);
-  const pg=usePagination(rows.length,10);
+  const pg=usePagination(rows.length,12);
   const counts=(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[])
     .map(k=>({k,n:PROCUREMENT.results.filter(r=>r.documents[k]).length}));
   return (
@@ -1512,20 +1851,25 @@ function DocumentsScreen() {
           and plans.
         </p>
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
-          <table className="w-full text-[12px]">
+          <div className="overflow-x-auto">
+            {/* Scrolls rather than clips. The card around this table is
+                overflow-hidden, so on a 390px phone columns four onward were
+                not merely cramped, they were invisible and unreachable. */}
+          <table className="w-full text-[12px] min-w-[760px]">
             <thead><tr className="border-b border-gray-100 bg-gray-50">{["Contract","Description","Award","Documents"].map(h=><th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
             <tbody>
               {pg.paginate(rows).map(({r,p})=>(
                 <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 align-top">
-                  <td className="px-4 py-3 font-mono text-[11px] text-gray-600">{r.id}</td>
-                  <td className="px-4 py-3 text-gray-700 max-w-md">{p!.description.slice(0,95)}{p!.description.length>95?"…":""}</td>
-                  <td className="px-4 py-3 font-mono whitespace-nowrap">{r.awardAmount?pesoFull(r.awardAmount):"—"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1.5">
+                  <td className="px-4 py-2.5 font-mono text-[11px] text-gray-600 align-middle">{r.id}</td>
+                  <td className="px-4 py-2.5 text-gray-700 max-w-sm truncate" title={p!.description}>{p!.description}</td>
+                  <td className="px-4 py-2.5 font-mono whitespace-nowrap align-middle">{r.awardAmount?peso(r.awardAmount):"—"}</td>
+                  <td className="px-4 py-2.5 align-middle">
+                    <div className="flex flex-wrap gap-1">
                       {(Object.keys(DOC_LABELS) as (keyof typeof DOC_LABELS)[]).filter(k=>r.documents[k]).map(k=>(
                         <a key={k} href={r.documents[k]!} target="_blank" rel="noreferrer"
-                          className="text-[10px] px-2 py-1 rounded border border-gray-200 text-[#1e3a7b] hover:bg-blue-50 hover:border-[#1e3a7b]/30 flex items-center gap-1">
-                          <FileText size={10}/>{DOC_LABELS[k]}<ExternalLink size={9}/>
+                          title={DOC_LABELS[k]}
+                          className="text-[10px] px-1.5 py-0.5 rounded border border-gray-200 text-[#1e3a7b] hover:bg-blue-50 hover:border-[#1e3a7b]/30 flex items-center gap-1">
+                          <FileText size={9}/>{DOC_LABELS[k].replace("Invitation to bid, BOQ and plans","Bid docs").replace("Contract agreement","Contract").replace("Notice of award","NOA").replace("Notice to proceed","NTP")}
                         </a>
                       ))}
                     </div>
@@ -1534,12 +1878,130 @@ function DocumentsScreen() {
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={pg.page} totalPages={Math.ceil(rows.length/pg.pageSize)} setPage={pg.setPage} total={rows.length} pageSize={pg.pageSize}/>
         </div>
       </div>
     </div>
   );
 }
+
+// Lost in an over-wide slice when the satellite screen was extracted, and only
+// surfaced by clicking the tab — the build passed the whole time.
+function ContractorsScreen() {
+  const [q,setQ]=useState("");
+  const [selected,setSelected]=useState<Contractor|null>(null);
+  const sort=useSort<Contractor>();
+  const filtered=useMemo(()=>CONTRACTORS.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())||c.municipalities.some(m=>m.toLowerCase().includes(q.toLowerCase()))),[q]);
+  const sorted=useMemo(()=>sort.apply(filtered),[filtered,sort.apply]);
+  const pg=usePagination(filtered.length,8);
+  // PCAB licence class, GPPB blacklisting and performance ratings are not in any
+  // public dataset, so this registry carries only what the award records prove:
+  // who won what, where, when, and how often their records fail a check.
+  const FlagRate=({rate}:{rate:number})=>{
+    const c=rate>=0.5?"#b91c1c":rate>=0.25?"#b45309":"#15803d";
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="h-1.5 rounded-full" style={{width:`${Math.max(rate*100,rate>0?4:0)}%`,background:c}}/></div>
+        <span className="font-mono text-[11px]" style={{color:c}}>{Math.round(rate*100)}%</span>
+      </div>
+    );
+  };
+  return (
+    <div className="flex-1 flex overflow-hidden bg-white">
+      <div className={`flex flex-col border-r border-gray-200 ${selected?"w-3/5":"flex-1"}`}>
+        <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+          <h2 className="text-[14px] font-bold text-gray-900">Contractor Registry</h2>
+          <span className="text-[11px] font-mono bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{CONTRACTORS.length}</span>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="relative"><Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search name or municipality…" aria-label="Search contractors" className="pl-7 pr-3 py-1.5 text-[12px] border border-gray-200 rounded bg-gray-50 w-52 focus:outline-none focus:border-[#1e3a7b]"/></div>
+            <span className="text-[11px] text-gray-400">Derived from award records · rebuild with <code className="font-mono">pipeline/build_dataset.py</code></span>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto" style={{scrollbarWidth:"none"}}>
+          {filtered.length===0?<EmptyState title="No contractors found" body={`No results for "${q}"`} action="Clear search" onAction={()=>setQ("")}/>:(
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
+                <tr>
+                  <SortTh col={"name" as keyof Contractor}           label="Contractor"     sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"totalProjects" as keyof Contractor}  label="Contracts"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"totalValue" as keyof Contractor}     label="Total Value"    sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"activeProjects" as keyof Contractor} label="Ongoing"        sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"flaggedProjects" as keyof Contractor} label="Flagged"       sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <SortTh col={"flagRate" as keyof Contractor}       label="Flag Rate"      sortKey={sort.sortKey as keyof Contractor|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Contractor)=>void}/>
+                  <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Years</th>
+                  <th className="px-4 py-2.5"/>
+                </tr>
+              </thead>
+              <tbody>
+                {pg.paginate(sorted).map(c=>{
+                  return (
+                    <tr key={c.id} onClick={()=>setSelected(selected?.id===c.id?null:c)}
+                      className={`border-b border-gray-50 cursor-pointer transition-colors ${selected?.id===c.id?"bg-blue-50":"hover:bg-gray-50"}`}>
+                      <td className="px-4 py-3 font-semibold text-gray-800">{c.name}
+                        {c.registrationRevoked&&<span className="ml-2 text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-50 text-red-700 align-middle">REVOKED</span>}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.totalProjects}</td>
+                      <td className="px-4 py-3 font-mono">{peso(c.totalValue)}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.activeProjects}</td>
+                      <td className="px-4 py-3 font-mono text-center">{c.flaggedProjects}</td>
+                      <td className="px-4 py-3"><FlagRate rate={c.flagRate}/></td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-gray-500">{c.years.length?`${c.years[0]}–${c.years[c.years.length-1]}`:"—"}</td>
+                      <td className="px-4 py-3"><button className="text-[#1e3a7b] text-[11px] flex items-center gap-1 hover:underline font-medium">View<ArrowRight size={10}/></button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          )}
+        </div>
+        <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
+      </div>
+      {selected&&(
+        <div className="w-2/5 flex flex-col bg-white border-l border-gray-200">
+          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
+            <span className="text-[12px] font-bold text-gray-700">{selected.name}</span>
+            <button onClick={()=>setSelected(null)} aria-label="Close detail panel"><X size={15} className="text-gray-400 hover:text-gray-600"/></button>
+          </div>
+          <div className="flex-1 overflow-auto p-5 space-y-4" style={{scrollbarWidth:"none"}}>
+            <div className="bg-white rounded border border-gray-200 p-4">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Award Record</div>
+              <dl className="space-y-2.5">{[
+                {l:"Contracts won",v:String(selected.totalProjects)},
+                {l:"Total awarded",v:pesoFull(selected.totalValue),m:true},
+                {l:"Years active",v:selected.years.length?`${selected.years[0]}–${selected.years[selected.years.length-1]}`:"—",m:true},
+                {l:"Municipalities",v:String(selected.municipalities.length)},
+                {l:"Registration",v:selected.registrationRevoked?"Marked REVOKED by DPWH":"No marker in DPWH record"},
+              ].map(({l,v,m})=>(<div key={l} className="flex items-start gap-2 justify-between"><dt className="text-[12px] text-gray-500">{l}</dt><dd className={`text-[12px] font-medium text-gray-800 text-right ${m?"font-mono":""}`}>{v}</dd></div>))}</dl>
+              <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">PCAB licence class, GPPB blacklisting and performance ratings are not published in any open dataset. They are absent rather than estimated.</p>
+            </div>
+            <div className="bg-white rounded border border-gray-200 p-4">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Record Quality</div>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold" style={{color:"#1e3a7b"}}>{selected.activeProjects}</div><div className="text-[10px] text-gray-400">Ongoing</div></div>
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-green-700">{selected.completedProjects}</div><div className="text-[10px] text-gray-400">Completed</div></div>
+                <div className="bg-gray-50 rounded p-3"><div className="font-mono text-xl font-bold text-amber-600">{selected.flaggedProjects}</div><div className="text-[10px] text-gray-400">Flagged</div></div>
+              </div>
+              <div className="text-[11px] text-gray-500 mb-1.5">Share of this contractor&apos;s records tripping a consistency check</div>
+              <FlagRate rate={selected.flagRate}/>
+            </div>
+            <div className="bg-white rounded border border-gray-200 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50"><span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Linked Projects</span></div>
+              {PROJECTS.filter(p=>p.contractor===selected.name).length===0?<EmptyState title="No linked projects" body="No projects found in MASID for this contractor."/>:PROJECTS.filter(p=>p.contractor===selected.name).map(p=>(
+                <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0"><div className="flex-1 min-w-0"><div className="text-[12px] font-medium text-gray-800 truncate">{p.name}</div><div className="text-[10px] font-mono text-gray-400">{p.id}</div></div><StatusBadge status={p.status}/></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 // ─── Admin Screen ─────────────────────────────────────────────────────────────
 
@@ -1572,14 +2034,18 @@ function AdminScreen() {
           <div className="bg-white rounded border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
               <span className="text-[13px] font-bold text-gray-800">System Users</span>
-              <button onClick={()=>toast.success("Invite sent")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-white rounded hover:opacity-90" style={{background:"#1e3a7b"}}><Plus size={13}/>Invite User</button>
+              <button onClick={()=>toast.success("Invite sent")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] text-white rounded hover:opacity-90" style={{background:"var(--masid-navy)"}}><Plus size={13}/>Invite User</button>
             </div>
-            <table className="w-full text-[13px]">
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[13px] min-w-[760px]">
               <thead className="border-b border-gray-100 bg-gray-50"><tr>{["Name","Role","Email","Last Login","Status","Actions"].map(h=><th key={h} className="text-left px-5 py-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>
                 {SYSTEM_USERS.map((u,i)=>(
                   <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold text-white" style={{background:"#1e3a7b"}}>{u.name[0]}</div><span className="font-medium text-gray-800">{u.name}</span></div></td>
+                    <td className="px-5 py-3"><div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold text-white" style={{background:"var(--masid-navy)"}}>{u.name[0]}</div><span className="font-medium text-gray-800">{u.name}</span></div></td>
                     <td className="px-5 py-3"><span className="text-[11px] px-2 py-0.5 rounded font-medium text-white" style={{background:ROLE_CFG[u.role].bg}}>{ROLE_LABELS[u.role]}</span></td>
                     <td className="px-5 py-3 font-mono text-[12px] text-gray-600">{u.email}</td>
                     <td className="px-5 py-3 text-gray-500 text-[12px]">{u.lastLogin}</td>
@@ -1593,6 +2059,7 @@ function AdminScreen() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
         {tab==="audit"&&(
@@ -1601,10 +2068,15 @@ function AdminScreen() {
               <span className="text-[13px] font-bold text-gray-800">Audit Trail</span>
               <button onClick={()=>toast.success("Audit log exported")} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[13px] border border-gray-200 rounded text-gray-600 hover:bg-gray-50"><Download size={13}/>Export CSV</button>
             </div>
-            <table className="w-full text-[12px]">
+            <div className="overflow-x-auto">
+              {/* Scrolls rather than clips. The card around this table is
+                  overflow-hidden, so on a 390px phone columns four onward were
+                  not merely cramped, they were invisible and unreachable. */}
+            <table className="w-full text-[12px] min-w-[760px]">
               <thead className="border-b border-gray-100 bg-gray-50"><tr>{["Timestamp","User","Action","Target","IP Address"].map(h=><th key={h} className="text-left px-5 py-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{h}</th>)}</tr></thead>
               <tbody>{AUDIT_LOG.map((e,i)=><tr key={i} className="border-b border-gray-50 hover:bg-gray-50"><td className="px-5 py-3 font-mono text-gray-500 whitespace-nowrap">{e.time}</td><td className="px-5 py-3 font-medium text-gray-700">{e.user}</td><td className="px-5 py-3 text-gray-600">{e.action}</td><td className="px-5 py-3 font-mono text-[11px] text-[#1e3a7b]">{e.target}</td><td className="px-5 py-3 font-mono text-gray-400">{e.ip}</td></tr>)}</tbody>
             </table>
+            </div>
           </div>
         )}
         {tab==="integrations"&&(
@@ -1637,7 +2109,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
   const totalBudget=PROJECTS.reduce((s,p)=>s+p.budget,0);
   return (
     <div className="flex-1 overflow-auto bg-gray-50" style={{scrollbarWidth:"none"}}>
-      <div className="border-b border-amber-200 px-6 py-3 flex items-center gap-3 text-[13px]" style={{background:"#fffbeb"}}>
+      <div className="border-b border-amber-200 px-6 py-3 flex items-center gap-3 text-[13px]" style={{background:tint("#f59e0b")}}>
         <Globe size={15} className="text-amber-600"/>
         <span className="text-amber-800"><strong>Public Transparency Portal</strong> — No login required. DPWH Region III · Open Government Partnership.</span>
         <button onClick={onLogin} className="ml-auto text-[12px] font-semibold text-[#1e3a7b] flex items-center gap-1 hover:underline shrink-0">Sign in for full access<ArrowRight size={11}/></button>
@@ -1658,7 +2130,11 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
           <span className="text-[13px] text-gray-500">{filtered.length} of {PROJECTS.length} projects</span>
         </div>
         <div className="bg-white rounded border border-gray-200 overflow-hidden">
-          <table className="w-full text-[13px]">
+          <div className="overflow-x-auto">
+            {/* Scrolls rather than clips. The card around this table is
+                overflow-hidden, so on a 390px phone columns four onward were
+                not merely cramped, they were invisible and unreachable. */}
+          <table className="w-full text-[13px] min-w-[760px]">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
                 <SortTh col={"name" as keyof Project}         label="Project Name"  sortKey={sort.sortKey as keyof Project|null} sortDir={sort.sortDir} onSort={sort.toggle as (k:keyof Project)=>void}/>
@@ -1682,6 +2158,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
               ))}
             </tbody>
           </table>
+          </div>
           <Pagination page={pg.page} totalPages={Math.ceil(filtered.length/pg.pageSize)} setPage={pg.setPage} total={filtered.length} pageSize={pg.pageSize}/>
         </div>
         <div className="bg-white rounded border border-gray-200 p-6">
@@ -1695,7 +2172,7 @@ function TransparencyScreen({onLogin}:{onLogin:()=>void}) {
                 <input placeholder="Email address" type="email" aria-label="Email address" className="px-3 py-2 text-[13px] border border-gray-200 rounded focus:outline-none focus:border-[#1e3a7b]"/>
               </div>
               <textarea rows={3} placeholder="Describe the information you are requesting and the reason for your request…" aria-label="FOI request description" className="w-full px-3 py-2 text-[13px] border border-gray-200 rounded focus:outline-none focus:border-[#1e3a7b] resize-none mb-3"/>
-              <button onClick={()=>toast.success("FOI request submitted. Response within 15 working days.")} className="px-5 py-2.5 text-[13px] font-semibold text-white rounded hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2" style={{background:"#1e3a7b"}}>Submit FOI Request</button>
+              <button onClick={()=>toast.success("FOI request submitted. Response within 15 working days.")} className="px-5 py-2.5 text-[13px] font-semibold text-white rounded hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#1e3a7b] focus:ring-offset-2" style={{background:"var(--masid-navy)"}}>Submit FOI Request</button>
             </div>
           </div>
         </div>
@@ -1712,7 +2189,25 @@ export default function App() {
   const [userRole,setUserRole]        = useState<Role>("dpwh-admin");
   const [screen,setScreen]            = useState<Screen>("dashboard");
   const [sidebarCollapsed,setSidebar] = useState(false);
-  const [selectedProjectId,setSelId]  = useState(PROJECTS[0].id);
+  // Null until someone picks one. Seeding it with PROJECTS[0] meant every screen
+  // that reads a "selected" project was handed an arbitrary contract nobody
+  // chose — the satellite workbench opened on it instead of on the top of its
+  // own sorted queue. Screens that need a fallback still apply one below.
+  const [selectedProjectId,setSelId]  = useState<string|null>(null);
+
+  /* Theme. Applied before anything is measured so the first paint is already in
+     the right palette, and kept in a ref-free closure the system listener reads
+     at fire time rather than capturing. */
+  const [theme,setThemeState] = useState<Theme>(()=>loadTheme());
+  const themeRef = useRef(theme); themeRef.current = theme;
+  useEffect(()=>{ applyTheme(theme); saveTheme(theme); },[theme]);
+  useEffect(()=>watchSystem(()=>themeRef.current),[]);
+  const setTheme = (t:Theme)=>setThemeState(t);
+
+  /* Language. Filipino by default on a device set to Filipino, without asking. */
+  const [lang,setLangState] = useState<Lang>(()=>loadLang());
+  useEffect(()=>{ saveLang(lang); document.documentElement.lang = lang==="fil"?"fil":"en"; },[lang]);
+  const setLang = (l:Lang)=>setLangState(l);
   const [notificationsOpen,setNotifs] = useState(false);
   const [paletteOpen,setPalette]      = useState(false);
   const [createModalOpen,setCreate]   = useState(false);
@@ -1720,6 +2215,8 @@ export default function App() {
   // Filters initialise from the URL so a filtered view can be shared as a link,
   // which is the whole point of a transparency register.
   const [filters,setFilters]          = useState<Filters>(()=>fromQuery(window.location.search.slice(1)));
+  const [mapLayers,setMapLayers]      = useState<MapLayers>({markers:true,boundaries:true,labels:true,cluster:false});
+  const [colorBy,setColorBy]          = useState<string|null>(null);   // null = follow the filter
 
 
   const handleViewDetail = (id:string) => { setSelId(id); setScreen("project-detail"); };
@@ -1767,8 +2264,8 @@ export default function App() {
       {createModalOpen&&<CreateProjectModal onClose={()=>setCreate(false)} onSave={()=>{}}/>}
 
       <div className="relative shrink-0">
-        <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)}
-          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole}
+        <TopNav screen={screen} onNavigate={handleNavigate} onToggleSidebar={()=>setSidebar(v=>!v)} canToggleSidebar={showSidebar}
+          onToggleNotifications={()=>setNotifs(v=>!v)} unreadCount={unreadCount} role={userRole} theme={theme} setTheme={setTheme} lang={lang} setLang={setLang}
           onLogout={handleLogout} onCreateProject={()=>setCreate(true)} canCreate={canCreate}
           onOpenPalette={()=>setPalette(true)}/>
         {notificationsOpen&&(
@@ -1778,17 +2275,18 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {showSidebar&&(
-          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole}/>
+          <FilterPanel filters={filters} setFilters={setFilters} collapsed={sidebarCollapsed} role={userRole} lang={lang} layers={mapLayers} setLayers={setMapLayers} colorBy={colorBy} setColorBy={setColorBy}/>
         )}
         <main className="flex-1 flex overflow-hidden" role="main">
           {screen==="dashboard"    &&<DashboardScreen onNavigate={handleNavigate} onViewDetail={handleViewDetail}/>}
-          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole}/>}
+          {screen==="map"          &&<MapScreen projects={visibleProjects} onViewDetail={handleViewDetail} filters={filters} onClearFilters={()=>setFilters(emptyFilters())} role={userRole} layers={mapLayers} colorBy={colorBy}/>}
           {screen==="project-detail"&&<ProjectDetailScreen project={selectedProject} onBack={()=>setScreen("map")} onOpenSatellite={()=>setScreen("satellite")}/>}
-          {screen==="satellite"    &&<SatelliteScreen project={selectedProject}/>}
+          {screen==="satellite"    &&<SatelliteScreen initialId={selectedProjectId} onOpenRecord={handleViewDetail} reviewerLabel={ROLE_CFG[userRole].label}/>}
           {screen==="documents"    &&<DocumentsScreen/>}
-          {screen==="citizen-report"&&<CitizenReportScreen/>}
+          {screen==="citizen-report"&&<ReportsFeed onOpenProject={handleViewDetail} role={ROLE_LABELS_PUBLIC[userRole]}/>}
           {screen==="contractors"  &&<ContractorsScreen/>}
           {screen==="admin"        &&<AdminScreen/>}
+          {screen==="nationwide"   &&<NationwideScreen/>}
           {screen==="transparency" &&<TransparencyScreen onLogin={()=>setIsLoggedIn(false)}/>}
         </main>
       </div>
