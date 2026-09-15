@@ -272,6 +272,20 @@ datasets:
       violations: {type: int, nullable: false, optional: true, origin: derived}
       rate:       {type: float, nullable: false, optional: true, origin: derived}
 
+  municipality-audit.json:
+    record_path: null
+    emitted_by: pipeline/audit_municipality.py
+    description: >
+      Audit of declared_municipality(), the regex-over-prose that supplies the
+      text half of MUNI_MISMATCH and BOUNDARY_ADJACENT. A second, independent
+      parser re-reads the same descriptions by sentence shape rather than by
+      token sweep; the two fail in different directions, so agreement is
+      evidence. Summary object with no record array. At the current build:
+      100% agreement on the 69 flag-raising contracts, 0 conflicts, 99.5%
+      across the register. It found and fixed one false positive (24CC0423,
+      where "ANGAT RIVER" was read as a location claim).
+    fields: {}
+
   stat-comparison.json:
     record_path: null
     emitted_by: pipeline/evaluate.py

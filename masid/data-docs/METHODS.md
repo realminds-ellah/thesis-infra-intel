@@ -60,6 +60,56 @@ are themselves approximations, and a revetment legitimately sits **on** a
 boundary — that is often exactly where a river is. A tighter tolerance would
 manufacture high-severity flags out of cartography.
 
+### Auditing the text half of that comparison
+
+The point-in-polygon half of `MUNI_MISMATCH` is exact arithmetic on published
+geometry — anyone can falsify it with a map. The other half is
+`declared_municipality()`, **a regex over prose**, and if it is wrong the flag is
+spurious: the project would have accused a record of contradicting itself when it
+does not. On the most consequential check in the project, that asymmetry went
+unmeasured for the whole build.
+
+`pipeline/audit_municipality.py` measures it with a **second, independent
+parser**. Production takes the rightmost municipality token anywhere in the
+description — robust to messy text, vulnerable to a barangay named after a
+municipality. The auditor ignores the vocabulary sweep entirely and reads DPWH's
+sentence shape, taking the comma-segment immediately before the province token —
+immune to stray collisions, vulnerable to descriptions that break the convention.
+**They fail in opposite directions, which is the point**: agreement between them
+is evidence, and every disagreement is printed for a person to settle.
+
+The geocoded municipality is deliberately excluded as a third opinion. It is the
+thing being compared against, and using it here would be circular — it would
+quietly convert a measurement into an assumption.
+
+All **69** flag-raising contracts are audited exhaustively rather than sampled. A
+sample of a population you can enumerate is a wasted opportunity.
+
+| | |
+|---|---|
+| agreement on the flag-raising population | **69 / 69 — 100%** |
+| **conflicts (two names) — spurious flags** | **0** |
+| agreement across the register | **1,287 / 1,293 — 99.5%** |
+
+The six register-wide disagreements are all cases where the auditor found nothing
+and production was right: province misspellings in the source (`BUALCAN`,
+`BUALACAN`) and the `PROVINCE OF BULACAN` form, which move the province token
+away from the segment the auditor reads.
+
+**The audit found one real defect, and it is now fixed.** `24CC0423` —
+*"CONSTRUCTION OF FLOOD CONTROL STRUCTURE ALONG ANGAT RIVER, BULACAN"* — declared
+**Angat**, geocoded to **Plaridel**, and raised a high-severity `MUNI_MISMATCH`.
+But *Angat River* is a **watercourse name, not a location claim**; the river runs
+through much of the province, and the coordinate in Plaridel is correct. The
+parser now drops a municipality token immediately followed by
+RIVER/CREEK/CHANNEL/WATERWAY/DIVERSION — while still matching a description that
+names the municipality **elsewhere**, so `"... ALONG GUIGUINTO RIVER AT BARANGAY
+MALIS, GUIGUINTO, BULACAN"` still resolves to Guiguinto.
+
+`MUNI_MISMATCH` fell **37 → 36** and the review queue **310 → 309**. That contract
+carried no procurement flag either, so it left the queue entirely: **it was there
+because of a river's name.**
+
 ## Contractor concentration — 15× and 8×
 
 `AWARD_CONCENTRATION` fires when a contractor's share of everything this office

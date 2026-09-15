@@ -175,7 +175,7 @@ const preds = (f: Filters): Record<keyof Filters, Pred> => ({
   // The condition list collapsed to one switch.
   //
   // Deliberately the RECORDS checks only, not the bidding ones. Including
-  // procurement flags takes this from 310 contracts to 1,123 — 87% of the
+  // procurement flags takes this from 309 contracts to 1,122 — 87% of the
   // register — because round-number bids alone are 709 and contractor
   // concentration another 366. A switch that selects seven contracts in eight
   // is not a filter, and "has a problem" would stop meaning anything.

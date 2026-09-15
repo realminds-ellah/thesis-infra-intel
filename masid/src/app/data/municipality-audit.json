@@ -1,0 +1,18 @@
+{
+ "method": "Two independent parsers of the same prose: the production rightmost-token sweep, and a structural read of the comma-segment before the province token. They fail in different directions, so agreement is evidence. The geocoded municipality is deliberately excluded — it is the thing being compared against, and using it here would be circular.",
+ "flagRaisingPopulation": {
+  "contracts": 69,
+  "agree": 69,
+  "conflicts": 0,
+  "agreementRate": 1.0
+ },
+ "wholeRegister": {
+  "contracts": 1293,
+  "agree": 1287,
+  "conflicts": 0,
+  "productionOnly": 6,
+  "structuralOnly": 0,
+  "agreementRate": 0.9954
+ },
+ "conflicts": []
+}

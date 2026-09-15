@@ -71,7 +71,7 @@ flowchart LR
 |---|---|---|
 | **DPWH transparency export** | everything. It is the spine — `projects.json`, `contractors.json`, and the join key every other dataset uses. | fatal |
 | **PhilGEPS detail export** | all bidding analysis: the 96.00% finding, bidder counts, the national comparison, the procurement half of the triage. Record-side checks survive. | severe |
-| **geoBoundaries ADM3** | every coordinate check — `MUNI_MISMATCH`, `OUTSIDE_PROVINCE`, `BOUNDARY_ADJACENT` — plus on-device reverse geocoding in citizen reports. 310 flags become uncomputable. | severe |
+| **geoBoundaries ADM3** | every coordinate check — `MUNI_MISMATCH`, `OUTSIDE_PROVINCE`, `BOUNDARY_ADJACENT` — plus on-device reverse geocoding in citizen reports. 309 flags become uncomputable. | severe |
 | **Sentinel-2** | the change-detection tier, which is already reported as a null result. **Nothing that is relied on is lost.** | low |
 | **Esri Wayback** | the dated imagery strip and the finding about the 5½-year gap. Live basemap tiles are a separate dependency. | moderate |
 | **UP NOAH** | the hazard join. The register still works; the "is the flood control where the flooding is" question does not. | moderate |

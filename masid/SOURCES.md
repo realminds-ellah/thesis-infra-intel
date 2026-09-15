@@ -424,7 +424,7 @@ the portal says; this audits it. The division:
 
 | | |
 |---|---|
-| Coordinate integrity | 37 contracts whose coordinate contradicts their own description; 102 with none at all. A register plots coordinates; it does not test them |
+| Coordinate integrity | 36 contracts whose coordinate contradicts their own description; 102 with none at all. A register plots coordinates; it does not test them |
 | Bidding red flags | the 96.00% cluster, single-bidder, bid-window, ABC ratio — none derivable from the flat export they index |
 | Flood-hazard join | whether the flood control is where the flooding is |
 | Rebuild recurrence | 142 contracts on sites built again in a later year |
@@ -514,7 +514,7 @@ What was kept from that version is the correctness, not the controls:
 - Layer toggles now actually drive the map rather than decorating the panel.
 
 **"Only ones with a problem" counts the records checks, not the bidding ones.**
-Including procurement flags takes it from 310 to 1,123 — 87% of the register —
+Including procurement flags takes it from 309 to 1,122 — 87% of the register —
 because round-number bids alone are 709 and contractor concentration another 366.
 A switch that selects seven contracts in eight is not a filter. Bidding patterns
 are still shown on every contract's detail panel, where they belong: they
@@ -728,14 +728,14 @@ not satellite verification, and they are not findings of fraud.** No imagery has
 been analysed. A flag means the public record disagrees with itself or with
 official boundary data — a reason to look, not a conclusion.
 
-310 of 1,293 records (24%) trip at least one check:
+309 of 1,293 records (24%) trip at least one check:
 
 | Check | Count | What it tests | Severity |
 |---|---|---|---|
 | `CONTRACTOR_REVOKED` | 110 | DPWH's own contractor field carries a `[REVOKED]` registration marker | medium |
 | `MISSING_COORDS` | 102 | No latitude/longitude published, so the site cannot be located at all | high |
 | `COORD_DUPLICATE` | 41 | Two or more contracts share one exact coordinate | medium |
-| `MUNI_MISMATCH` | 37 | The description names one municipality; the coordinate falls in another, beyond boundary tolerance | high |
+| `MUNI_MISMATCH` | 36 | The description names one municipality; the coordinate falls in another, beyond boundary tolerance | high |
 | `BOUNDARY_ADJACENT` | 33 | Same as above but within 300 m of the named municipality — treated as cartographic, not substantive | low |
 | `UNLOCATABLE_COORD` | 9 | Coordinate falls outside every municipal polygon in the region | high |
 | `OUTSIDE_PROVINCE` | 7 | Coordinate falls outside Bulacan entirely | high |

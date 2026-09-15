@@ -47,7 +47,7 @@ Case study: DPWH Bulacan 1st District Engineering Office
 
 *[Point at the six tiles across the top]*
 
-> "**310 trip at least one consistency check.** Note the phrase — the record disagrees with itself. Not fraud. That distinction holds everywhere in this tool."
+> "**309 trip at least one consistency check.** Note the phrase — the record disagrees with itself. Not fraud. That distinction holds everywhere in this tool."
 
 ### 0:35 — Scroll to **Where the money went**
 

@@ -24,7 +24,7 @@ python3 data-docs/validate.py
 | **[`validate.py`](validate.py)** | **the enforcement** | Checks the emitted JSON against the contract. Fails on undocumented fields, type drift, null violations, row-count changes and broken joins. Writes `MANIFEST.json`. |
 | [`DICTIONARY.md`](DICTIONARY.md) | generated | Every field, readable. Never hand-edited — `build_dictionary.py` renders it. |
 | [`METHODS.md`](METHODS.md) | authored | Why each threshold is the number it is. Severity weights, the 300 m boundary tolerance, the bootstrap null, the 96.00% comparison, the OCR evaluation. |
-| [`LIMITATIONS.md`](LIMITATIONS.md) | authored | 32 known limits, **each with a measured size**. |
+| [`LIMITATIONS.md`](LIMITATIONS.md) | authored | 33 known limits, **each with a measured size**. |
 | [`LINEAGE.md`](LINEAGE.md) | authored | Source → pipeline → dataset, what breaks if a source disappears, and the fields with no source at all. |
 | [`QUALITY.md`](QUALITY.md) | generated | The gate's 36 checks, rendered from `data-quality.json`. |
 | [`MANIFEST.json`](MANIFEST.json) | generated | Row counts and sha256 per dataset, so a figure quoted in the thesis ties to the build that produced it. |

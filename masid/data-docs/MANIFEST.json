@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-19T13:29:44Z",
+ "generated": "2026-08-19T14:31:05Z",
  "contract_version": 1,
  "note": "Row counts and checksums for the build these figures came from. A number quoted anywhere in this project can be tied to a sha256 here.",
  "datasets": {
@@ -11,14 +11,14 @@
   },
   "contractors.json": {
    "rows": 176,
-   "bytes": 64146,
-   "sha256": "d94ab27ac445b4a763508327fde8035337b1a584d02f134b2d26d848aa2459c1",
+   "bytes": 64134,
+   "sha256": "5bc0b99304007c663003ed80207debdbc1e6e8412fefd93b4016edd354edfa14",
    "emitted_by": "pipeline/build_dataset.py"
   },
   "data-quality.json": {
    "rows": 36,
    "bytes": 5407,
-   "sha256": "0c9bce257a9ecc7d651c976e6977ac11ac5256390c999735a0e20909fcea3921",
+   "sha256": "1c82704826cfc5d3e4b160693e544f022335262458809af35a9a6425a2c11677",
    "emitted_by": "pipeline/verify_data.py"
   },
   "documents.json": {
@@ -35,9 +35,15 @@
   },
   "meta.json": {
    "rows": 2,
-   "bytes": 2281,
-   "sha256": "e3fe4139f2686662125dd56d35ad1cb15e6c15797d94f8fab7048afb0ef33e0d",
+   "bytes": 2266,
+   "sha256": "cfce22e4d93e2148bd5558494df3425fe246e8f9d5efa05dfaf05e3c6e78bb27",
    "emitted_by": "pipeline/build_dataset.py"
+  },
+  "municipality-audit.json": {
+   "rows": 0,
+   "bytes": 638,
+   "sha256": "58a7ddf7b302cf3bd7123e045276499996a8141ca3008a78d7df668bc1320893",
+   "emitted_by": "pipeline/audit_municipality.py"
   },
   "national.json": {
    "rows": 216,
@@ -53,8 +59,8 @@
   },
   "projects.json": {
    "rows": 1293,
-   "bytes": 1603298,
-   "sha256": "1109ab1ec6551293ab566221da28891d457976762643b81867c8fa644ccbea65",
+   "bytes": 1603125,
+   "sha256": "73de0cfb62916a257552bb3e5583db7bb92c628e1699ff806fce5facd0387054",
    "emitted_by": "pipeline/build_dataset.py"
   },
   "satellite.json": {

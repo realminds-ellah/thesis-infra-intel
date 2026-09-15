@@ -146,7 +146,7 @@ sequenceDiagram
     Note over REC, CHK: Nothing here is an accusation
     REC->>CHK: coordinate · description · dates · bidders
     CHK-->>REC: "the record disagrees with itself" — a reason to look
-    Note right of CHK: 310 of 1,293 trip a check<br/>17 trip both signals
+    Note right of CHK: 309 of 1,293 trip a check<br/>17 trip both signals
 
     Note over SKY, GND: Can anyone see it?
     CHK->>SKY: 6 dated flights, 2010 → 2025
@@ -215,7 +215,7 @@ data-docs/validate.py       enforces the contract — fails on drift
 **Records tier** — every published coordinate is reverse-geocoded against
 official municipal boundaries and compared with the location the contract
 description itself states, and every contractor is checked against the
-registration marker DPWH publishes in its own records. 310 of 1,293 records
+registration marker DPWH publishes in its own records. 309 of 1,293 records
 disagree with themselves or with the contractor register in some way.
 
 **Procurement tier** — bidder counts with PCAB ids, the approved budget, the full

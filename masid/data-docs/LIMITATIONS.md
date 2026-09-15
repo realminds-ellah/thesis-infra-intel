@@ -40,35 +40,36 @@ Ordered by how much they constrain what this project can claim.
 | 16 | **Scope corridors are an inference** | 219 built, 220 possible | Direction comes from OpenStreetMap, not from DPWH. The work may be on one bank; the corridor covers both, because which bank is not published either. |
 | 17 | **Corridors from distant channels** | **34 over 100 m away** | May follow the wrong watercourse. `metresToWaterway` is emitted per corridor and flagged in the interface. |
 | 18 | **Corridors truncated** | 16 contracts | The mapped channel ran out before the stated length; `coveredMetres` records what was actually drawn. |
-| 19 | **Geocoding resolves to municipality only** | — | No barangay layer ships, so `barangay` is parsed from description text and is not a validated administrative code. |
-| 20 | **Boundary geometry is itself approximate** | — | Why the tolerance is a generous 300 m; a tighter one would manufacture flags out of cartography. |
+| 19 | **The declared municipality is parsed from prose** | **99.5% agreement, 0 conflicts** | `MUNI_MISMATCH` compares geometry against a regex over description text. Audited against an independent parser across the whole register and exhaustively on all 69 flag-raising contracts (`pipeline/audit_municipality.py`); it found one false positive, a river name read as a place, now fixed. Measured — not assumed. |
+| 20 | **Geocoding resolves to municipality only** | — | No barangay layer ships, so `barangay` is parsed from description text and is not a validated administrative code. |
+| 21 | **Boundary geometry is itself approximate** | — | Why the tolerance is a generous 300 m; a tighter one would manufacture flags out of cartography. |
 
 ## Document extraction
 
 | # | limitation | size | consequence |
 |---|---|---|---|
-| 21 | **Table parsing is not complete** | median **92%** of value | 972 of 1,237 clear the 35% threshold and are displayed, each stating its own coverage. 670 land in the 90–102% band a complete table should occupy; **7 exceed 102%**, where a subtotal row was counted twice. |
-| 22 | **Some documents carry no Bill of Quantities** | **129 of 1,237 (10.4%)** | A fact about those documents, not a failure of extraction. Only **22 (1.8%)** are genuinely unreadable. |
-| 23 | **OCR price accuracy is not perfect** | **932 of 962 (96.9%)** | Measured, not assumed. The 30 misses are unexplained and should not be treated as zero. |
-| 24 | **Descriptions truncate across columns** | — | Which is why visibility is classified by DPWH **pay-item code**, not by the OCR'd wording. |
+| 22 | **Table parsing is not complete** | median **92%** of value | 972 of 1,237 clear the 35% threshold and are displayed, each stating its own coverage. 670 land in the 90–102% band a complete table should occupy; **7 exceed 102%**, where a subtotal row was counted twice. |
+| 23 | **Some documents carry no Bill of Quantities** | **129 of 1,237 (10.4%)** | A fact about those documents, not a failure of extraction. Only **22 (1.8%)** are genuinely unreadable. |
+| 24 | **OCR price accuracy is not perfect** | **932 of 962 (96.9%)** | Measured, not assumed. The 30 misses are unexplained and should not be treated as zero. |
+| 25 | **Descriptions truncate across columns** | — | Which is why visibility is classified by DPWH **pay-item code**, not by the OCR'd wording. |
 
 ## Scope and comparison
 
 | # | limitation | size | consequence |
 |---|---|---|---|
-| 25 | **One district office** | 1 of 216 | Findings are about Bulacan 1st DEO. The Nationwide screen compares **procurement indicators only**. |
-| 26 | **National comparison excludes record checks** | — | Those need municipal polygon geometry, which ships for Bulacan alone. Claiming a national records score without it would be inventing one. |
-| 27 | **No ground truth to validate any ranking** | — | The ICI referred its findings to the DOJ and Ombudsman rather than publishing an itemised list. **This is why the triage is always called an ordering and never a prediction**, and why no model in this project may output a fraud score. |
-| 28 | **Data is a snapshot** | records to Jan 2026 | No refresh path. A stale ₱67.7 B quietly becomes wrong. |
+| 26 | **One district office** | 1 of 216 | Findings are about Bulacan 1st DEO. The Nationwide screen compares **procurement indicators only**. |
+| 27 | **National comparison excludes record checks** | — | Those need municipal polygon geometry, which ships for Bulacan alone. Claiming a national records score without it would be inventing one. |
+| 28 | **No ground truth to validate any ranking** | — | The ICI referred its findings to the DOJ and Ombudsman rather than publishing an itemised list. **This is why the triage is always called an ordering and never a prediction**, and why no model in this project may output a fraud score. |
+| 29 | **Data is a snapshot** | records to Jan 2026 | No refresh path. A stale ₱67.7 B quietly becomes wrong. |
 
 ## The prototype boundary
 
 | # | limitation | consequence |
 |---|---|---|
-| 29 | **No server** | Citizen reports and imagery reviews live in one browser and reach nobody. Export before relying on them. |
-| 30 | **No accounts** | The login screen is decorative; any role can be selected. Deletion is ownership by browser, not moderation. |
-| 31 | **No audit trail on moderation** | A deployed version naming contractors needs soft deletes, a reason and a record of who acted. |
-| 32 | **Right of reply is a stub** | Real, visible, and it goes nowhere — the panel says so rather than pretending to file something. |
+| 30 | **No server** | Citizen reports and imagery reviews live in one browser and reach nobody. Export before relying on them. |
+| 31 | **No accounts** | The login screen is decorative; any role can be selected. Deletion is ownership by browser, not moderation. |
+| 32 | **No audit trail on moderation** | A deployed version naming contractors needs soft deletes, a reason and a record of who acted. |
+| 33 | **Right of reply is a stub** | Real, visible, and it goes nowhere — the panel says so rather than pretending to file something. |
 
 ---
 

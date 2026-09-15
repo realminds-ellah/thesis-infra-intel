@@ -332,6 +332,72 @@ about whether a structure was delivered.
 
 ---
 
+## 10. The strongest check rested on an unmeasured text parse — it holds, and it had one error in it
+
+Every other finding here is about the record. This one is about **us**.
+
+`MUNI_MISMATCH` is the most consequential thing this project asserts: 36 contracts
+marked high severity because the published coordinate falls in a different
+municipality than the contract's own description names. It is two halves. The
+geometry half is exact arithmetic on published boundaries and anyone can falsify
+it with a map. The other half is `declared_municipality()` — **a regex over
+prose** — and nobody had ever measured whether it reads the sentence correctly.
+
+That asymmetry is uncomfortable in the specific way that matters: if the parse is
+wrong, the flag is spurious, and the project has accused a public record of
+contradicting itself when it does not. The whole legal posture of this thesis is
+that a flag says *"the record disagrees with itself"* and never *"someone stole
+this."* A flag built on a bad parse is not a weaker claim — it is a false one.
+
+**The measurement.** A second parser, written to fail in the opposite direction.
+Production sweeps for the rightmost municipality token anywhere in the text;
+the auditor ignores the sweep and reads DPWH's sentence shape, taking only the
+comma-segment before the province token. One is vulnerable to a barangay named
+after a municipality, the other to descriptions that break the convention.
+Agreement between two parsers that fail differently is evidence. The geocoded
+municipality was deliberately withheld as a tiebreaker — it is the thing being
+compared against, and using it would make the measurement circular.
+
+All 69 flag-raising contracts were audited exhaustively rather than sampled.
+
+| | |
+|---|---|
+| agreement on the contracts that actually raise a flag | **69 / 69 — 100%** |
+| **conflicts — where a flag would be spurious** | **0** |
+| agreement across all 1,293 contracts | **99.5%** |
+
+**And it found one.** `24CC0423` — *"CONSTRUCTION OF FLOOD CONTROL STRUCTURE
+ALONG ANGAT RIVER, BULACAN"* — was declared **Angat**, geocoded to **Plaridel**,
+and flagged high severity. But *Angat River* is the name of **a river**. It runs
+through much of the province, the description names no municipality at all, and
+the Plaridel coordinate was right the whole time. The parser had read a
+watercourse as a place.
+
+Exactly **one contract in 1,293** was affected, and it was the one carrying the
+flag. It is fixed — a municipality token immediately followed by RIVER, CREEK,
+CHANNEL, WATERWAY or DIVERSION no longer counts as a location claim, while a
+description that names the municipality *elsewhere* still resolves normally.
+`MUNI_MISMATCH` fell **37 → 36** and the review queue **310 → 309**. That contract
+had no procurement flag either, so it left the queue entirely: **an inspector
+would have been sent to look at it because of a river's name.**
+
+**Why this belongs in the findings and not in a changelog.** The parse is 99.5%
+accurate, so the honest summary is *the check holds*. But that number did not
+exist until it was measured, and "it looked right" was doing the work in the
+meantime. The one error it surfaced was invisible to inspection — the flag looked
+entirely reasonable, and Angat is a real municipality in this province. Nothing
+short of re-parsing the text a second way would have caught it.
+
+A project that flags other people's records for internal contradiction owes the
+same treatment to its own. **The measurement is the finding; the fix is a
+footnote.**
+
+*Method and the full disagreement list:
+[`masid/data-docs/METHODS.md`](masid/data-docs/METHODS.md) ·
+re-run with `python3 pipeline/audit_municipality.py`*
+
+---
+
 ## Reproducing these
 
 ```bash
